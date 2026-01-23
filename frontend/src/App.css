@@ -1,0 +1,101 @@
+/* App-specific styles that complement the design system */
+
+/* Remove default Vite styles */
+#root {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  min-height: 100vh;
+}
+
+/* Ensure smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection styles */
+::selection {
+  background: rgba(255, 215, 0, 0.3);
+  color: #fff;
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid #FFD700;
+  outline-offset: 2px;
+}
+
+/* Hide focus for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Responsive text scaling */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+
+  .font-display {
+    letter-spacing: 0.02em;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+/* Large screen optimizations */
+@media (min-width: 1440px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .tile:hover {
+    transform: none;
+  }
+
+  .character-card:hover {
+    transform: none;
+  }
+
+  button:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .animated-bg {
+    animation: none;
+    background-size: 100% 100%;
+  }
+}
+
+/* Print styles */
+@media print {
+  .animated-bg {
+    background: white;
+  }
+
+  .glass-card {
+    background: white;
+    border: 1px solid #ddd;
+  }
+}
