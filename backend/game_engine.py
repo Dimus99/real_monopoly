@@ -367,6 +367,7 @@ class GameEngine:
         is_doubles = d1 == d2
         
         result = {
+            "player_id": player_id,
             "dice": [d1, d2],
             "doubles": is_doubles,
             "passed_go": False,
@@ -428,10 +429,6 @@ class GameEngine:
         landing_result = self._handle_landing(game, player, tile)
         result.update(landing_result)
         
-        # Ensure if it was a chance/tax tile, the UI shows the modal
-        if tile.group in ["Chance", "Tax"]:
-            result["action"] = "chance"
-
         game.logs.append(f"{player.name} rolled {d1}+{d2} and moved to {tile.name}")
         
         # If doubles, remind to roll again
@@ -482,29 +479,31 @@ class GameEngine:
                 new_tile = game.board[player.position]
                 landing_res = self._handle_landing(game, player, new_tile)
                 
-                # Merge results, but keep the chance_card and force chance action for UI
+                # Merge results, but keep the chance_card and prioritize the new landing action
                 for k, v in landing_res.items():
-                    if k not in result: # Don't overwrite what chance_result set (like amount)
+                    if k != "chance_card": # Don't overwrite the chance card info
                         result[k] = v
                 
                 result["landed_on_after_chance"] = new_tile.name
             
-            result["action"] = "chance"
+            # If no specific action was set by new landing (like pay_rent), set it to chance
+            if result.get("action") in [None, "safe"]:
+                result["action"] = "chance"
             
         elif tile.group == "Jail": # Previously Tax block was here, now combined above
             result["action"] = "safe"
             game.logs.append(f"🏝️ {player.name} is just visiting Epstein Island. No questions asked.")
             
         elif tile.group == "Special" or tile.id == 0:
-            result["action"] = "safe"
-            game.logs.append(f"🏢 {player.name} is at Headquarters. Geopolitical strategy is being updated.")
+            # Special tiles like START
+            game.logs.append(f"🏢 {player.name} is at {tile.name}.")
             
             if tile.owner_id and tile.owner_id != player.id and not tile.is_mortgaged:
                 rent = self._calculate_rent(game, tile, game.dice, player)
                 result["action"] = "pay_rent"
                 result["amount"] = rent
                 result["owner_id"] = tile.owner_id
-            elif not tile.owner_id and not tile.is_destroyed:
+            elif not tile.owner_id and tile.price > 0 and not tile.is_destroyed:
                 result["action"] = "can_buy"
                 result["price"] = tile.price
             else:
@@ -813,6 +812,7 @@ class GameEngine:
         
         return {
             "success": True,
+            "player_id": player_id,
             "property": prop.dict(),
             "game_state": game.dict()
         }
@@ -863,6 +863,7 @@ class GameEngine:
         
         return {
             "success": True,
+            "player_id": player_id,
             "rent_paid": rent,
             "game_state": game.dict()
         }
