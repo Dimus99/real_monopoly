@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Copy, Users, Bot, Play, Check, Home, Clock, ArrowLeftRight,
     ArrowLeft, MessageSquare, Settings, Bell,
-    Menu, UserPlus, X, MapPin, ChevronLeft, ChevronRight
+    Menu, UserPlus, X, MapPin, ChevronLeft, ChevronRight, Crosshair
 } from 'lucide-react';
 import useGameSocket from '../hooks/useGameSocket';
 import Board from '../components/Board';
@@ -39,12 +39,13 @@ const GameRoom = () => {
     const [diceValues, setDiceValues] = useState([1, 1]);
     const [copied, setCopied] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
-    const [showMobilePlayers, setShowMobilePlayers] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [friends, setFriends] = useState([]);
 
     // Dice Animation States
     const [showDice, setShowDice] = useState(false);
     const [diceRolling, setDiceRolling] = useState(false);
+    const [hasRolled, setHasRolled] = useState(false);
 
     // Animation States
     const [showBuyout, setShowBuyout] = useState(false);
@@ -57,18 +58,18 @@ const GameRoom = () => {
     const [tradeTarget, setTradeTarget] = useState(null);
     const [incomingTrade, setIncomingTrade] = useState(null);
 
-    // Sync State for delayed movement
+    // Sync State
     const [delayedPlayers, setDelayedPlayers] = useState({});
 
     // Targeting State
-    const [targetingAbility, setTargetingAbility] = useState(null); // 'ORESHNIK', 'BUYOUT', etc.
+    const [targetingAbility, setTargetingAbility] = useState(null);
 
     const currentPlayer = gameState?.players?.[playerId];
     const isMyTurn = gameState?.player_order?.[gameState?.current_turn_index] === playerId;
     const currentTurnPlayer = gameState?.players?.[gameState?.player_order?.[gameState?.current_turn_index]];
 
-    // Contextual actions
     const currentTile = gameState?.board?.[currentPlayer?.position];
+    // Can buy only if on the tile (UI Logic)
     const canBuy = isMyTurn &&
         currentTile &&
         !currentTile.owner_id &&
@@ -80,10 +81,22 @@ const GameRoom = () => {
         sendAction('BUY', { property_id: currentPlayer.position });
     };
 
+    const copyToClipboard = (text) => {
+        const link = `${window.location.origin}/?game=${text}`;
+        navigator.clipboard.writeText(link).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+
+    const handleEndTurn = () => {
+        if (!isMyTurn) return;
+        sendAction('END_TURN');
+        setHasRolled(false);
+    };
+
     const handleAbility = (abilityType) => {
         if (!isMyTurn || !currentPlayer) return;
-
-        // Some abilities require target selection
         if (['ORESHNIK', 'BUYOUT', 'ISOLATION', 'SANCTIONS'].includes(abilityType)) {
             setTargetingAbility(abilityType);
         } else {
@@ -91,25 +104,22 @@ const GameRoom = () => {
         }
     };
 
-    // Timer state
+    // Timer
     const [timeLeft, setTimeLeft] = useState(45);
-
     useEffect(() => {
         if (!gameState?.turn_expiry) return;
-
         const updateTimer = () => {
-            const expiry = new Date(gameState.turn_expiry).getTime();
+            let expiryStr = gameState.turn_expiry;
+            if (expiryStr && !expiryStr.endsWith('Z')) expiryStr += 'Z';
+            const expiry = new Date(expiryStr).getTime();
             const now = new Date().getTime();
             const diff = Math.ceil((expiry - now) / 1000);
             setTimeLeft(Math.max(0, diff));
         };
-
         updateTimer();
         const interval = setInterval(updateTimer, 1000);
         return () => clearInterval(interval);
     }, [gameState?.turn_expiry]);
-
-
 
     const handleRoll = () => {
         if (!isMyTurn || isRolling) return;
@@ -117,53 +127,10 @@ const GameRoom = () => {
         sendAction('ROLL');
     };
 
-    // Handle Chat
     const handleSendMessage = (text) => {
-        if (text.trim()) {
-            sendAction('CHAT', { message: text });
-        }
+        if (text.trim()) sendAction('CHAT', { message: text });
     };
 
-    // Add bot
-    const addBot = async () => {
-        try {
-            const token = localStorage.getItem('monopoly_token');
-            await fetch(`http://localhost:8000/api/games/${gameId}/bots`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
-    // Start game
-    const startGame = async () => {
-        try {
-            const token = localStorage.getItem('monopoly_token');
-            await fetch(`http://localhost:8000/api/games/${gameId}/start`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
-    // Copy game code
-    const copyGameCode = () => {
-        navigator.clipboard.writeText(gameId);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    // Invite Friend
-    const handleInvite = (friend) => {
-        alert(`Invite sent to ${friend.name}!`);
-        setShowInviteModal(false);
-    };
-
-    // Trade Logic
     const initiateTrade = (targetPlayer) => {
         setTradeTarget(targetPlayer);
         setShowTradeModal(true);
@@ -179,399 +146,436 @@ const GameRoom = () => {
         setIncomingTrade(null);
     };
 
-    // Effects for animations
+    // --- Waiting Room Actions ---
+    const handleStartGame = async () => {
+        try {
+            const token = localStorage.getItem('monopoly_token');
+            const res = await fetch(`http://localhost:8000/api/games/${gameId}/start`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to start');
+        } catch (e) {
+            alert('Could not start game. Need at least 2 players.');
+        }
+    };
+
+    const handleAddBot = async () => {
+        try {
+            const token = localStorage.getItem('monopoly_token');
+            await fetch(`http://localhost:8000/api/games/${gameId}/bots`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        } catch (e) { alert('Failed to add bot'); }
+    };
+
+    const handleRemoveBot = async (botId) => {
+        try {
+            const token = localStorage.getItem('monopoly_token');
+            await fetch(`http://localhost:8000/api/games/${gameId}/bots/${botId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        } catch (e) { alert('Failed to remove bot'); }
+    };
+
+    const fetchFriends = async () => {
+        try {
+            const token = localStorage.getItem('monopoly_token');
+            const res = await fetch('http://localhost:8000/api/friends', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) setFriends(await res.json());
+        } catch (e) { console.error(e); }
+    };
+
+    const handleSendInvite = async (friendId) => {
+        try {
+            const token = localStorage.getItem('monopoly_token');
+            const res = await fetch(`http://localhost:8000/api/games/${gameId}/invite`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ to_user_id: friendId })
+            });
+            if (res.ok) {
+                alert('Invite sent!');
+            } else {
+                const err = await res.json();
+                alert(err.detail || 'Failed to send invite');
+            }
+        } catch (e) { alert('Error sending invite'); }
+    };
+
+    const openInviteModal = () => {
+        fetchFriends();
+        setShowInviteModal(true);
+    };
+
+    // Modals state
+    const [showBuyModal, setShowBuyModal] = useState(false);
+    const [showRentModal, setShowRentModal] = useState(false);
+    const [rentDetails, setRentDetails] = useState(null);
+
+    // Effects
     useEffect(() => {
         if (!lastAction) return;
-
         switch (lastAction.type) {
-            case 'ORESHNIK':
-                setShowOreshnik(true);
-                break;
-            case 'BUYOUT':
-                setShowBuyout(true);
-                break;
-            case 'AID':
-                setShowAid(true);
-                break;
-            case 'NUKE':
-                setShowNuke(true);
-                break;
+            case 'ORESHNIK': setShowOreshnik(true); break;
+            case 'BUYOUT': setShowBuyout(true); break;
+            case 'AID': setShowAid(true); break;
+            case 'NUKE': setShowNuke(true); break;
             case 'DICE_ROLLED':
-                setDiceValues(lastAction.dice || gameState?.dice);
+                setDiceValues(lastAction.dice || [1, 1]);
                 setShowDice(true);
                 setDiceRolling(true);
-
+                setTimeout(() => setDiceRolling(false), 1500);
                 setTimeout(() => {
-                    setDiceRolling(false);
-                    setTimeout(() => {
-                        setShowDice(false);
-                        setIsRolling(false);
-                    }, 2000);
-                }, 2000);
+                    setShowDice(false);
+                    setIsRolling(false);
+                    if (lastAction.player_id === playerId) {
+                        setHasRolled(true);
+                        // Trigger modals based on action
+                        if (lastAction.action === 'can_buy') {
+                            setShowBuyModal(true);
+                        } else if (lastAction.action === 'pay_rent') {
+                            setRentDetails({
+                                amount: lastAction.amount,
+                                ownerId: lastAction.owner_id
+                            });
+                            setShowRentModal(true);
+                        }
+                    }
+                }, 3000);
                 break;
-            case 'GAME_OVER':
-                setShowVictory(true);
+            case 'TURN_ENDED':
+                setHasRolled(false);
                 break;
+            case 'GAME_OVER': setShowVictory(true); break;
             case 'TRADE_OFFERED':
-                if (lastAction.trade.to_player_id === playerId) {
-                    setIncomingTrade(lastAction.trade);
-                }
+                if (lastAction.trade?.to_player_id === playerId) setIncomingTrade(lastAction.trade);
                 break;
-            case 'TRADE_UPDATED':
-                setIncomingTrade(null);
-                break;
-            case 'CHAT_MESSAGE':
-                // Chat messages are handled through lastAction - they update the logs display
-                break;
+            case 'TRADE_UPDATED': setIncomingTrade(null); break;
         }
-    }, [lastAction]);
+    }, [lastAction, playerId]);
 
     useEffect(() => {
         if (gameState?.players) {
-            if (!diceRolling) {
-                setDelayedPlayers(gameState.players);
-            }
-        }
-    }, [gameState?.players, diceRolling]);
-
-    useEffect(() => {
-        if (gameState?.dice) {
             if (!showDice) {
-                setDiceValues(gameState.dice);
+                setDelayedPlayers(gameState.players);
+            } else {
+                const timer = setTimeout(() => {
+                    setDelayedPlayers(gameState.players);
+                }, 3000);
+                return () => clearTimeout(timer);
             }
         }
-    }, [gameState?.dice]);
+    }, [gameState?.players, showDice]);
+
+    // Auto-open Buy Modal
+    useEffect(() => {
+        if (canBuy && hasRolled && !showBuyModal && !selectedTile) {
+            setShowBuyModal(true);
+        }
+    }, [canBuy, hasRolled]);
 
     // Handle tile click
     const handleTileClick = (tileId) => {
         if (targetingAbility) {
-            sendAction('USE_ABILITY', {
-                ability_type: targetingAbility,
-                target_id: tileId
-            });
+            sendAction('USE_ABILITY', { ability_type: targetingAbility, target_id: tileId });
             setTargetingAbility(null);
             return;
         }
-
         const tile = gameState?.board?.find(t => t.id === tileId);
-        if (tile) {
-            setSelectedTile(tile);
-        }
+        if (tile) setSelectedTile(tile);
     };
 
     if (!gameState) {
         return (
             <div className="min-h-screen animated-bg flex items-center justify-center">
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-                    <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                        className="w-20 h-20 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-6"
-                    />
-                    <div className="text-2xl font-display text-white">Connecting...</div>
-                    <div className="text-gray-400 mt-2 font-mono">{gameId}</div>
-                </motion.div>
+                <div className="text-2xl font-display text-white animate-pulse">Loading Game...</div>
             </div>
         );
     }
 
+    // --- WAITING ROOM ---
     if (gameState.game_status === 'waiting') {
-        const friends = JSON.parse(localStorage.getItem('monopoly_friends') || '[]');
+        const myPlayer = gameState.players[playerId];
+        const isHost = gameState.host_id === myPlayer?.user_id;
+
         return (
             <div className="min-h-screen animated-bg flex items-center justify-center p-4">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="glass-card p-0 overflow-hidden max-w-4xl w-full flex flex-col md:flex-row min-h-[500px]"
-                >
-                    <div className="p-8 md:w-1/2 flex flex-col justify-center border-b md:border-b-0 md:border-r border-white/10 bg-black/20">
-                        <motion.h1 className="font-display text-4xl font-bold text-white mb-2">LOBBY</motion.h1>
-                        <p className="text-gray-400 mb-8">Waiting for players...</p>
-                        <div className="mb-8">
-                            <div className="text-sm text-gray-500 mb-2 uppercase tracking-widest">Game Code</div>
-                            <div onClick={copyGameCode} className="flex items-center justify-between bg-black/40 p-4 rounded-xl border border-white/10 hover:border-yellow-500/50 cursor-pointer group transition-all">
-                                <span className="font-mono text-3xl font-bold text-white tracking-[0.2em]">{gameState.game_id}</span>
-                                <div className="p-2 bg-white/5 rounded-lg group-hover:bg-yellow-500/20 transition-colors">
-                                    {copied ? <Check size={20} className="text-green-400" /> : <Copy size={20} className="text-white" />}
-                                </div>
-                            </div>
+                <div className="glass-card max-w-4xl w-full p-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-50"><Settings className="animate-spin-slow" size={100} /></div>
+
+                    <div className="relative z-10">
+                        <h1 className="text-4xl font-display font-bold text-white mb-2">Lobby Waiting</h1>
+                        <div className="flex items-center gap-4 text-gray-400 mb-8">
+                            <div className="bg-white/10 px-3 py-1 rounded font-mono">ID: {gameId}</div>
+                            <div className="flex items-center justify-center gap-2"><Users size={16} /> {Object.keys(gameState.players).length}/{gameState.max_players} Players</div>
+                            {!isHost && <div className="text-yellow-500 animate-pulse">Waiting for host to start...</div>}
                         </div>
-                        <div className="space-y-3">
-                            <button onClick={() => setShowInviteModal(true)} className="btn btn-blue w-full">
-                                <UserPlus size={20} /> Invite Friend
-                            </button>
-                            <button onClick={startGame} disabled={gameState.player_order.length < 2} className="btn btn-primary w-full">
-                                <Play size={20} /> Start Match
-                            </button>
-                        </div>
-                    </div>
-                    <div className="p-6 md:w-1/2 bg-black/10">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-lg font-bold text-white flex items-center gap-2"><Users size={20} /> Players</h2>
-                            <button onClick={addBot} className="btn btn-blue btn-sm">
-                                <Bot size={16} /> Add Bot
-                            </button>
-                        </div>
-                        <div className="space-y-3">
-                            {gameState.player_order.map((pid, idx) => {
-                                const p = gameState.players[pid];
-                                const char = CHARACTERS[p.character];
-                                return (
-                                    <motion.div key={pid} initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: idx * 0.1 }} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
-                                        <img src={char?.avatar} className="w-10 h-10 rounded-full object-cover bg-black/50" alt={p.name} />
-                                        <div className="flex-1">
-                                            <div className="font-bold text-white text-sm">{p.name}</div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                            {Object.values(gameState.players).map(p => (
+                                <div key={p.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <img src={CHARACTERS[p.character]?.avatar} className="w-12 h-12 rounded-lg bg-black/30 object-cover" />
+                                            {p.is_bot && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-[10px] px-1 rounded">BOT</div>}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-white">{p.name}</div>
                                             <div className="text-xs text-gray-400">{p.character}</div>
                                         </div>
-                                        {pid === playerId && <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded">YOU</span>}
-                                    </motion.div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </motion.div>
-                <AnimatePresence>
-                    {showInviteModal && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowInviteModal(false)}>
-                            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} onClick={e => e.stopPropagation()} className="glass-card p-6 max-w-sm w-full">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="font-bold text-white">Invite Friends</h3>
-                                    <button onClick={() => setShowInviteModal(false)}><X size={20} className="text-gray-400" /></button>
-                                </div>
-                                <div className="space-y-2 max-h-60 overflow-y-auto">
-                                    {JSON.parse(localStorage.getItem('monopoly_friends') || '[]').length === 0 ? (
-                                        <div className="text-gray-500 text-center py-4">No friends added yet</div>
-                                    ) : (
-                                        JSON.parse(localStorage.getItem('monopoly_friends') || '[]').map(friend => (
-                                            <div key={friend.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-2 h-2 rounded-full ${friend.online ? 'bg-green-500' : 'bg-gray-500'}`} />
-                                                    <span className="text-white font-medium">{friend.name}</span>
-                                                </div>
-                                                <button onClick={() => handleInvite(friend)} className="btn btn-success btn-sm">Invite</button>
-                                            </div>
-                                        ))
+                                    </div>
+                                    {isHost && p.is_bot && (
+                                        <button onClick={() => handleRemoveBot(p.id)} className="p-2 text-red-500 hover:bg-white/10 rounded-full transition-colors" title="Remove Bot">
+                                            <X size={16} />
+                                        </button>
                                     )}
                                 </div>
+                            ))}
+                        </div>
+
+                        <div className="flex flex-wrap gap-4 pt-4 border-t border-white/10">
+                            {isHost && (
+                                <>
+                                    <button
+                                        onClick={handleStartGame}
+                                        className="btn-primary py-3 px-8 text-lg flex items-center gap-2 shadow-lg hover:scale-105 transition-transform"
+                                        disabled={Object.keys(gameState.players).length < 2}
+                                    >
+                                        <Play size={24} /> Start Game
+                                    </button>
+                                    <button
+                                        onClick={handleAddBot}
+                                        className="btn-ghost py-3 px-6 flex items-center gap-2 border border-white/20 hover:bg-white/10"
+                                        disabled={Object.keys(gameState.players).length >= gameState.max_players}
+                                    >
+                                        <Bot size={20} /> Add Bot
+                                    </button>
+                                </>
+                            )}
+
+                            <button
+                                onClick={openInviteModal}
+                                className="btn-purple py-3 px-6 flex items-center gap-2 shadow-lg"
+                            >
+                                <UserPlus size={20} /> Invite Friend
+                            </button>
+
+                            <button
+                                onClick={() => copyToClipboard(gameId)}
+                                className="btn-ghost py-3 px-6 flex items-center gap-2 border border-white/20 hover:bg-white/10 ml-auto"
+                            >
+                                <Copy size={20} /> Copy ID
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Invite Modal (Inside Waiting Room) */}
+                    <AnimatePresence>
+                        {showInviteModal && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowInviteModal(false)}>
+                                <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} onClick={e => e.stopPropagation()} className="glass-card p-6 max-w-md w-full">
+                                    <div className="flex items-center justify-between mb-4"><h3 className="text-xl font-bold text-white">Invite Friends</h3><button onClick={() => setShowInviteModal(false)} className="btn-ghost"><X size={20} /></button></div>
+                                    <div className="space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                                        {friends.length === 0 ? (
+                                            <div className="text-gray-500 text-center py-4">No friends found. Add them in Lobby!</div>
+                                        ) : (
+                                            friends.map(friend => (
+                                                <div key={friend.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center font-bold text-white">
+                                                            {friend.avatar_url ? <img src={friend.avatar_url} className="w-full h-full rounded-full" /> : friend.name.charAt(0)}
+                                                        </div>
+                                                        <div className="font-semibold text-white">{friend.name}</div>
+                                                    </div>
+                                                    <button onClick={() => handleSendInvite(friend.id)} className="btn-sm btn-success flex items-center gap-1"><UserPlus size={14} /> Send</button>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </motion.div>
                             </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen w-full animated-bg flex flex-col md:flex-row relative">
-            {/* Mobile Sidebar Backdrop */}
-            {showMobilePlayers && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden"
-                    onClick={() => setShowMobilePlayers(false)}
-                />
-            )}
-
-            {/* Sidebar */}
-            <div className={`
-                ${sidebarCollapsed ? 'w-[80px]' : 'w-[85vw] max-w-[320px] lg:max-w-[380px]'}
-                shrink-0 min-h-screen bg-[#0a0a14] border-r border-white/5 z-40 transition-all duration-300 ease-out
-                ${showMobilePlayers ? 'translate-x-0' : '-translate-x-full'}
-                md:translate-x-0 fixed md:sticky md:top-0 left-0 top-0 h-screen overflow-y-auto custom-scrollbar shadow-2xl
-            `}>
-                {/* Collapse Toggle Button - Desktop only */}
-                <button
-                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 z-50 w-6 h-14 bg-[#1a1a2e] border border-white/10 rounded-r-xl items-center justify-center text-gray-400 hover:text-white hover:bg-[#252540] transition-colors shadow-lg"
-                >
-                    {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-                </button>
-
-                <div className="p-4 md:p-6">
-                    {/* Header - only show when expanded */}
+        <div className="flex bg-[#0c0c14] h-screen w-full overflow-hidden font-sans selection:bg-purple-500/30">
+            {/* COLLAPSIBLE SIDEBAR */}
+            <motion.div
+                animate={{ width: sidebarCollapsed ? 80 : 300 }}
+                className="flex-shrink-0 bg-[#0c0c14] border-r border-white/10 flex flex-col z-30 shadow-2xl relative transition-all duration-300"
+            >
+                {/* Top Info Bar */}
+                <div className="p-4 border-b border-white/10 bg-[#13131f] flex items-center justify-between">
                     {!sidebarCollapsed && (
-                        <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-xl font-black text-white tracking-tighter flex items-center gap-3"><Users size={24} className="text-blue-500" /> ГЕОПОЛИТИКИ</h2>
-                            <motion.div animate={{ rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                                <Settings size={18} className="text-gray-500" />
-                            </motion.div>
-                        </div>
+                        <button onClick={() => navigate('/')} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400">
+                            <ArrowLeft size={16} />
+                        </button>
                     )}
 
-                    {/* Collapsed header - avatar icon */}
-                    {sidebarCollapsed && (
-                        <div className="flex flex-col items-center mb-6 pt-2">
-                            <Users size={24} className="text-blue-500" />
+                    <button onClick={() => copyToClipboard(gameId)} className={`flex flex-col ${sidebarCollapsed ? 'items-center w-full' : 'items-end'}`}>
+                        {sidebarCollapsed ? <Copy size={16} className="text-blue-400 mb-1" /> : (
+                            <>
+                                <span className="text-[9px] text-blue-500 font-bold tracking-widest uppercase">Game ID</span>
+                                <span className="text-sm font-mono font-bold text-blue-400">#{gameId.substring(0, 6)}</span>
+                            </>
+                        )}
+                    </button>
+
+                    <button
+                        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                        className="absolute -right-3 top-20 bg-yellow-500 rounded-full p-1 text-black shadow-lg hover:scale-110 transition-transform z-50"
+                    >
+                        {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                    </button>
+                </div>
+
+                {/* Status Compact */}
+                <div className="p-2 border-b border-white/10 bg-[#0c0c14]">
+                    <div className={`flex ${sidebarCollapsed ? 'flex-col gap-2' : 'gap-2'}`}>
+                        <div className={`bg-black/40 p-2 rounded-lg border border-white/5 flex flex-col items-center ${sidebarCollapsed ? 'w-full' : 'flex-1'}`}>
+                            <Clock size={12} className={timeLeft < 10 ? 'text-red-500' : 'text-gray-400'} />
+                            <span className="text-sm font-mono font-bold text-white">{timeLeft}</span>
                         </div>
-                    )}
+                        <div className={`bg-black/40 p-2 rounded-lg border border-white/5 flex flex-col items-center ${sidebarCollapsed ? 'w-full' : 'flex-1'}`}>
+                            <div className="w-3 h-3 rounded-full bg-yellow-500" title="Current Turn" />
+                            {!sidebarCollapsed && <span className="text-[10px] text-gray-400 truncate w-full text-center mt-1">{currentTurnPlayer?.name}</span>}
+                        </div>
+                    </div>
+                </div>
 
-                    <div className={sidebarCollapsed ? 'space-y-3' : 'space-y-4'}>
-                        {gameState.player_order.map((pid, idx) => {
-                            const p = gameState.players[pid];
-                            const isTurn = gameState.player_order[gameState.current_turn_index] === pid;
-                            const isCurrentPlayer = pid === playerId;
-                            const char = CHARACTERS[p.character];
+                {/* Players List */}
+                <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
+                    {Object.entries(delayedPlayers || {}).map(([pid, p]) => {
+                        const isTurn = gameState?.player_order?.[gameState?.current_turn_index] === pid;
+                        const char = CHARACTERS[p.character] || {};
 
-                            // Collapsed view - just avatars
-                            if (sidebarCollapsed) {
-                                return (
-                                    <motion.div
-                                        key={pid}
-                                        initial={{ scale: 0.8, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        transition={{ delay: idx * 0.05 }}
-                                        onClick={() => setSidebarCollapsed(false)}
-                                        className={`relative cursor-pointer group mx-auto`}
-                                    >
-                                        <div className={`w-12 h-12 rounded-xl overflow-hidden border-2 p-0.5 transition-all duration-300 ${isTurn ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'border-white/10 group-hover:border-white/30'}`}>
-                                            <img src={char?.avatar} className="w-full h-full object-cover rounded-lg bg-black/40" alt={p.name} />
+                        return (
+                            <motion.div
+                                key={pid}
+                                layout
+                                className={`relative rounded-xl border transition-all duration-300 ${isTurn
+                                    ? 'bg-gradient-to-r from-blue-900/40 to-purple-900/40 border-l-4 border-l-blue-500 border-white/10'
+                                    : 'bg-white/5 border-white/5 hover:bg-white/10'
+                                    } ${sidebarCollapsed ? 'p-2 flex justify-center' : 'p-3'}`}
+                            >
+                                {sidebarCollapsed ? (
+                                    <div className="relative group">
+                                        <img src={char.avatar} className="w-10 h-10 rounded-lg bg-black/40 object-cover" />
+                                        {isTurn && <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border border-black" />}
+                                        {/* Tooltip */}
+                                        <div className="absolute left-14 top-0 bg-black/90 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none">
+                                            {p.name} (${p.money})
                                         </div>
-                                        {isTurn && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white p-1 rounded-lg shadow-lg border border-white/20"><Clock size={8} /></div>}
-                                        {isCurrentPlayer && <div className="absolute -top-1 -left-1 w-3 h-3 bg-yellow-500 rounded-full border-2 border-[#0a0a14]" />}
-                                        {/* Tooltip on hover */}
-                                        <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-black/90 backdrop-blur-md px-3 py-2 rounded-lg border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                                            <div className="text-white font-bold text-sm">{p.name}</div>
-                                            <div className="text-yellow-400 font-mono text-xs">${p.money?.toLocaleString()}</div>
-                                        </div>
-                                    </motion.div>
-                                );
-                            }
-
-                            // Expanded view - full cards
-                            return (
-                                <motion.div key={pid} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: idx * 0.1 }} className={`relative p-5 rounded-[24px] border-2 transition-all duration-500 ${isTurn ? 'bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-blue-500/50 shadow-[0_10px_30px_rgba(59,130,246,0.15)]' : 'bg-white/[0.03] border-white/5 opacity-80'}`}>
-                                    {isTurn && <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-12 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,1)]" />}
-                                    <div className="flex items-center gap-4">
-                                        <div className="relative">
-                                            <div className={`w-14 h-14 rounded-2xl overflow-hidden border-2 p-0.5 ${isTurn ? 'border-blue-500' : 'border-white/10'}`}>
-                                                <img src={char?.avatar} className="w-full h-full object-cover rounded-xl bg-black/40" alt={p.name} />
-                                            </div>
-                                            {isTurn && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white p-1 rounded-lg shadow-lg border border-white/20"><Clock size={10} /></div>}
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 flex-shrink-0">
+                                            <img src={char.avatar} className="w-full h-full object-cover bg-black/40" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-0.5">
-                                                <div className="text-white font-black text-sm truncate uppercase tracking-tight flex items-center gap-2">
-                                                    {p.name} {p.is_bot && <span className="text-[8px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded-full border border-purple-500/20">BOT</span>}
-                                                </div>
-                                                {isTurn && <div className="text-blue-400 font-mono font-black text-xs">{timeLeft}s</div>}
+                                                <span className={`text-xs font-bold truncate ${isTurn ? 'text-white' : 'text-gray-300'}`}>{p.name}</span>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <div className="text-2xl font-black text-yellow-400 font-mono tracking-tighter">${p.money?.toLocaleString()}</div>
-                                                {isCurrentPlayer && !isTurn && <span className="text-[9px] font-black text-blue-400 border border-blue-400/30 px-1.5 py-0.5 rounded-md uppercase tracking-widest">You</span>}
+                                            <div className="text-lg font-mono font-black text-yellow-400 leading-none">
+                                                ${p.money?.toLocaleString()}
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className="mt-4 pt-3 flex items-center justify-between gap-2 border-t border-white/5">
-                                        <div className="flex flex-col"><span className="text-[10px] text-gray-500 font-black uppercase tracking-[0.1em]">Assets</span><div className="flex items-center gap-1.5 text-white font-black text-xs"><Home size={12} className="text-blue-500" />{p.properties?.length || 0}</div></div>
-                                        <div className="flex flex-col text-right"><span className="text-[10px] text-gray-500 font-black uppercase tracking-[0.1em]">Position</span><div className="flex items-center gap-1.5 text-white font-black text-xs"><MapPin size={12} className="text-purple-500" />#{p.position || 0}</div></div>
-                                    </div>
-                                    {isTurn && <motion.div initial={{ width: '100%' }} animate={{ width: (timeLeft / 45) * 100 + '%' }} className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-b-full opacity-60" />}
-                                    {!isCurrentPlayer && !p.is_bot && (
-                                        <button onClick={(e) => { e.stopPropagation(); initiateTrade(p); }} className="btn-ghost absolute top-4 right-4 text-white/50 hover:text-yellow-400">
-                                            <ArrowLeftRight size={14} />
-                                        </button>
-                                    )}
-                                </motion.div>
-                            );
-                        })}
-                    </div>
-                </div>
-                {/* Close button for mobile sidebar */}
-                <button
-                    onClick={() => setShowMobilePlayers(false)}
-                    className="md:hidden absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors z-50"
-                >
-                    <X size={20} />
-                </button>
-            </div>
-
-            {/* Main Area */}
-            <div className="flex-1 flex flex-col min-h-screen relative min-w-0 bg-[#0c0c14]">
-                <header className="h-14 md:h-16 shrink-0 bg-gray-900/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-3 md:px-6 z-10 sticky top-0">
-                    <div className="flex items-center gap-2 md:gap-4">
-                        <button onClick={() => navigate('/')} className="btn btn-ghost btn-circle p-2">
-                            <ArrowLeft size={18} />
-                        </button>
-                        <button onClick={() => setShowMobilePlayers(true)} className="md:hidden btn btn-ghost btn-circle p-2">
-                            <Users size={18} />
-                        </button>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] md:text-[10px] text-gray-500 font-mono tracking-widest uppercase">#{gameId.substring(0, 6)}</span>
-                            <span className="text-xs md:text-sm font-bold text-white font-display uppercase tracking-wider">{gameState.map_type}</span>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 md:gap-4">
-                        <div className="px-2 md:px-3 py-1 md:py-1.5 bg-black/40 rounded-full border border-white/10 flex items-center gap-1.5 md:gap-2 shadow-inner">
-                            <Clock size={12} className={timeLeft < 10 ? "text-red-500 animate-pulse" : "text-gray-400"} />
-                            <span className={`font-mono font-bold text-xs md:text-sm ${timeLeft < 10 ? "text-red-500" : "text-white"}`}>{timeLeft}s</span>
-                        </div>
-                        <div className="hidden sm:flex px-3 md:px-4 py-1 md:py-1.5 bg-black/40 rounded-full border border-white/10 items-center gap-2 shadow-inner">
-                            <span className="text-[10px] md:text-xs text-gray-400 uppercase tracking-wider">Turn:</span>
-                            <span className="text-yellow-400 font-bold text-xs md:text-sm truncate max-w-[80px]">{currentTurnPlayer?.name}</span>
-                        </div>
-                    </div>
-                </header>
-
-                <div className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 relative bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_100%)] overflow-auto">
-                    <div
-                        className="relative shadow-[0_30px_60px_rgba(0,0,0,0.8)] md:shadow-[0_60px_120px_rgba(0,0,0,0.9)] rounded-2xl md:rounded-[40px] transition-all duration-300"
-                        style={{
-                            width: 'min(95vw, min(85vh, 1000px))',
-                            height: 'min(95vw, min(85vh, 1000px))',
-                            minWidth: '320px',
-                            minHeight: '320px'
-                        }}
-                    >
-                        <div className="absolute -inset-1 bg-gradient-to-br from-white/10 to-transparent rounded-[42px] z-[-1]" />
-                        <Board
-                            tiles={gameState.board}
-                            players={delayedPlayers}
-                            onTileClick={handleTileClick}
-                            mapType={gameState.map_type}
-                            currentPlayerId={playerId}
-                            logs={gameState.logs}
-                            onSendMessage={handleSendMessage}
-                        />
-                        <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
-                            <AnimatePresence>
-                                {showDice && (
-                                    <div className="pointer-events-auto">
-                                        <DiceAnimation show={showDice} rolling={diceRolling} values={diceValues} />
+                                        {!isMyTurn && !p.is_bot && (
+                                            <button onClick={(e) => { e.stopPropagation(); initiateTrade(p); }} className="p-1 hover:bg-white/10 rounded">
+                                                <ArrowLeftRight size={14} className="text-gray-400" />
+                                            </button>
+                                        )}
                                     </div>
                                 )}
-                            </AnimatePresence>
-                        </div>
-                        <div className="absolute bottom-4 md:bottom-8 lg:bottom-12 left-1/2 -translate-x-1/2 w-full max-w-[90%] sm:max-w-sm pointer-events-auto z-40 px-2 md:px-4">
-                            <ActionPanel
-                                isMyTurn={isMyTurn}
-                                isRolling={isRolling}
-                                onRoll={handleRoll}
-                                canBuy={canBuy}
-                                onBuy={handleBuyProperty}
-                                character={currentPlayer?.character}
-                                onAbility={() => handleAbility(gameState.game_mode === 'oreshnik_all' ? 'ORESHNIK' : currentPlayer?.character)}
-                                currentTilePrice={currentTile?.price}
-                                gameMode={gameState.game_mode}
-                            />
-                        </div>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+            </motion.div>
+
+            {/* MAIN BOARD AREA */}
+            <div className="flex-1 relative bg-[#0c0c14] flex items-center justify-center p-0 overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0" />
+
+                <div className="relative z-10 shadow-2xl transition-all duration-300"
+                    style={{
+                        height: 'auto',
+                        width: '100%',
+                        maxWidth: '82vh',
+                        maxHeight: '82vh',
+                        aspectRatio: '1/1',
+                        margin: 'auto'
+                    }}
+                >
+                    <Board
+                        tiles={gameState.board}
+                        players={delayedPlayers}
+                        onTileClick={handleTileClick}
+                        mapType={gameState.map_type}
+                        currentPlayerId={playerId}
+                        logs={gameState.logs}
+                        onSendMessage={handleSendMessage}
+                    />
+
+                    <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
                         <AnimatePresence>
-                            {targetingAbility && (
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-[60] bg-red-500/10 pointer-events-none flex flex-col items-center justify-start pt-20">
-                                    <div className="bg-black/80 backdrop-blur-md px-8 py-4 rounded-2xl border border-red-500 shadow-2xl pointer-events-auto text-center">
-                                        <div className="text-red-400 font-black text-xl mb-1 uppercase tracking-tighter animate-pulse">SELECT TARGET FOR {targetingAbility}</div>
-                                        <div className="text-gray-400 text-sm mb-4">Click a tile on the board</div>
-                                        <button onClick={() => setTargetingAbility(null)} className="w-full py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white font-bold transition-all">CANCEL</button>
-                                    </div>
-                                </motion.div>
+                            {showDice && (
+                                <div className="pointer-events-auto transform scale-150">
+                                    <DiceAnimation show={showDice} rolling={diceRolling} values={diceValues} />
+                                </div>
                             )}
                         </AnimatePresence>
                     </div>
+
+                    {/* Action Panel - CENTERED */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md pointer-events-auto z-40 px-4 flex justify-center items-center">
+                        <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/10">
+                            <ActionPanel
+                                isMyTurn={isMyTurn}
+                                isRolling={isRolling}
+                                hasRolled={hasRolled}
+                                onRoll={handleRoll}
+                                canBuy={canBuy}
+                                onBuy={handleBuyProperty}
+                                onEndTurn={handleEndTurn}
+                                character={currentPlayer?.character}
+                                onAbility={() => handleAbility(gameState.game_mode === 'oreshnik_all' ? 'ORESHNIK' : currentPlayer?.character)}
+                                currentTilePrice={currentTile?.price}
+                                currentTileName={currentTile?.name}
+                                gameMode={gameState.game_mode}
+                                isChatOpen={false}
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Overlays */}
+            {/* Target Overlay */}
+            <AnimatePresence>
+                {targetingAbility && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-[60] bg-red-500/10 pointer-events-none flex flex-col items-center justify-start pt-20">
+                        <div className="bg-black/90 px-6 py-3 rounded-full border border-red-500 shadow-2xl pointer-events-auto text-center">
+                            <div className="text-red-400 font-bold uppercase tracking-wider animate-pulse flex items-center gap-2">
+                                <Crosshair size={16} /> SELECT TARGET
+                            </div>
+                            <button onClick={() => setTargetingAbility(null)} className="mt-2 text-xs text-gray-400 hover:text-white underline">Cancel</button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <div className="pointer-events-none fixed inset-0 z-[100]">
                 <OreshnikAnimation isVisible={showOreshnik} onComplete={() => setShowOreshnik(false)} />
                 <AbilityAnimations.BuyoutAnimation isVisible={showBuyout} onComplete={() => setShowBuyout(false)} />
@@ -579,20 +583,64 @@ const GameRoom = () => {
                 <AbilityAnimations.NukeThreatAnimation isVisible={showNuke} onComplete={() => setShowNuke(false)} />
             </div>
 
+            {/* Buy Modal */}
             <AnimatePresence>
-                {selectedTile && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0" onClick={() => setSelectedTile(null)} />
+                {(selectedTile || showBuyModal) && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0" onClick={() => { setSelectedTile(null); setShowBuyModal(false); }} />
                         <div className="relative z-10 pointer-events-auto">
-                            <PropertyModal property={selectedTile} players={gameState.players} canBuy={canBuy && currentPlayer?.position === selectedTile.position} onBuy={handleBuyProperty} onClose={() => setSelectedTile(null)} />
+                            <PropertyModal
+                                property={selectedTile || currentTile}
+                                players={gameState.players}
+                                canBuy={showBuyModal || (canBuy && currentPlayer?.position === (selectedTile || currentTile)?.id)}
+                                onBuy={() => {
+                                    handleBuyProperty();
+                                    setShowBuyModal(false);
+                                }}
+                                onClose={() => { setSelectedTile(null); setShowBuyModal(false); }}
+                            />
                         </div>
                     </div>
                 )}
             </AnimatePresence>
 
+            {/* Rent Modal */}
+            <AnimatePresence>
+                {showRentModal && rentDetails && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                    >
+                        <div className="bg-gradient-to-br from-gray-900 to-black p-8 rounded-3xl border border-red-500/30 shadow-2xl max-w-md w-full text-center space-y-6">
+                            <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                                <div className="text-4xl">💸</div>
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold text-white mb-2">Pay Rent</h3>
+                                <p className="text-gray-400">You landed on <span className="text-white font-bold">{gameState?.players?.[rentDetails.ownerId]?.name}</span>'s property.</p>
+                            </div>
+                            <div className="py-4 border-y border-white/10">
+                                <span className="text-4xl font-mono font-bold text-red-400">-${rentDetails.amount}</span>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    sendAction('PAY_RENT', { property_id: currentPlayer.position });
+                                    setShowRentModal(false);
+                                }}
+                                className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-lg shadow-lg transition-all"
+                            >
+                                Pay & Continue
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Also show trade modal (only needed if trading in waiting room enabled? Probably not, but safe to keep) */}
             <TradeModal isOpen={showTradeModal} onClose={() => setShowTradeModal(false)} fromPlayer={currentPlayer} toPlayer={tradeTarget} gameState={gameState} onSendOffer={handleSendOffer} />
             <TradeNotification trade={incomingTrade} fromPlayer={gameState?.players?.[incomingTrade?.from_player_id]} onRespond={handleRespondTrade} />
-
         </div>
     );
 };

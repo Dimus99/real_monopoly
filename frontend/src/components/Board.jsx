@@ -6,25 +6,39 @@ import ToastNotification from './ToastNotification';
 const getTileStyle = (index) => {
     let row, col;
 
-    // Top Row (0 -> 10): GO is at position 0, Top-Left
-    if (index >= 0 && index <= 10) {
+    // Explicit Corner Handling
+    if (index === 0) { // GO -> Top Left
+        return { gridRowStart: 1, gridRowEnd: 2, gridColumnStart: 1, gridColumnEnd: 2 };
+    }
+    if (index === 10) { // Jail -> Top Right
+        return { gridRowStart: 1, gridRowEnd: 2, gridColumnStart: 11, gridColumnEnd: 12 };
+    }
+    if (index === 20) { // Free Parking -> Bottom Right
+        return { gridRowStart: 11, gridRowEnd: 12, gridColumnStart: 11, gridColumnEnd: 12 };
+    }
+    if (index === 30) { // Go To Jail -> Bottom Left
+        return { gridRowStart: 11, gridRowEnd: 12, gridColumnStart: 1, gridColumnEnd: 2 };
+    }
+
+    // Top Row (1 -> 9): Moves Right
+    if (index > 0 && index < 10) {
         row = 1;
-        col = 1 + index; // 0=>1, 10=>11
+        col = 1 + index; // 1->2, 9->10
     }
-    // Right Col (11 -> 20): Moves Down
-    else if (index >= 11 && index <= 19) {
+    // Right Col (11 -> 19): Moves Down
+    else if (index > 10 && index < 20) {
         col = 11;
-        row = 1 + (index - 10); // 11=>2, 19=>10
+        row = 1 + (index - 10); // 11->2, 19->10
     }
-    // Bottom Row (20 -> 30): Moves Left
-    else if (index >= 20 && index <= 30) {
+    // Bottom Row (21 -> 29): Moves Left
+    else if (index > 20 && index < 30) {
         row = 11;
-        col = 11 - (index - 20); // 20=>11, 30=>1
+        col = 11 - (index - 20); // 21->10, 29->2
     }
     // Left Col (31 -> 39): Moves Up
-    else if (index >= 31 && index <= 39) {
+    else if (index > 30 && index < 40) {
         col = 1;
-        row = 11 - (index - 30); // 31=>10, 39=>2
+        row = 11 - (index - 30); // 31->10, 39->2
     }
 
     return {
@@ -122,8 +136,8 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
 
     // Calculate full path for animation along board edges
     const calculatePath = (start, end) => {
-        if (start === end) return [end];
-        const path = [];
+        if (start === end) return [start];
+        const path = [start];
         let current = start;
         // Max 40 steps to avoid infinite loop
         let safety = 0;
@@ -419,7 +433,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                     key={tile.id}
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.02 }}
+                    transition={{ delay: index * 0.015 }}
                 >
                     <Tile
                         property={tile}
@@ -429,6 +443,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                         image={TILE_IMAGES[tile.name]}
                         isCorner={[0, 10, 20, 30].includes(tile.id)}
                         currentPlayerId={currentPlayerId}
+                        allPlayers={players}
                     />
                 </motion.div>
             ))}

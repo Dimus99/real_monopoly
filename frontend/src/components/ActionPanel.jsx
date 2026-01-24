@@ -1,125 +1,176 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Zap, DollarSign } from 'lucide-react';
+import { ShoppingCart, Check, Zap } from 'lucide-react';
 
 const ActionPanel = ({
     isMyTurn,
     isRolling,
+    hasRolled,
     onRoll,
     canBuy,
     onBuy,
+    onEndTurn,
     character,
     onAbility,
     currentTilePrice,
-    gameMode = 'abilities'
+    currentTileName,
+    gameMode = 'abilities',
+    isChatOpen = false
 }) => {
 
     // Ability configurations
     const ABILITIES = {
-        'Putin': { name: 'Use ORESHNIK', icon: '🚀', color: 'bg-red-600', desc: 'Destroy City' },
-        'Trump': { name: 'Hostile Buyout', icon: '💰', color: 'bg-orange-500', desc: 'Take Property' },
-        'Zelensky': { name: 'Collect Aid', icon: '🤝', color: 'bg-blue-600', desc: 'Get Money' },
-        'Kim': { name: 'Nuke Threat', icon: '☢️', color: 'bg-red-800', desc: 'Extort Money' },
-        'Biden': { name: 'Sanctions', icon: '🚫', color: 'bg-blue-800', desc: 'Freeze Assets' },
-        'Xi': { name: 'Debt Trap', icon: '🧧', color: 'bg-red-500', desc: 'Collect Interest' }
+        'Putin': { name: 'Ебнуть орешником', icon: '🚀', color: 'bg-red-600', desc: 'Уничтожить город' },
+        'Trump': { name: 'BUYOUT', icon: '💰', color: 'bg-orange-500', desc: 'Захватить' },
+        'Zelensky': { name: 'AID', icon: '🤝', color: 'bg-blue-600', desc: 'Собрать помощь' },
+        'Kim': { name: 'ISOLATION', icon: '☢️', color: 'bg-red-800', desc: 'Изоляция' },
+        'Biden': { name: 'SANCTIONS', icon: '🚫', color: 'bg-blue-800', desc: 'Санкции' },
+        'Xi': { name: 'BELT_ROAD', icon: '🧧', color: 'bg-red-500', desc: 'Инфраструктура' }
     };
 
     let ability = null;
     if (gameMode === 'oreshnik_all') {
         ability = ABILITIES['Putin'];
     } else if (gameMode === 'abilities') {
-        ability = ABILITIES[character];
+        const charKey = Object.keys(ABILITIES).find(k => k.toLowerCase() === character?.toLowerCase()) || character;
+        ability = ABILITIES[charKey];
     }
 
-    if (!isMyTurn) return null;
+    // Don't show panel if not my turn OR if chat is open
+    // BUT we should show 'End Turn' even if chat is open? No, chat overlays.
+    if (!isMyTurn || isChatOpen) return null;
 
     return (
-        <div className="w-full flex flex-col items-center gap-4 pointer-events-none">
+        <div className="w-full flex flex-col items-center gap-3 pointer-events-none">
 
-            {/* Main Command Center */}
-            <motion.div
-                initial={{ scale: 0.8, opacity: 0, y: 30 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                className="flex items-center gap-6 p-4 bg-gray-900/90 backdrop-blur-3xl border border-white/20 rounded-full shadow-[0_30px_60px_rgba(0,0,0,0.6)] pointer-events-auto"
-            >
-                {/* Roll Button - The Hero Action */}
-                <motion.button
-                    whileHover={{ scale: 1.05, y: -8 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={onRoll}
-                    disabled={isRolling}
-                    className={`
-                        relative w-32 h-32 rounded-full flex flex-col items-center justify-center gap-1 font-black text-white transition-all shadow-[0_20px_40px_rgba(0,0,0,0.4)]
-                        ${isRolling
-                            ? 'bg-slate-800 cursor-wait opacity-50'
-                            : 'bg-gradient-to-br from-[#FFD700] via-[#FFA500] to-[#FF8C00] hover:shadow-[0_25px_50px_rgba(255,165,0,0.5)] shadow-xl'
-                        }
-                    `}
-                >
-                    {isRolling ? (
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                            className="text-5xl"
+            <AnimatePresence mode="wait">
+                {/* Before rolling - Show Roll button */}
+                {!hasRolled && (
+                    <motion.div
+                        key="roll-panel"
+                        initial={{ scale: 0.8, opacity: 0, y: 30 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.8, opacity: 0, y: -30 }}
+                        className="flex items-center gap-4 p-3 bg-gray-900/95 backdrop-blur-xl border border-white/20 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.7)] pointer-events-auto"
+                    >
+                        {/* Roll Button */}
+                        <motion.button
+                            whileHover={{ scale: 1.05, y: -4 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={onRoll}
+                            disabled={isRolling}
+                            className={`
+                                relative w-24 h-24 md:w-28 md:h-28 rounded-full flex flex-col items-center justify-center gap-1 font-black text-white transition-all
+                                ${isRolling
+                                    ? 'bg-slate-800 cursor-wait opacity-50'
+                                    : 'bg-gradient-to-br from-[#FFD700] via-[#FFA500] to-[#FF8C00] hover:shadow-[0_15px_40px_rgba(255,165,0,0.5)] shadow-xl'
+                                }
+                            `}
                         >
-                            🎲
-                        </motion.div>
-                    ) : (
-                        <>
-                            <span className="text-5xl filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)] animate-bounce-slow">🎲</span>
-                            <span className="font-display tracking-[0.25em] text-[10px] font-black text-black/90 uppercase">ROLL</span>
-                        </>
-                    )}
+                            {isRolling ? (
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                                    className="text-4xl md:text-5xl"
+                                >
+                                    🎲
+                                </motion.div>
+                            ) : (
+                                <>
+                                    <motion.span
+                                        animate={{ y: [0, -4, 0] }}
+                                        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                                        className="text-4xl md:text-5xl filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.4)]"
+                                    >
+                                        🎲
+                                    </motion.span>
+                                    <span className="font-display tracking-[0.2em] text-[9px] md:text-[10px] font-black text-black/90 uppercase">ROLL</span>
+                                </>
+                            )}
 
-                    {/* Ring Pulse Effect */}
-                    {!isRolling && (
-                        <span className="absolute inset-0 rounded-3xl border-2 border-white/40 animate-ping opacity-20" />
-                    )}
-                </motion.button>
+                            {!isRolling && (
+                                <span className="absolute inset-0 rounded-full border-2 border-yellow-300/50 animate-pulse" />
+                            )}
+                        </motion.button>
 
-                {/* Contextual Actions Container */}
-                <div className="flex flex-col gap-3 min-w-[200px]">
-
-                    {/* Buy Button - Appears when landing on property */}
-                    <AnimatePresence>
-                        {canBuy && (
+                        {/* Ability Button - available before rolling too */}
+                        {ability && (
                             <motion.button
-                                initial={{ x: 20, opacity: 0 }}
-                                animate={{ x: 0, opacity: 1 }}
-                                exit={{ x: 20, opacity: 0 }}
-                                whileHover={{ scale: 1.02, x: 5 }}
+                                whileHover={{ scale: 1.02, x: 3 }}
                                 whileTap={{ scale: 0.98 }}
-                                onClick={onBuy}
-                                className="h-[64px] px-8 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-full font-black flex items-center gap-4 whitespace-nowrap overflow-hidden shadow-lg shadow-emerald-900/30 border border-white/20"
+                                onClick={onAbility}
+                                className={`h-[52px] md:h-[56px] px-4 md:px-6 ${ability.color} hover:brightness-110 text-white rounded-2xl font-black flex items-center gap-3 shadow-lg border border-white/20`}
                             >
-                                <div className="p-2 bg-white/20 rounded-full shadow-inner">
-                                    <ShoppingCart size={26} className="text-white" />
-                                </div>
+                                <span className="text-2xl filter drop-shadow-md">{ability.icon}</span>
                                 <div className="flex flex-col items-start leading-tight">
-                                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Purchase</span>
-                                    <span className="text-xl font-mono">${currentTilePrice?.toLocaleString()}</span>
+                                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-90">{ability.name}</span>
+                                    <span className="text-[10px] font-medium opacity-80 truncate max-w-[100px]">{ability.desc}</span>
                                 </div>
                             </motion.button>
                         )}
-                    </AnimatePresence>
+                    </motion.div>
+                )}
 
-                    {/* Ability Button */}
-                    {ability && (
+                {/* After rolling - Show Buy/End Turn buttons */}
+                {hasRolled && (
+                    <motion.div
+                        key="action-panel"
+                        initial={{ scale: 0.8, opacity: 0, y: 30 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.8, opacity: 0, y: -30 }}
+                        className="flex items-center gap-3 p-3 bg-gray-900/95 backdrop-blur-xl border border-white/20 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.7)] pointer-events-auto"
+                    >
+                        {/* Buy Button - Only if can buy */}
+                        {canBuy && (
+                            <motion.button
+                                initial={{ x: -20, opacity: 0 }}
+                                animate={{ x: 0, opacity: 1 }}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={onBuy}
+                                className="h-[56px] md:h-[64px] px-5 md:px-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-2xl font-black flex items-center gap-3 whitespace-nowrap shadow-lg border border-white/20"
+                            >
+                                <div className="p-1.5 bg-white/20 rounded-lg">
+                                    <ShoppingCart size={22} className="text-white" />
+                                </div>
+                                <div className="flex flex-col items-start leading-tight">
+                                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-80">Купить</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold truncate max-w-[100px] leading-tight">{currentTileName || "Property"}</span>
+                                        <span className="text-xl font-mono leading-none">${currentTilePrice?.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </motion.button>
+                        )}
+
+                        {/* End Turn / OK Button */}
                         <motion.button
-                            whileHover={{ scale: 1.02, x: 5 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={onAbility}
-                            className={`h-[64px] px-8 ${ability.color} bg-gradient-to-br from-white/20 to-transparent hover:brightness-110 text-white rounded-full font-black flex items-center gap-4 shadow-lg border border-white/20`}
+                            whileHover={{ scale: 1.05, y: -2 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={onEndTurn}
+                            className="h-[56px] md:h-[64px] px-6 md:px-8 bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-2xl font-black flex items-center gap-3 shadow-lg border border-white/20"
                         >
-                            <span className="text-3xl filter drop-shadow-md">{ability.icon}</span>
+                            <Check size={24} className="text-white" />
                             <div className="flex flex-col items-start leading-tight">
-                                <span className="text-[10px] font-black uppercase tracking-widest opacity-80">{ability.name}</span>
-                                <span className="text-[10px] font-bold opacity-90 truncate max-w-[140px]">{ability.desc}</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider opacity-80">Готово</span>
+                                <span className="text-sm font-bold uppercase tracking-wider">Передать ход</span>
                             </div>
                         </motion.button>
-                    )}
-                </div>
-            </motion.div>
+
+                        {/* Ability Button - still available after rolling */}
+                        {ability && (
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={onAbility}
+                                className={`h-[52px] md:h-[56px] px-4 ${ability.color} hover:brightness-110 text-white rounded-2xl font-black flex items-center gap-2 shadow-lg border border-white/20`}
+                            >
+                                <span className="text-2xl">{ability.icon}</span>
+                            </motion.button>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
         </div>
     );

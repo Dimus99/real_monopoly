@@ -264,11 +264,15 @@ async def websocket_game(
                 message = action_data.get("message", "")
                 player = game.players.get(player_id)
                 if player and message:
+                    # Save to game logs
+                    engine.add_chat_message(game_id, player.name, message)
+                    
                     await manager.broadcast(game_id, {
                         "type": "CHAT_MESSAGE",
                         "player_id": player_id,
                         "player_name": player.name,
-                        "message": message[:200]  # Limit message length
+                        "message": message[:200],  # Limit message length
+                        "game_state": game.dict() # Send updated state so logs persist on reload
                     })
             
             elif action == "TRADE_OFFER":
@@ -324,7 +328,7 @@ async def websocket_game(
 
 
 async def _check_and_run_bot_turn(game_id: str):
-    """Check if it's a bot's turn and run it with a delay."""
+    """Check if it's a bot's turn and run it with dice animation timing."""
     game = engine.games.get(game_id)
     if not game or game.game_status != "active":
         return
@@ -334,19 +338,45 @@ async def _check_and_run_bot_turn(game_id: str):
     
     if player and player.is_bot:
         # Wait a bit for realism
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(1.0)
         
-        result = engine.run_bot_turn(game_id)
-        if result:
-            await manager.broadcast(game_id, result)
+        # Step 1: Roll dice
+        dice_result = engine.run_bot_turn(game_id)
+        if dice_result:
+            await manager.broadcast(game_id, dice_result)
             
-            # Check if next player is also a bot (chain bot turns)
-            game = engine.games.get(game_id)
-            if game and game.game_status == "active":
-                next_id = game.player_order[game.current_turn_index]
-                next_player = game.players.get(next_id)
-                if next_player and next_player.is_bot:
-                    await _check_and_run_bot_turn(game_id)
+            # Wait for dice animation to complete
+            await asyncio.sleep(3.5)
+            
+            # Step 2: Perform actions (buy, rent, ability)
+            actions_result = engine.run_bot_post_roll(game_id, current_id)
+            if actions_result:
+                await manager.broadcast(game_id, actions_result)
+            
+            await asyncio.sleep(1.0)
+            
+            # Step 3: Check doubles or End Turn
+            # dice_result was returned by roll_dice
+            if dice_result.get("doubles"):
+                 # Doubles! Roll again.
+                 # Since backend didn't advance turn, current_id is still current.
+                 # Just recurse (with small delay is good)
+                 await _check_and_run_bot_turn(game_id)
+            else:
+                 # Not doubles. End turn.
+                 end_result = engine.end_turn(game_id, current_id)
+                 if not end_result.get("error"):
+                     await manager.broadcast(game_id, {"type": "TURN_ENDED", **end_result})
+                     
+                     # Check if NEXT player is bot
+                     await asyncio.sleep(0.5)
+                     game = engine.games.get(game_id)
+                     if game and game.game_status == "active":
+                         # Re-fetch order just in case
+                         next_id = game.player_order[game.current_turn_index]
+                         next_player = game.players.get(next_id)
+                         if next_player and next_player.is_bot:
+                             await _check_and_run_bot_turn(game_id)
 
 
 # ============== Game Action REST Endpoints (Alternative to WebSocket) ==============

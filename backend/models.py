@@ -2,7 +2,7 @@
 Pydantic models for Political Monopoly.
 """
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Literal
+from typing import List, Optional, Dict, Literal, Any
 from datetime import datetime
 
 
@@ -90,8 +90,10 @@ class Player(BaseModel):
     is_bankrupt: bool = False
     
     # Ability cooldowns
+
     ability_used_this_game: bool = False
     ability_cooldown: int = 0  # Turns until ability can be used again
+    skipped_turns: int = 0  # For Biden's Sanctions
 
 
 class Property(BaseModel):
@@ -108,6 +110,7 @@ class Property(BaseModel):
     
     # Visual state
     destruction_turn: Optional[int] = None  # When it was destroyed
+    isolation_turns: int = 0  # For Kim's Isolation
 
 
 class TileType(BaseModel):
@@ -162,6 +165,9 @@ class GameState(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
+    
+    # Per-turn dynamic state (reset on turn change)
+    turn_state: Dict[str, Any] = Field(default_factory=dict)
 
 
 # ============== Request/Response Models ==============

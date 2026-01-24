@@ -302,28 +302,56 @@ async def start_game(
 
 
 async def _run_bot_after_delay(game_id: str):
-    """Helper to run bot turn after a delay."""
+    """Helper to run bot turn with realistic dice animation timing."""
     import asyncio
     from socket_manager import manager
     
-    await asyncio.sleep(1.5)
+    await asyncio.sleep(1.0)  # Brief pause before bot acts
     
     engine = get_game_engine()
     game = engine.games.get(game_id)
     if not game or game.game_status != "active":
         return
     
-    result = engine.run_bot_turn(game_id)
-    if result:
-        await manager.broadcast(game_id, result)
+    current_id = game.player_order[game.current_turn_index]
+    current_player = game.players.get(current_id)
+    
+    if not current_player or not current_player.is_bot:
+        return
+    
+    # Step 1: Roll dice (this broadcasts DICE_ROLLED)
+    dice_result = engine.run_bot_turn(game_id)
+    if dice_result:
+        await manager.broadcast(game_id, dice_result)
         
-        # Check if next player is also a bot
-        game = engine.games.get(game_id)
-        if game and game.game_status == "active":
-            next_id = game.player_order[game.current_turn_index]
-            next_player = game.players.get(next_id)
-            if next_player and next_player.is_bot:
-                await _run_bot_after_delay(game_id)
+        # Wait for dice animation to complete (match frontend timing)
+        await asyncio.sleep(3.5)
+        
+        # Step 2: Perform post-roll actions (buy, pay rent, etc.)
+        actions_result = engine.run_bot_post_roll(game_id, current_id)
+        if actions_result:
+            await manager.broadcast(game_id, actions_result)
+        
+        await asyncio.sleep(1.0) # Pause before ending turn
+
+        # Step 3: Check doubles or End Turn
+        # Bot logic doesn't currently handle doubling properly in this helper but for MVP we assume valid turn end
+        if dice_result.get("doubles"):
+             await _run_bot_after_delay(game_id) # Recursive call for doubles
+        else:
+             # End current turn
+             end_result = engine.end_turn(game_id, current_id)
+             if not end_result.get("error"):
+                 await manager.broadcast(game_id, {"type": "TURN_ENDED", **end_result})
+                 
+                 # Check if NEXT player is also a bot
+                 await asyncio.sleep(0.5)
+                 game = engine.games.get(game_id)
+                 if game and game.game_status == "active":
+                     next_id = game.player_order[game.current_turn_index]
+                     next_player = game.players.get(next_id)
+                     if next_player and next_player.is_bot:
+                         await _run_bot_after_delay(game_id)
 
 
 @router.post("/{game_id}/bots")
@@ -418,6 +446,17 @@ async def remove_bot(
     del game.players[bot_id]
     if bot_id in game.player_order:
         game.player_order.remove(bot_id)
+    
+    # Broadcast removal
+    from socket_manager import manager
+    import asyncio
+    asyncio.create_task(
+        manager.broadcast(game_id.upper(), {
+            "type": "PLAYER_LEFT",
+            "player_id": bot_id,
+            "game_state": game.dict()
+        })
+    )
     
     return {"success": True, "game_state": game.dict()}
 

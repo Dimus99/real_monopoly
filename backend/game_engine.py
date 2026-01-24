@@ -12,54 +12,54 @@ from models import Property, GameState, Player, TradeOffer
 # ============== Board Data ==============
 
 WORLD_MAP_DATA = [
-    # Brown (2 properties)
-    {"name": "Pyongyang", "group": "Brown", "price": 60, "rent": [2, 10, 30, 90, 160, 250]},
-    {"name": "Tehran", "group": "Brown", "price": 60, "rent": [4, 20, 60, 180, 320, 450]},
-    # Light Blue (3 properties)
-    {"name": "Baghdad", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
-    {"name": "Kabul", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
-    {"name": "Damascus", "group": "LightBlue", "price": 120, "rent": [8, 40, 100, 300, 450, 600]},
-    # Pink (3 properties)
-    {"name": "Taipei", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
-    {"name": "Hong Kong", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
-    {"name": "Beijing", "group": "Pink", "price": 160, "rent": [12, 60, 180, 500, 700, 900]},
-    # Orange (3 properties)
-    {"name": "Tel Aviv", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
-    {"name": "Jerusalem", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
-    {"name": "Mecca", "group": "Orange", "price": 200, "rent": [16, 80, 220, 600, 800, 1000]},
-    # Red (3 properties)
-    {"name": "Rio", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
-    {"name": "Delhi", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
-    {"name": "Moscow", "group": "Red", "price": 240, "rent": [20, 100, 300, 750, 925, 1100]},
-    # Yellow (3 properties)
-    {"name": "Berlin", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
-    {"name": "Paris", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
-    {"name": "London", "group": "Yellow", "price": 280, "rent": [24, 120, 360, 850, 1025, 1200]},
-    # Green (3 properties)
-    {"name": "Kyiv", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
-    {"name": "Tokyo", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
-    {"name": "Washington", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
-    # Dark Blue (2 properties)
-    {"name": "Greenland", "group": "DarkBlue", "price": 706, "rent": [35, 175, 500, 1100, 1300, 1500]},
-    {"name": "Antarctica", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},
+    # Brown
+    {"name": "Пхеньян", "group": "Brown", "price": 60, "rent": [2, 10, 30, 90, 160, 250]},
+    {"name": "Тегеран", "group": "Brown", "price": 60, "rent": [4, 20, 60, 180, 320, 450]},
+    # Light Blue
+    {"name": "Багдад", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
+    {"name": "Кабул", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
+    {"name": "Дамаск", "group": "LightBlue", "price": 120, "rent": [8, 40, 100, 300, 450, 600]},
+    # Pink
+    {"name": "Тайбэй", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
+    {"name": "Гонконг", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
+    {"name": "Пекин", "group": "Pink", "price": 160, "rent": [12, 60, 180, 500, 700, 900]},
+    # Orange
+    {"name": "Тель-Авив", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
+    {"name": "Иерусалим", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
+    {"name": "Мекка", "group": "Orange", "price": 200, "rent": [16, 80, 220, 600, 800, 1000]},
+    # Red
+    {"name": "Рио-де-Жанейро", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
+    {"name": "Дели", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
+    {"name": "Москва", "group": "Red", "price": 240, "rent": [20, 100, 300, 750, 925, 1100]},
+    # Yellow
+    {"name": "Берлин", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
+    {"name": "Париж", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
+    {"name": "Лондон", "group": "Yellow", "price": 280, "rent": [24, 120, 360, 850, 1025, 1200]},
+    # Green
+    {"name": "Киев", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
+    {"name": "Токио", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
+    {"name": "Вашингтон", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
+    # Dark Blue
+    {"name": "Гренландия", "group": "DarkBlue", "price": 706, "rent": [35, 175, 500, 1100, 1300, 1500]},
+    {"name": "Антарктида", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},
 ]
 
 UKRAINE_MAP_DATA = [
-    {"name": "Kyiv", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},
-    {"name": "Lviv", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
-    {"name": "Odesa", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
-    {"name": "Kharkiv", "group": "Yellow", "price": 280, "rent": [24, 120, 360, 850, 1025, 1200]},
-    {"name": "Dnipro", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
-    {"name": "Zaporizhzhia", "group": "Red", "price": 240, "rent": [20, 100, 300, 750, 925, 1100]},
-    {"name": "Mariupol", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
-    {"name": "Mykolaiv", "group": "Orange", "price": 200, "rent": [16, 80, 220, 600, 800, 1000]},
-    {"name": "Kherson", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
-    {"name": "Vinnytsia", "group": "Pink", "price": 160, "rent": [12, 60, 180, 500, 700, 900]},
-    {"name": "Poltava", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
-    {"name": "Chernihiv", "group": "LightBlue", "price": 120, "rent": [8, 40, 100, 300, 450, 600]},
-    {"name": "Sumy", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
-    {"name": "Zhytomyr", "group": "Brown", "price": 60, "rent": [4, 20, 60, 180, 320, 450]},
-    {"name": "Rivne", "group": "Brown", "price": 60, "rent": [2, 10, 30, 90, 160, 250]},
+    {"name": "Киев", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},
+    {"name": "Львов", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
+    {"name": "Одесса", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
+    {"name": "Харьков", "group": "Yellow", "price": 280, "rent": [24, 120, 360, 850, 1025, 1200]},
+    {"name": "Днепр", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
+    {"name": "Запорожье", "group": "Red", "price": 240, "rent": [20, 100, 300, 750, 925, 1100]},
+    {"name": "Мариуполь", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
+    {"name": "Николаев", "group": "Orange", "price": 200, "rent": [16, 80, 220, 600, 800, 1000]},
+    {"name": "Херсон", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
+    {"name": "Винница", "group": "Pink", "price": 160, "rent": [12, 60, 180, 500, 700, 900]},
+    {"name": "Полтава", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
+    {"name": "Чернигов", "group": "LightBlue", "price": 120, "rent": [8, 40, 100, 300, 450, 600]},
+    {"name": "Сумы", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
+    {"name": "Житомир", "group": "Brown", "price": 60, "rent": [4, 20, 60, 180, 320, 450]},
+    {"name": "Ровно", "group": "Brown", "price": 60, "rent": [2, 10, 30, 90, 160, 250]},
 ]
 
 MONOPOLY1_MAP_DATA = [
@@ -164,35 +164,35 @@ def create_board(map_type: str = "World") -> List[Property]:
         
         # Special tiles at fixed positions
         if i == 0:
-            prop_data = {"name": "GO", "group": "Special", "price": 0, "rent": []}
+            prop_data = {"name": "СТАРТ", "group": "Special", "price": 0, "rent": []}
         elif i == 10:
-            prop_data = {"name": "Epstein Island", "group": "Jail", "price": 0, "rent": []}
+            prop_data = {"name": "ТЮРЬМА", "group": "Jail", "price": 0, "rent": []}
         elif i == 20:
-            prop_data = {"name": "UN Summit", "group": "FreeParking", "price": 0, "rent": []}
+            prop_data = {"name": "БЕСПЛАТНАЯ ПАРКОВКА", "group": "FreeParking", "price": 0, "rent": []}
         elif i == 30:
-            prop_data = {"name": "Go to Epstein Island", "group": "GoToJail", "price": 0, "rent": []}
-        # Chance/Community Chest
+            prop_data = {"name": "В ТЮРЬМУ", "group": "GoToJail", "price": 0, "rent": []}
+        # Chance
         elif i in [2, 7, 17, 22, 33, 36]:
-            prop_data = {"name": "Breaking News", "group": "Chance", "price": 0, "rent": []}
+            prop_data = {"name": "Шанс", "group": "Chance", "price": 0, "rent": []}
         # Tax tiles
         elif i == 4:
-            prop_data = {"name": "Corruption Tax", "group": "Tax", "price": 0, "rent": [200]}
+            prop_data = {"name": "Подоходный налог", "group": "Tax", "price": 0, "rent": [200]}
         elif i == 38:
-            prop_data = {"name": "Luxury Tax", "group": "Tax", "price": 0, "rent": [100]}
-        # Stations/Airports
+            prop_data = {"name": "Налог на роскошь", "group": "Tax", "price": 0, "rent": [100]}
+        # Stations
         elif i == 5:
-            prop_data = {"name": "Moscow Airport", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]}
+            prop_data = {"name": "Аэропорт Москвы", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]}
         elif i == 15:
-            prop_data = {"name": "Beijing Airport", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]}
+            prop_data = {"name": "Аэропорт Пекина", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]}
         elif i == 25:
-            prop_data = {"name": "Washington Airport", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]}
+            prop_data = {"name": "Аэропорт Нью-Йорка", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]}
         elif i == 35:
-            prop_data = {"name": "London Airport", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]}
+            prop_data = {"name": "Аэропорт Лондона", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]}
         # Utilities
         elif i == 12:
-            prop_data = {"name": "Gazprom", "group": "Utility", "price": 150, "rent": []}
+            prop_data = {"name": "Газпром", "group": "Utility", "price": 150, "rent": []}
         elif i == 28:
-            prop_data = {"name": "OPEC Oil", "group": "Utility", "price": 150, "rent": []}
+            prop_data = {"name": "Роснефть", "group": "Utility", "price": 150, "rent": []}
         else:
             # Regular property
             if data_idx < len(data):
@@ -278,6 +278,27 @@ class GameEngine:
         
         player = game.players[player_id]
         
+        # Handle Sanctions (Skip Turn)
+        if player.skipped_turns > 0:
+            player.skipped_turns -= 1
+            game.logs.append(f"🚫 {player.name} is sanctioned in this turn! Skipping...")
+            
+            # Immediately end turn since their action involves doing nothing
+            # Return special status so frontend knows to just end
+            # Actually, let's just create a dummy result that forces end turn
+            # But we need to ensure the turn advances.
+            # Best approach: Return a result that indicates skipped, and auto-call next_turn or let frontend do it?
+            # It's better if we just return the state and let frontend see the log, 
+            # OR we execute next_turn here and return "turn_skipped".
+            
+            # Let's perform the "skip" action:
+            self._next_turn(game)
+            return {
+                "dice": [0, 0],
+                "action": "skipped_turn",
+                "game_state": game.dict()
+            }
+        
         # Roll dice
         d1 = random.randint(1, 6)
         d2 = random.randint(1, 6)
@@ -345,11 +366,12 @@ class GameEngine:
         
         game.logs.append(f"{player.name} rolled {d1}+{d2} and moved to {tile.name}")
         
-        # If not doubles, end turn
-        if not is_doubles:
-            self._next_turn(game)
-        else:
+        # If doubles, remind to roll again
+        if is_doubles:
             game.logs.append(f"{player.name} rolled doubles - roll again!")
+            game.turn_state["has_rolled"] = False
+        else:
+            game.turn_state["has_rolled"] = True
         
         result["game_state"] = game.dict()
         return result
@@ -416,7 +438,7 @@ class GameEngine:
     
     def _calculate_rent(self, game: GameState, tile: Property, dice: List[int]) -> int:
         """Calculate rent for a property."""
-        if tile.is_destroyed or tile.is_mortgaged:
+        if tile.is_destroyed or tile.is_mortgaged or tile.isolation_turns > 0:
             return 0
         
         owner = game.players.get(tile.owner_id)
@@ -425,7 +447,7 @@ class GameEngine:
         
         if tile.group == "Utility":
             # Count utilities owned by owner
-            utilities_owned = sum(1 for t in game.board if t.group == "Utility" and t.owner_id == tile.owner_id)
+            utilities_owned = sum(1 for t in game.board if t.group == "Utility" and t.owner_id == tile.owner_id and t.isolation_turns == 0)
             multiplier = 4 if utilities_owned == 1 else 10
             return (dice[0] + dice[1]) * multiplier
             
@@ -511,14 +533,21 @@ class GameEngine:
         game.current_turn_index = (game.current_turn_index + 1) % len(game.player_order)
         game.turn_number += 1
         game.doubles_count = 0
+        game.turn_state = {}  # Reset turn flags
         
         # Set timeout (45s)
         game.turn_expiry = datetime.utcnow() + timedelta(seconds=45)
         
+
         # Decrease ability cooldowns
         for player in game.players.values():
             if player.ability_cooldown > 0:
                 player.ability_cooldown -= 1
+        
+        # Decrease Isolation counters
+        for prop in game.board:
+            if prop.isolation_turns > 0:
+                prop.isolation_turns -= 1
     
     def check_timeouts(self) -> List[Dict[str, Any]]:
         """Check for expired turns and kick players. Returns updates to broadcast."""
@@ -619,6 +648,9 @@ class GameEngine:
         if not player:
             return {"error": "Player not found"}
         
+        if player.position != property_id:
+            return {"error": "Must be on the tile to buy it"}
+        
         if property_id < 0 or property_id >= len(game.board):
             return {"error": "Invalid property"}
         
@@ -629,6 +661,9 @@ class GameEngine:
         
         if prop.is_destroyed:
             return {"error": "Cannot buy destroyed property"}
+            
+        if prop.isolation_turns > 0:
+            return {"error": "Property is Isolated (Kim's Nuke Threat) - Cannot buy!"}
         
         if prop.group in ["Special", "Jail", "FreeParking", "GoToJail", "Chance", "Tax"]:
             return {"error": "Cannot buy this tile"}
@@ -887,10 +922,10 @@ class GameEngine:
         if target.group in ["Special", "Jail", "FreeParking", "GoToJail", "Chance", "Tax"]:
             return {"error": "Cannot isolate this tile"}
         
-        # Mark as mortgaged (temporary)
-        target.is_mortgaged = True
+        # Set isolation
+        target.isolation_turns = 3
         
-        game.logs.append(f"🔒 {player.name} imposed ISOLATION on {target.name}!")
+        game.logs.append(f"🔒 {player.name} imposed ISOLATION on {target.name} for 3 turns!")
         
         return {
             "success": True,
@@ -913,11 +948,10 @@ class GameEngine:
             if not target:
                 return {"error": "Target player not found"}
         
-        # Skip their turn by marking them as jailed for 1 turn
-        target.is_jailed = True
-        target.jail_turns = 2  # Will be released after next turn
+        # Skip their turn
+        target.skipped_turns = 1
         
-        game.logs.append(f"🚫 {player.name} imposed SANCTIONS on {target.name}! They skip their next turn!")
+        game.logs.append(f"🚫 {player.name} imposed SANCTIONS on {target.name}! They will skip their next turn!")
         
         return {
             "success": True,
@@ -945,22 +979,6 @@ class GameEngine:
             "bonus": bonus
         }
     
-    def end_turn(self, game_id: str, player_id: str) -> Dict[str, Any]:
-        """Explicitly end a player's turn."""
-        game = self.games.get(game_id)
-        if not game:
-            return {"error": "Game not found"}
-        
-        current_id = game.player_order[game.current_turn_index]
-        if current_id != player_id:
-            return {"error": "Not your turn"}
-        
-        self._next_turn(game)
-        
-        return {
-            "success": True,
-            "game_state": game.dict()
-        }
     
     # ============ Trading System ============
 
@@ -1084,7 +1102,7 @@ class GameEngine:
             game.board[pid].owner_id = p1.id
             
     def run_bot_turn(self, game_id: str) -> Optional[Dict[str, Any]]:
-        """Execute a full bot turn."""
+        """Execute a bot's dice roll. Returns dice result for animation."""
         game = self.games.get(game_id)
         if not game:
             return None
@@ -1095,36 +1113,84 @@ class GameEngine:
         if not player.is_bot:
             return None
         
-        # 1. Roll dice
+        # Roll dice
         roll_result = self.roll_dice(game_id, current_id)
         
-        actions = [roll_result]
+        return {
+            "type": "DICE_ROLLED",
+            "player_id": current_id,
+            "player_name": player.name,
+            "is_bot": True,
+            **roll_result
+        }
+    
+    def run_bot_post_roll(self, game_id: str, player_id: str) -> Optional[Dict[str, Any]]:
+        """Execute bot actions after dice roll (buy, pay rent, ability)."""
+        game = self.games.get(game_id)
+        if not game:
+            return None
         
-        # 2. Buy if possible
-        if roll_result.get("action") == "can_buy":
-            prop = game.board[player.position]
-            if player.money >= prop.price:
-                buy_result = self.buy_property(game_id, current_id, player.position)
-                actions.append(buy_result)
+        player = game.players.get(player_id)
+        if not player or not player.is_bot:
+            return None
         
-        # 3. Pay rent automatically
-        if roll_result.get("action") == "pay_rent":
-            rent_result = self.pay_rent(game_id, current_id, player.position)
-            actions.append(rent_result)
+        actions = []
         
-        # 4. Random chance to use ability
-        if player.ability_cooldown == 0 and random.random() < 0.2:
+        # Buy if possible
+        tile = game.board[player.position]
+        if not tile.owner_id and tile.price > 0 and player.money >= tile.price:
+            if tile.group not in ['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax']:
+                buy_result = self.buy_property(game_id, player_id, player.position)
+                if buy_result.get("success"):
+                    actions.append({"type": "PROPERTY_BOUGHT", **buy_result})
+        
+        # Pay rent if needed
+        if tile.owner_id and tile.owner_id != player_id and not tile.is_mortgaged:
+            rent_result = self.pay_rent(game_id, player_id, player.position)
+            actions.append({"type": "RENT_PAID", **rent_result})
+        
+        # Random chance to use ability (20%)
+        if player.ability_cooldown == 0 and random.random() < 0.15:
             ability = CHARACTER_ABILITIES.get(player.character)
             if ability:
-                ability_result = self.execute_ability(game_id, current_id, ability["name"])
-                actions.append(ability_result)
+                ability_result = self.execute_ability(game_id, player_id, ability["name"])
+                if ability_result.get("success"):
+                    actions.append({"type": "ABILITY_USED", **ability_result})
+        
+        if actions:
+            return {
+                "type": "BOT_ACTIONS",
+                "player_id": player_id,
+                "actions": actions,
+                "game_state": game.dict()
+            }
+        
+        return None
+
+    def end_turn(self, game_id: str, player_id: str) -> Dict[str, Any]:
+        """Manually end a player's turn."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        # Verify it's this player's turn
+        current_id = game.player_order[game.current_turn_index]
+        if current_id != player_id:
+            return {"error": "Not your turn"}
+        
+        # Advance turn
+        self._next_turn(game)
         
         return {
-            "type": "BOT_TURN",
-            "player_id": current_id,
-            "actions": actions,
+            "success": True,
             "game_state": game.dict()
         }
+    
+    def add_chat_message(self, game_id: str, player_name: str, message: str):
+        """Add a chat message to the game log."""
+        game = self.games.get(game_id)
+        if game:
+            game.logs.append(f"💬 {player_name}: {message}")
 
 
 # Global engine instance

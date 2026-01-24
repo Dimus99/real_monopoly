@@ -1,764 +1,493 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Globe, MapPin, Users, Gamepad2, Plus, ArrowRight, LogOut,
-    Sparkles, UserPlus, User, MessageCircle, X, Check,
-    Copy, Send, Crown, Star, Settings, Bell, Clock
+    Plus, LogIn, Users, Play, Settings, CreditCard,
+    MessageSquare, Music, Volume2, Shield, Search,
+    UserPlus, UserCheck, X, RefreshCw
 } from 'lucide-react';
 import CharacterSelection from '../components/CharacterSelection';
 
-// Character data with abilities
-const CHARACTERS = [
-    { id: 'Putin', name: 'Putin', country: 'Russia', ability: 'ORESHNIK', abilityDesc: 'Destroy any city', avatar: '/avatars/putin.png', color: '#C41E3A' },
-    { id: 'Trump', name: 'Trump', country: 'USA', ability: 'BUYOUT', abilityDesc: 'Hostile takeover', avatar: '/avatars/trump.png', color: '#FF6B35' },
-    { id: 'Zelensky', name: 'Zelensky', country: 'Ukraine', ability: 'AID', abilityDesc: 'Collect from all', avatar: '/avatars/zelensky.png', color: '#0057B8' },
-    { id: 'Kim', name: 'Kim', country: 'N. Korea', ability: 'NUKE', abilityDesc: 'Threaten neighbors', avatar: '/avatars/kim.png', color: '#8B0000' },
-    { id: 'Biden', name: 'Biden', country: 'USA', ability: 'SANCTIONS', abilityDesc: 'Freeze assets', avatar: '/avatars/biden.png', color: '#3C3B6E' },
-    { id: 'Xi', name: 'Xi', country: 'China', ability: 'DEBT TRAP', abilityDesc: 'Collect interest', avatar: '/avatars/xi.png', color: '#DE2910' }
-];
-
-const MAPS = [
-    { id: 'World', name: 'World', icon: Globe, gradient: 'from-blue-600 to-purple-600' },
-    { id: 'Ukraine', name: 'Ukraine', icon: MapPin, gradient: 'from-blue-500 to-yellow-400' },
-    { id: 'Monopoly1', name: 'Monopoly-One', icon: Gamepad2, gradient: 'from-orange-500 to-red-600' }
-];
-
-const MODES = [
-    { id: 'abilities', name: 'Способности', icon: Sparkles, desc: 'У каждого героя свои уникальные навыки' },
-    { id: 'classic', name: 'Классика', icon: Gamepad2, desc: 'Честная игра без суперспособностей' },
-    { id: 'oreshnik_all', name: 'Мир в труху', icon: Send, desc: 'У каждого игрока есть ракета Орешник' }
-];
-
-// Friends storage helper
-const getFriends = () => JSON.parse(localStorage.getItem('monopoly_friends') || '[]');
-const saveFriends = (friends) => localStorage.setItem('monopoly_friends', JSON.stringify(friends));
-const getFriendRequests = () => JSON.parse(localStorage.getItem('monopoly_friend_requests') || '[]');
-const saveFriendRequests = (requests) => localStorage.setItem('monopoly_friend_requests', JSON.stringify(requests));
-
 const Lobby = () => {
     const navigate = useNavigate();
-
-    // Auth State
-    const [user, setUser] = useState(JSON.parse(localStorage.getItem('monopoly_user')) || null);
-    const [nameInput, setNameInput] = useState('');
-
-    // Navigation State
-    const [activeTab, setActiveTab] = useState('play'); // play, friends
-    const [mode, setMode] = useState('menu'); // menu, create, join
-
-    // Game Setup State
-    const [character, setCharacter] = useState('Putin');
-    const [mapType, setMapType] = useState('World');
-    const [gameMode, setGameMode] = useState('abilities');
-    const [joinId, setJoinId] = useState('');
+    const [user, setUser] = useState(null);
+    const [mode, setMode] = useState('menu'); // menu, create, join, friends, settings
     const [isLoading, setIsLoading] = useState(false);
+
+    // Create Game State
+    const [selectedMap, setSelectedMap] = useState('World');
+    const [gameMode, setGameMode] = useState('abilities');
+    const [maxPlayers, setMaxPlayers] = useState(4);
+
+    // Characters
+    const CHARACTERS = [
+        { id: 'Putin', name: 'Putin', avatar: '/avatars/putin.png', color: '#C41E3A', ability: 'ORESHNIK', country: 'RU', abilityDesc: 'Launch a rocket that destroys a tile.' },
+        { id: 'Trump', name: 'Trump', avatar: '/avatars/trump.png', color: '#FF6B35', ability: 'BUYOUT', country: 'USA', abilityDesc: 'Buy any property even if owned.' },
+        { id: 'Zelensky', name: 'Zelensky', avatar: '/avatars/zelensky.png', color: '#0057B8', ability: 'AID', country: 'UA', abilityDesc: 'Collect aid from all players.' },
+        { id: 'Kim', name: 'Kim', avatar: '/avatars/kim.png', color: '#8B0000', ability: 'NUKE', country: 'NK', abilityDesc: 'Nuke threat to block rent.' },
+        { id: 'Biden', name: 'Biden', avatar: '/avatars/biden.png', color: '#3C3B6E', ability: 'SANCTIONS', country: 'USA', abilityDesc: 'Freeze enemy property profits.' },
+        { id: 'Xi', name: 'Xi', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT', country: 'CN', abilityDesc: 'Ensnare opponent in debt trap.' }
+    ];
+
+    // Join Game State
+    const [gameIdInput, setGameIdInput] = useState('');
+    const [character, setCharacter] = useState('Putin');
+    const [activeGames, setActiveGames] = useState([]);
 
     // Friends State
     const [friends, setFriends] = useState([]);
     const [friendRequests, setFriendRequests] = useState([]);
-    const [showAddFriend, setShowAddFriend] = useState(false);
-    const [friendIdInput, setFriendIdInput] = useState('');
-    const [myActiveGames, setMyActiveGames] = useState([]);
-    const [copied, setCopied] = useState(false);
+    const [friendCodeInput, setFriendCodeInput] = useState('');
 
-    // Load friends on mount
     useEffect(() => {
-        if (user) {
-            // Check for token from new auth system
-            if (!localStorage.getItem('monopoly_token')) {
-                handleLogout();
-                return;
-            }
-            setFriends(getFriends());
-            setFriendRequests(getFriendRequests());
-            fetchMyGames();
+        const token = localStorage.getItem('monopoly_token');
+        if (!token) {
+            setMode('auth');
+            return;
         }
-    }, [user]);
 
-    const fetchMyGames = async () => {
+        const fetchUser = async () => {
+            try {
+                const res = await fetch('http://localhost:8000/api/users/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setUser(data);
+                    if (mode === 'auth') setMode('menu');
+                } else {
+                    localStorage.removeItem('monopoly_token');
+                    setMode('auth');
+                }
+            } catch (e) {
+                setMode('auth');
+            }
+        };
+        fetchUser();
+    }, [navigate, mode]);
+
+    const authFetch = async (url, options = {}) => {
+        const token = localStorage.getItem('monopoly_token');
+        const res = await fetch(`http://localhost:8000${url}`, {
+            ...options,
+            headers: {
+                ...options.headers,
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        return res;
+    };
+
+    const fetchFriendsData = async () => {
         try {
-            const token = localStorage.getItem('monopoly_token');
-            if (!token) return;
+            const [friendsRes, requestsRes] = await Promise.all([
+                authFetch('/api/friends'),
+                authFetch('/api/friends/requests')
+            ]);
+            if (friendsRes.ok) setFriends(await friendsRes.json());
+            if (requestsRes.ok) setFriendRequests(await requestsRes.json());
+        } catch (e) { console.error(e); }
+    };
 
-            const res = await fetch('http://localhost:8000/api/games/my-active', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+    const fetchActiveGames = async () => {
+        try {
+            const res = await authFetch('/api/games?status=waiting');
             if (res.ok) {
                 const data = await res.json();
-                setMyActiveGames(data.games || []);
+                setActiveGames(data.games || []);
             }
-        } catch (e) {
-            console.error("Failed to fetch active games", e);
-        }
+        } catch (e) { }
     };
 
     useEffect(() => {
-        if (user) {
-            const interval = setInterval(fetchMyGames, 5000);
-            return () => clearInterval(interval);
-        }
-    }, [user]);
+        if (mode === 'friends') fetchFriendsData();
+        if (mode === 'join' || mode === 'menu') fetchActiveGames();
 
-    const handleAuth = async () => {
-        if (!nameInput.trim()) return;
-        setIsLoading(true);
-        try {
-            const res = await fetch('http://localhost:8000/api/auth/anonymous', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: nameInput.trim() })
-            });
-
-            if (!res.ok) throw new Error('Auth failed');
-
-            const data = await res.json();
-            setUser(data.user);
-            localStorage.setItem('monopoly_user', JSON.stringify(data.user));
-            localStorage.setItem('monopoly_token', data.token);
-        } catch (e) {
-            console.error(e);
-            alert("Ошибка входа. Проверьте сервер.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleLogout = () => {
-        setUser(null);
-        localStorage.removeItem('monopoly_user');
-        localStorage.removeItem('monopoly_token');
-        setMode('menu');
-        setActiveTab('play');
-    };
-
-    // Add friend by code
-    const addFriend = () => {
-        if (!friendIdInput.trim()) return;
-
-        // Simulate adding friend (in real app, this would be an API call)
-        const newFriend = {
-            id: 'friend_' + Math.random().toString(36).substring(7),
-            name: 'Player ' + friendIdInput.toUpperCase(),
-            friendCode: friendIdInput.toUpperCase(),
-            addedAt: Date.now(),
-            online: Math.random() > 0.5
-        };
-
-        const updatedFriends = [...friends, newFriend];
-        setFriends(updatedFriends);
-        saveFriends(updatedFriends);
-        setFriendIdInput('');
-        setShowAddFriend(false);
-    };
-
-    // Remove friend
-    const removeFriend = (friendId) => {
-        const updatedFriends = friends.filter(f => f.id !== friendId);
-        setFriends(updatedFriends);
-        saveFriends(updatedFriends);
-    };
-
-    // Copy friend code
-    const copyFriendCode = () => {
-        navigator.clipboard.writeText(user?.friendCode || '');
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+        const interval = setInterval(() => {
+            if (mode === 'join' || mode === 'menu') fetchActiveGames();
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [mode]);
 
     const createGame = async () => {
         setIsLoading(true);
-        const token = localStorage.getItem('monopoly_token');
         try {
-            const res = await fetch('http://localhost:8000/api/games', {
+            // 1. Create Game
+            const createRes = await authFetch('/api/games', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({
-                    map_type: mapType,
-                    game_mode: gameMode
+                    map_type: selectedMap,
+                    game_mode: gameMode,
+                    max_players: maxPlayers,
+                    starting_money: 1500
                 })
             });
 
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.detail || 'Create failed');
-            }
+            if (!createRes.ok) throw new Error('Failed to create game');
+            const data = await createRes.json();
 
-            const data = await res.json();
+            // 2. Join as Host
             await joinGame(data.game_id);
-        } catch (e) {
-            console.error(e);
-            alert(`Ошибка создания игры: ${e.message}`);
-        } finally {
+
+        } catch (err) {
+            alert(err.message);
             setIsLoading(false);
         }
     };
 
     const joinGame = async (gameId) => {
         setIsLoading(true);
-        const token = localStorage.getItem('monopoly_token');
         try {
-            const joinRes = await fetch(`http://localhost:8000/api/games/${gameId}/join`, {
+            const res = await authFetch(`/api/games/${gameId}/join`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    character
-                })
+                body: JSON.stringify({ character })
             });
 
-            if (!joinRes.ok) {
-                const err = await joinRes.json();
-                // If already in game, just navigate
-                if (err.detail === "Already in this game") {
-                    const userId = user.id;
-                    // We need to fetch game state to get player ID, or just redirect and let GameRoom handle it
-                    // But GameRoom needs playerId. 
-                    // Let's assume we can fetch game state to find our player ID.
-                    const gameRes = await fetch(`http://localhost:8000/api/games/${gameId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    const gameData = await gameRes.json();
-                    const player = Object.values(gameData.game_state.players).find(p => p.user_id === userId);
-                    if (player) {
-                        navigate(`/game/${gameId}/${player.id}`);
-                        return;
-                    }
+            if (!res.ok) {
+                const err = await res.json();
+                // Check if already joined (400) -> Just navigate
+                if (err.detail === 'Already in this game') {
+                    navigate(`/game/${gameId}/${res.ok ? (await res.json()).player_id : ''}`); // Need player ID?
+                    // If already in game, we need to find our player ID. 
+                    // Usually the backend join response would give it, but if error...
+                    // We should just navigate and let GameRoom handle reconnection? 
+                    // But GameRoom needs playerId.
+                    // Let's assume joining works first time.
+                    alert(err.detail);
+                    setIsLoading(false);
+                    return;
                 }
                 throw new Error(err.detail || "Failed to join");
             }
 
-            const joinData = await joinRes.json();
-            navigate(`/game/${gameId}/${joinData.player_id}`);
+            const data = await res.json();
+            navigate(`/game/${gameId}/${data.player_id}`);
+        } catch (err) {
+            alert(err.message);
+            setIsLoading(false);
+        }
+    };
+
+    const sendFriendRequest = async () => {
+        if (!friendCodeInput) return;
+        try {
+            const res = await authFetch('/api/friends/request', {
+                method: 'POST',
+                body: JSON.stringify({ friend_code: friendCodeInput })
+            });
+            if (res.ok) {
+                alert('Friend request sent!');
+                setFriendCodeInput('');
+            } else {
+                const err = await res.json();
+                alert(err.detail);
+            }
+        } catch (e) { alert('Error sending request'); }
+    };
+
+    const handleAuth = async (name) => {
+        setIsLoading(true);
+        try {
+            const res = await fetch('http://localhost:8000/api/auth/anonymous', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem('monopoly_token', data.token);
+                setUser(data.user);
+                setMode('menu');
+            } else {
+                alert('Login failed');
+            }
         } catch (e) {
-            console.error(e);
-            alert(`Ошибка подключения к игре: ${e.message}`);
+            alert('Server error');
         } finally {
             setIsLoading(false);
         }
     };
 
-
-
-    // Friend Card Component
-    const FriendCard = ({ friend, onRemove, onInvite }) => (
-        <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors group"
-        >
-            <div className="relative">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                    {friend.name.charAt(0)}
-                </div>
-                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-900 ${friend.online ? 'bg-green-500' : 'bg-gray-500'
-                    }`} />
-            </div>
-            <div className="flex-1 min-w-0">
-                <div className="font-semibold text-white truncate">{friend.name}</div>
-                <div className="text-xs text-gray-400">
-                    {friend.online ? '🟢 В сети' : '⚫ Не в сети'}
-                </div>
-            </div>
-            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                    onClick={() => onInvite(friend)}
-                    className="btn btn-success btn-sm btn-circle"
-                    title="Пригласить в игру"
-                >
-                    <Gamepad2 size={16} />
-                </button>
-                <button
-                    onClick={() => onRemove(friend.id)}
-                    className="btn btn-danger btn-sm btn-circle"
-                    title="Удалить"
-                >
-                    <X size={16} />
-                </button>
-            </div>
-        </motion.div>
-    );
-
-    // --- Auth Screen ---
-    if (!user) {
+    if (mode === 'auth' || !user) {
         return (
             <div className="min-h-screen animated-bg flex items-center justify-center p-4">
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="glass-card p-8 max-w-sm w-full text-center"
-                >
-                    <motion.div
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ type: 'spring', stiffness: 200 }}
-                        className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-xl"
-                    >
-                        <Crown size={40} className="text-white" />
-                    </motion.div>
+                <div className="glass-card max-w-md w-full p-10 text-center space-y-8 animate-fadeIn">
+                    <div className="space-y-4">
+                        <h1 className="text-5xl font-display font-black tracking-tighter italic">
+                            POLITICAL <span className="text-yellow-400">MONOPOLY</span>
+                        </h1>
+                        <p className="text-gray-400 font-medium tracking-widest uppercase text-xs">Satire Edition</p>
+                    </div>
 
-                    <h1 className="font-display text-3xl font-bold text-white mb-1">
-                        POLITICAL MONOPOLY
-                    </h1>
-                    <p className="text-gray-400 text-sm mb-6">Satire Edition</p>
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold block text-left ml-2">Leader Name</label>
+                            <input
+                                type="text"
+                                placeholder="Enter your name..."
+                                className="input-premium w-full text-center"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && e.target.value.trim()) {
+                                        handleAuth(e.target.value.trim());
+                                    }
+                                }}
+                            />
+                        </div>
 
-                    <input
-                        type="text"
-                        className="input-premium w-full mb-4 text-center"
-                        placeholder="Введите ваше имя..."
-                        value={nameInput}
-                        onChange={e => setNameInput(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleAuth()}
-                        maxLength={16}
-                    />
-
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={handleAuth}
-                        className="btn-primary w-full"
-                        disabled={!nameInput.trim()}
-                    >
-                        Начать игру
-                    </motion.button>
-                </motion.div>
+                        <button
+                            onClick={(e) => {
+                                const input = e.target.previousSibling.querySelector('input') || e.target.parentElement.querySelector('input');
+                                if (input && input.value.trim()) handleAuth(input.value.trim());
+                            }}
+                            className="btn-primary w-full py-4 text-xl"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Entering...' : 'Enter Arena'}
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     }
 
-    // --- Main Menu ---
     return (
-        <div className="min-h-screen animated-bg p-4">
-            <div className="max-w-lg mx-auto">
+        <div className="min-h-screen w-full bg-[#0c0c14] text-white flex flex-col font-sans overflow-hidden relative">
+            {/* Background */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_#1a1a2e_0%,_#000000_100%)] z-0" />
+            <div className="absolute inset-0 opacity-20 z-0 pointer-events-none" style={{ backgroundImage: 'url("/grid-pattern.png")', backgroundSize: '50px 50px' }} />
 
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-between mb-6"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                            {user.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                            <div className="font-bold text-white">{user.name}</div>
-                            <div className="text-xs text-gray-400 flex items-center gap-1">
-                                <Star size={10} className="text-yellow-400" />
-                                World Leader
-                            </div>
+            {/* Header */}
+            <div className="relative z-10 p-6 flex justify-between items-center border-b border-white/10 glass-card mx-4 mt-4 rounded-xl">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+                        <img src={user.avatar_url || "/api/placeholder/48/48"} alt="User" className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold font-display tracking-wide">{user.name}</h2>
+                        <div className="text-xs text-purple-400 font-mono tracking-wider flex items-center gap-2">
+                            CODE: <span className="text-white font-bold select-all">{user.friend_code}</span>
                         </div>
                     </div>
-                    <button
-                        onClick={handleLogout}
-                        className="btn-ghost"
-                    >
-                        <LogOut size={20} />
-                    </button>
-                </motion.div>
-
-                {/* Tab Navigation */}
-                <div className="flex gap-2 mb-8 p-1.5 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-md">
-                    <button
-                        onClick={() => { setActiveTab('play'); setMode('menu'); }}
-                        className={`flex-1 py-4 px-6 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${activeTab === 'play'
-                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg scale-[1.02]'
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
-                            }`}
-                    >
-                        <Gamepad2 size={24} />
-                        Играть
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('friends')}
-                        className={`flex-1 py-4 px-6 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${activeTab === 'friends'
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg scale-[1.02]'
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
-                            }`}
-                    >
-                        <Users size={24} />
-                        Друзья
-                        {friends.length > 0 && (
-                            <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-extrabold shadow-sm ml-2">
-                                {friends.length}
-                            </span>
-                        )}
-                    </button>
                 </div>
+                <div className="flex gap-4">
+                    <div className="text-right hidden sm:block">
+                        <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">Total Earnings</div>
+                        <div className="text-xl font-mono font-bold text-green-400">${user.stats?.total_earnings?.toLocaleString()}</div>
+                    </div>
+                </div>
+            </div>
 
-                <AnimatePresence mode="wait">
-                    {/* PLAY TAB */}
-                    {activeTab === 'play' && (
-                        <motion.div
-                            key="play"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                        >
-                            {/* Menu */}
-                            {mode === 'menu' && (
-                                <div className="space-y-6">
-                                    <motion.button
-                                        whileHover={{ scale: 1.03, translateY: -5 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => setMode('create')}
-                                        className="w-full p-8 glass-card flex items-center gap-6 text-left group hover:border-green-400/50 transition-all shadow-card hover:shadow-green-500/20"
-                                    >
-                                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                            <Plus size={40} className="text-white drop-shadow-md" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="text-2xl font-display font-bold text-white mb-1 group-hover:text-green-300 transition-colors">Создать игру</div>
-                                            <div className="text-base text-gray-300">Пригласите друзей</div>
-                                        </div>
-                                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-green-500 group-hover:text-white transition-colors">
-                                            <ArrowRight size={24} className="text-gray-400 group-hover:text-white" />
-                                        </div>
-                                    </motion.button>
+            {/* Main Content */}
+            <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4">
+                {mode === 'menu' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                        <button onClick={() => setMode('create')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-purple-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="w-20 h-20 bg-purple-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(168,85,247,0.3)]">
+                                <Plus size={40} className="text-purple-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold mb-2">Create Game</h3>
+                                <p className="text-sm text-gray-400">Host a new match active diplomacy</p>
+                            </div>
+                        </button>
 
-                                    <motion.button
-                                        whileHover={{ scale: 1.03, translateY: -5 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => setMode('join')}
-                                        className="w-full p-8 glass-card flex items-center gap-6 text-left group hover:border-blue-400/50 transition-all shadow-card hover:shadow-blue-500/20"
-                                    >
-                                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                            <Users size={40} className="text-white drop-shadow-md" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="text-2xl font-display font-bold text-white mb-1 group-hover:text-blue-300 transition-colors">Присоединиться</div>
-                                            <div className="text-base text-gray-300">Введите код игры</div>
-                                        </div>
-                                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                                            <ArrowRight size={24} className="text-gray-400 group-hover:text-white" />
-                                        </div>
-                                    </motion.button>
+                        <button onClick={() => setMode('join')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-blue-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-cyan-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="w-20 h-20 bg-blue-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+                                <LogIn size={40} className="text-blue-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold mb-2">Join Game</h3>
+                                <p className="text-sm text-gray-400">Enter code to join lobby</p>
+                            </div>
+                        </button>
+
+                        <button onClick={() => setMode('friends')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-green-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                            {friendRequests.length > 0 && (
+                                <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-bounce">
+                                    {friendRequests.length}
                                 </div>
                             )}
+                            <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="w-20 h-20 bg-green-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+                                <Users size={40} className="text-green-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold mb-2">Friends</h3>
+                                <p className="text-sm text-gray-400">Manage friends & invites</p>
+                            </div>
+                        </button>
 
-                            {/* Create Game */}
-                            {mode === 'create' && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="space-y-5"
-                                >
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <button
-                                            onClick={() => setMode('menu')}
-                                            className="btn-ghost"
-                                        >
-                                            <ArrowRight size={20} className="rotate-180" />
-                                        </button>
-                                        <h2 className="text-xl font-bold text-white">Аватар</h2>
-                                    </div>
-
-                                    <CharacterSelection
-                                        characters={CHARACTERS}
-                                        selectedId={character}
-                                        onSelect={setCharacter}
-                                    />
-
-                                    <div className="pt-2">
-                                        <h3 className="text-sm font-semibold text-gray-400 mb-3">Карта</h3>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {MAPS.map(map => (
-                                                <motion.button
-                                                    key={map.id}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    onClick={() => setMapType(map.id)}
-                                                    className={`p-4 rounded-xl flex items-center gap-3 transition-all ${mapType === map.id
-                                                        ? `bg-gradient-to-br ${map.gradient} text-white shadow-lg`
-                                                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                                                        }`}
-                                                >
-                                                    <map.icon size={24} />
-                                                    <span className="font-semibold">{map.name}</span>
-                                                </motion.button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-2">
-                                        <h3 className="text-sm font-semibold text-gray-400 mb-3">Режим игры</h3>
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {MODES.map(m => (
-                                                <button
-                                                    key={m.id}
-                                                    onClick={() => setGameMode(m.id)}
-                                                    className={`p-4 rounded-xl flex items-center gap-4 border-2 transition-all text-left ${gameMode === m.id
-                                                        ? 'bg-white/10 border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.2)]'
-                                                        : 'bg-white/5 border-transparent hover:bg-white/10'
-                                                        }`}
-                                                >
-                                                    <div className={`p-2 rounded-lg ${gameMode === m.id ? 'bg-yellow-500 text-black' : 'bg-white/10 text-gray-400'}`}>
-                                                        <m.icon size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <div className={`font-bold ${gameMode === m.id ? 'text-white' : 'text-gray-300'}`}>{m.name}</div>
-                                                        <div className="text-xs text-gray-500">{m.desc}</div>
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={createGame}
-                                        disabled={isLoading}
-                                        className="btn-primary w-full flex items-center justify-center gap-2"
-                                    >
-                                        {isLoading ? (
-                                            <motion.div
-                                                animate={{ rotate: 360 }}
-                                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                                                className="w-6 h-6 border-2 border-white border-t-transparent rounded-full"
-                                            />
-                                        ) : (
-                                            <>
-                                                <Gamepad2 size={22} />
-                                                Создать игру
-                                            </>
-                                        )}
-                                    </motion.button>
-                                </motion.div>
-                            )}
-
-                            {/* Join Game */}
-                            {mode === 'join' && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="space-y-5"
-                                >
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <button
-                                            onClick={() => setMode('menu')}
-                                            className="btn-ghost"
-                                        >
-                                            <ArrowRight size={20} className="rotate-180" />
-                                        </button>
-                                        <h2 className="text-xl font-bold text-white">Код игры</h2>
-                                    </div>
-
-                                    <input
-                                        type="text"
-                                        className="input-premium w-full text-center text-2xl tracking-[0.3em] uppercase font-mono"
-                                        placeholder="XXXXXXXX"
-                                        value={joinId}
-                                        onChange={e => setJoinId(e.target.value.toUpperCase())}
-                                        maxLength={8}
-                                    />
-
-                                    <div>
-                                        <h3 className="text-sm font-semibold text-gray-400 mb-3">Ваш аватар</h3>
-                                        <CharacterSelection
-                                            characters={CHARACTERS}
-                                            selectedId={character}
-                                            onSelect={setCharacter}
-                                        />
-                                    </div>
-
-                                    <motion.button
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => joinGame(joinId)}
-                                        disabled={isLoading || joinId.length < 8}
-                                        className="btn-success w-full flex items-center justify-center gap-2 disabled:opacity-50"
-                                    >
-                                        {isLoading ? (
-                                            <motion.div
-                                                animate={{ rotate: 360 }}
-                                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                                                className="w-6 h-6 border-2 border-white border-t-transparent rounded-full"
-                                            />
-                                        ) : (
-                                            <>
-                                                <Users size={22} />
-                                                Присоединиться
-                                            </>
-                                        )}
-                                    </motion.button>
-                                </motion.div>
-                            )}
-                        </motion.div>
-                    )}
-
-                    {/* FRIENDS TAB */}
-                    {activeTab === 'friends' && (
-                        <motion.div
-                            key="friends"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="space-y-4"
-                        >
-                            {/* Your Friend Code */}
-                            <div className="glass-card p-4">
-                                <div className="text-sm text-gray-400 mb-2">Ваш код для друзей</div>
-                                <div className="flex items-center gap-3">
-                                    <div className="flex-1 bg-black/30 rounded-lg px-4 py-3 font-mono text-xl tracking-widest text-yellow-400">
-                                        {user.friendCode}
-                                    </div>
-                                    <motion.button
-                                        whileTap={{ scale: 0.9 }}
-                                        onClick={copyFriendCode}
-                                        className="btn-ghost"
-                                    >
-                                        {copied ? <Check size={20} className="text-green-400" /> : <Copy size={20} />}
-                                    </motion.button>
-                                </div>
+                        {/* Open Lobbies Panel (New Feature) */}
+                        <div className="col-span-1 md:col-span-3 glass-card p-6 mt-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-bold flex items-center gap-2"><Globe size={20} className="text-blue-400" /> Open Public Lobbies</h3>
+                                <button onClick={fetchActiveGames} className="p-2 hover:bg-white/10 rounded-full"><RefreshCw size={16} /></button>
                             </div>
 
-                            {/* Add Friend Button */}
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => setShowAddFriend(true)}
-                                className="btn btn-purple w-full py-4 text-base"
-                            >
-                                <UserPlus size={20} />
-                                Добавить друга
-                            </motion.button>
-
-                            {/* Friends List */}
-                            <div className="space-y-2">
-                                <div className="text-sm text-gray-400 mb-2">
-                                    Друзья ({friends.length})
-                                </div>
-
-                                {friends.length === 0 ? (
-                                    <div className="text-center py-10 text-gray-500">
-                                        <Users size={48} className="mx-auto mb-3 opacity-50" />
-                                        <div>Пока нет друзей</div>
-                                        <div className="text-sm">Добавьте друзей по коду</div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {friends.map(friend => (
-                                            <FriendCard
-                                                key={friend.id}
-                                                friend={friend}
-                                                onRemove={removeFriend}
-                                                onInvite={(f) => {
-                                                    setActiveTab('play');
-                                                    setMode('create');
-                                                }}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Add Friend Modal */}
-                <AnimatePresence>
-                    {showAddFriend && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-                            onClick={() => setShowAddFriend(false)}
-                        >
-                            <motion.div
-                                initial={{ scale: 0.9, y: 20 }}
-                                animate={{ scale: 1, y: 0 }}
-                                exit={{ scale: 0.9, y: 20 }}
-                                onClick={e => e.stopPropagation()}
-                                className="glass-card p-6 max-w-sm w-full"
-                            >
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-xl font-bold text-white">Добавить друга</h3>
-                                    <button
-                                        onClick={() => setShowAddFriend(false)}
-                                        className="btn-ghost"
-                                    >
-                                        <X size={20} />
-                                    </button>
-                                </div>
-
-                                <p className="text-gray-400 text-sm mb-4">
-                                    Введите код друга для добавления
-                                </p>
-
-                                <input
-                                    type="text"
-                                    className="input-premium w-full text-center uppercase tracking-widest font-mono text-lg mb-4"
-                                    placeholder="XXXXXX"
-                                    value={friendIdInput}
-                                    onChange={e => setFriendIdInput(e.target.value.toUpperCase())}
-                                    maxLength={6}
-                                />
-
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={addFriend}
-                                    disabled={friendIdInput.length < 4}
-                                    className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
-                                >
-                                    <UserPlus size={18} />
-                                    Добавить
-                                </motion.button>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {myActiveGames.length > 0 && (
-                    <motion.div
-                        initial={{ y: 100 }}
-                        animate={{ y: 0 }}
-                        className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-white/10 p-4 z-[40] flex flex-col items-center"
-                    >
-                        <div className="w-full max-w-lg">
-                            <div className="flex items-center justify-between mb-3 px-1">
-                                <span className="text-xs text-gray-400 uppercase tracking-widest font-black flex items-center gap-2">
-                                    <Clock size={14} className="text-yellow-500" /> Активные партии
-                                </span>
-                                <span className="text-[10px] bg-white/5 text-gray-500 px-2 py-0.5 rounded-full uppercase font-bold">
-                                    {myActiveGames.length}
-                                </span>
-                            </div>
-                            <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar-none mask-fade-sides">
-                                {myActiveGames.map(g => (
-                                    <motion.button
-                                        key={g.game_id}
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => navigate(`/game/${g.game_id}/${g.player_id}`)}
-                                        className="flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all min-w-[200px] text-left group"
-                                    >
-                                        <div className="relative">
-                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-white/10 group-hover:border-blue-500/50 transition-colors">
-                                                <Globe size={20} className="text-blue-400" />
+                            {activeGames.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">No active public games found. Create one!</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {activeGames.map(game => (
+                                        <div key={game.game_id} className="bg-white/5 border border-white/10 p-4 rounded-xl hover:bg-white/10 transition-all flex justify-between items-center group">
+                                            <div>
+                                                <div className="font-mono font-bold text-lg text-purple-400">#{game.game_id.substring(0, 6)}</div>
+                                                <div className="text-xs text-gray-400 mt-1">{game.map_type} • {game.player_count}/{game.max_players} Players</div>
                                             </div>
-                                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-900 animate-pulse" />
+                                            <button
+                                                onClick={() => { setMode('join'); setGameIdInput(game.game_id); }}
+                                                className="btn-sm btn-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                Join
+                                            </button>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-sm font-black text-white truncate uppercase tracking-tight">{g.map_type}</div>
-                                            <div className="text-[10px] text-gray-500 font-bold uppercase">Ход {g.turn} • {g.players_count} игрок.</div>
-                                        </div>
-                                        <ArrowRight size={16} className="text-gray-600 group-hover:text-blue-400 transition-colors" />
-                                    </motion.button>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    </motion.div>
+                    </div>
                 )}
-            </div >
-        </div >
+
+                {/* Create Mode */}
+                {mode === 'create' && (
+                    <div className="glass-card max-w-2xl w-full p-8 animate-in fade-in zoom-in duration-300">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-3xl font-bold font-display">Create Match</h2>
+                            <button onClick={() => setMode('menu')} className="btn-ghost p-2 rounded-full hover:bg-white/10"><X /></button>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div>
+                                <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Выберите карту</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {[
+                                        { id: 'World', name: 'Мировая карта' },
+                                        { id: 'Ukraine', name: 'Украина' },
+                                        { id: 'Monopoly1', name: 'Монополия One' }
+                                    ].map(m => (
+                                        <button key={m.id} onClick={() => setSelectedMap(m.id)} className={`p-4 rounded-xl border text-sm font-bold transition-all ${selectedMap === m.id ? 'bg-purple-600/20 border-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.3)]' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}>
+                                            {m.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="label">Game Mode</label>
+                                <div className="flex gap-4">
+                                    <button onClick={() => setGameMode('abilities')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${gameMode === 'abilities' ? 'bg-blue-600/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-white/5 border-white/10 text-gray-400'}`}>Abilities</button>
+                                    <button onClick={() => setGameMode('oreshnik_all')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${gameMode === 'oreshnik_all' ? 'bg-red-600/20 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)] text-red-400' : 'bg-white/5 border-white/10 text-gray-400'}`}>Oreshnik All</button>
+                                    <button onClick={() => setGameMode('classic')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${gameMode === 'classic' ? 'bg-blue-600/20 border-blue-500 text-white' : 'bg-white/5 border-white/10 text-gray-400'}`}>Classic</button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Choose Your Leader</label>
+                                <CharacterSelection characters={CHARACTERS} selectedId={character} onSelect={setCharacter} />
+                            </div>
+
+                            <button onClick={createGame} disabled={isLoading} className="btn-primary w-full py-4 text-xl font-bold shadow-lg shadow-purple-900/20">
+                                {isLoading ? 'Creating...' : 'Launch Game'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Join Mode */}
+                {mode === 'join' && (
+                    <div className="glass-card max-w-md w-full p-8 animate-in fade-in zoom-in duration-300">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-3xl font-bold font-display">Join Game</h2>
+                            <button onClick={() => setMode('menu')} className="btn-ghost"><X /></button>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div>
+                                <label className="label">Game ID</label>
+                                <input
+                                    value={gameIdInput}
+                                    onChange={e => setGameIdInput(e.target.value.toUpperCase())}
+                                    className="input-field text-center font-mono text-2xl tracking-widest uppercase"
+                                    placeholder="ABCD123"
+                                    maxLength={8}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Select Leader</label>
+                                <CharacterSelection characters={CHARACTERS} selectedId={character} onSelect={setCharacter} />
+                            </div>
+
+                            <button onClick={() => joinGame(gameIdInput)} disabled={isLoading || !gameIdInput} className="btn-primary w-full py-4 text-xl font-bold">
+                                {isLoading ? 'Joining...' : 'Enter Lobby'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Friends Mode */}
+                {mode === 'friends' && (
+                    <div className="glass-card max-w-2xl w-full p-8 animate-in fade-in zoom-in duration-300">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-3xl font-bold font-display">Friends Center</h2>
+                            <button onClick={() => setMode('menu')} className="btn-ghost"><X /></button>
+                        </div>
+
+                        <div className="flex gap-2 mb-8">
+                            <input
+                                value={friendCodeInput}
+                                onChange={e => setFriendCodeInput(e.target.value.toUpperCase())}
+                                placeholder="Enter Friend Code (e.g. A1B2C3)"
+                                className="input-field flex-1 font-mono uppercase"
+                                maxLength={6}
+                            />
+                            <button onClick={sendFriendRequest} className="btn-primary px-6"><UserPlus size={20} /></button>
+                        </div>
+
+                        <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                            {friendRequests.length > 0 && (
+                                <div className="mb-4">
+                                    <h3 className="text-sm text-gray-400 uppercase tracking-widest mb-2">Requests</h3>
+                                    {friendRequests.map(req => (
+                                        <div key={req.id} className="bg-white/10 p-3 rounded-lg flex justify-between items-center border border-purple-500/30">
+                                            <div className="font-bold">{req.from_user?.name}</div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => authFetch(`/api/friends/requests/${req.id}/accept`, { method: 'POST' }).then(fetchFriendsData)} className="p-1 bg-green-500 rounded hover:bg-green-600"><UserCheck size={16} /></button>
+                                                <button onClick={() => authFetch(`/api/friends/requests/${req.id}/reject`, { method: 'POST' }).then(fetchFriendsData)} className="p-1 bg-red-500 rounded hover:bg-red-600"><X size={16} /></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <h3 className="text-sm text-gray-400 uppercase tracking-widest mb-2">My Friends</h3>
+                            {friends.length === 0 ? <div className="text-gray-500 text-center py-4">No friends yet. Add someone!</div> :
+                                friends.map(f => (
+                                    <div key={f.id} className="bg-white/5 p-3 rounded-lg flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center font-bold text-xs">{f.name[0]}</div>
+                                            <div>
+                                                <div className="font-bold text-sm">{f.name}</div>
+                                                <div className="text-[10px] text-gray-500 font-mono">#{f.friend_code}</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-xs text-green-400">Online</div>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 };
+
+// Simple globe icon mock
+const Globe = ({ size, className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+);
 
 export default Lobby;
