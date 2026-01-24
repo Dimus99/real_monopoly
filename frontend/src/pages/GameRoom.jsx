@@ -29,6 +29,7 @@ const CHARACTERS = {
 };
 
 const GameRoom = () => {
+    const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
     const { gameId, playerId } = useParams();
     const navigate = useNavigate();
     const { gameState, sendAction, lastAction } = useGameSocket(gameId, playerId);
@@ -191,7 +192,7 @@ const GameRoom = () => {
         setIncomingTrade(null);
     };
 
-    const API_BASE = import.meta.env.DEV ? 'http://localhost:8000' : `${window.location.protocol}//${window.location.host}`;
+
 
     // --- Waiting Room Actions ---
     const handleStartGame = async () => {

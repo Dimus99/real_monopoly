@@ -32,7 +32,7 @@ COPY --from=frontend-builder /app/frontend/dist ./static
 RUN chmod +x entrypoint.sh
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8080
 
 # Run entrypoint (which runs migrations and starts uvicorn)
 CMD ["./entrypoint.sh"]

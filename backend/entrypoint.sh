@@ -55,8 +55,8 @@ else
 fi
 
 echo "=========================================="
-echo "🎮 Starting server on port ${PORT:-8000}"
+echo "🎮 Starting server on port ${PORT:-8080}"
 echo "=========================================="
 
 # Start the server
-exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'
+exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080} --proxy-headers --forwarded-allow-ips='*'

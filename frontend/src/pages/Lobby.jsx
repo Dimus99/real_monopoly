@@ -12,6 +12,7 @@ const Lobby = () => {
     const [user, setUser] = useState(null);
     const [mode, setMode] = useState('menu'); // menu, create, join, friends, settings
     const [isLoading, setIsLoading] = useState(false);
+    const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
 
     // Create Game State
     const [selectedMap, setSelectedMap] = useState('World');
@@ -48,7 +49,7 @@ const Lobby = () => {
 
         const fetchUser = async () => {
             try {
-                const res = await fetch('http://localhost:8000/api/users/me', {
+                const res = await fetch(`${API_BASE}/api/users/me`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -68,7 +69,7 @@ const Lobby = () => {
 
     const authFetch = async (url, options = {}) => {
         const token = localStorage.getItem('monopoly_token');
-        const res = await fetch(`http://localhost:8000${url}`, {
+        const res = await fetch(`${API_BASE}${url}`, {
             ...options,
             headers: {
                 ...options.headers,
@@ -190,7 +191,7 @@ const Lobby = () => {
     const handleAuth = async (name) => {
         setIsLoading(true);
         try {
-            const res = await fetch('http://localhost:8000/api/auth/anonymous', {
+            const res = await fetch(`${API_BASE}/api/auth/anonymous`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name })

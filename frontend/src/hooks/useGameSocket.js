@@ -13,7 +13,7 @@ const useGameSocket = (gameId, playerId) => {
 
         const token = localStorage.getItem('monopoly_token');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = import.meta.env.DEV ? 'localhost:8000' : window.location.host;
+        const host = import.meta.env.DEV ? 'localhost:8080' : window.location.host;
         const ws = new WebSocket(`${protocol}//${host}/ws/${gameId}?player_id=${playerId}&token=${token}`);
 
         socketRef.current = ws;
