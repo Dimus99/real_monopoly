@@ -101,6 +101,14 @@ app.include_router(users_router)
 app.include_router(friends_router)
 app.include_router(games_router)
 
+@app.get("/")
+async def root():
+    return {"status": "ok", "message": "Political Monopoly API is running", "version": "1.0.0"}
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+
 
 # ============== Health Check ==============
 
