@@ -582,8 +582,10 @@ const GameRoom = () => {
                 <div className="p-2 border-b border-white/10 bg-[#0c0c14]">
                     <div className={`flex ${sidebarCollapsed ? 'flex-col gap-2' : 'gap-2'}`}>
                         <div className={`bg-black/40 p-2 rounded-lg border border-white/5 flex flex-col items-center ${sidebarCollapsed ? 'w-full' : 'flex-1'}`}>
-                            <Clock size={12} className={timeLeft <= 10 ? 'text-orange-500 animate-pulse' : 'text-gray-400'} />
-                            <span className={`text-sm font-mono font-bold ${timeLeft <= 10 ? 'text-orange-500 animate-pulse' : 'text-white'}`}>{timeLeft}</span>
+                            <Clock size={12} className={(gameState?.turn_timer !== 0 && timeLeft <= 10) ? 'text-orange-500 animate-pulse' : 'text-gray-400'} />
+                            <span className={`text-sm font-mono font-bold ${(gameState?.turn_timer !== 0 && timeLeft <= 10) ? 'text-orange-500 animate-pulse' : 'text-white'}`}>
+                                {gameState?.turn_timer === 0 ? '∞' : timeLeft}
+                            </span>
                         </div>
                         <div className={`bg-black/40 p-2 rounded-lg border border-white/5 flex flex-col items-center ${sidebarCollapsed ? 'w-full' : 'flex-1'}`}>
                             <div className="w-3 h-3 rounded-full bg-yellow-500" title="Current Turn" />
