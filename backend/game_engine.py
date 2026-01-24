@@ -22,7 +22,7 @@ WORLD_MAP_DATA = [
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Кабул", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
     {"name": "Дамаск", "group": "LightBlue", "price": 120, "rent": [8, 40, 100, 300, 450, 600]},
-    {"name": "ТЮРЬМА", "group": "Jail", "price": 0, "rent": []},
+    {"name": "Остров Эпштейна", "group": "Jail", "price": 0, "rent": []},
     {"name": "Тайбэй", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
     {"name": "Газпром", "group": "Utility", "price": 150, "rent": []},
     {"name": "Гонконг", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
@@ -42,7 +42,7 @@ WORLD_MAP_DATA = [
     {"name": "Париж", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
     {"name": "Роснефть", "group": "Utility", "price": 150, "rent": []},
     {"name": "Лондон", "group": "Yellow", "price": 280, "rent": [24, 120, 360, 850, 1025, 1200]},
-    {"name": "В ТЮРЬМУ", "group": "GoToJail", "price": 0, "rent": []},
+    {"name": "На Остров Эпштейна", "group": "GoToJail", "price": 0, "rent": []},
     {"name": "Киев", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
     {"name": "Токио", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
@@ -456,7 +456,7 @@ class GameEngine:
         if tile.group == "GoToJail":
             self._send_to_jail(game, player)
             result["action"] = "go_to_jail"
-            game.logs.append(f"⚖️ {player.name} was indicted for war crimes and sent to The Hague!")
+            game.logs.append(f"⚖️ {player.name} was sent to Epstein Island! Conspiracy confirmed.")
             
         elif tile.group == "FreeParking":
             if game.pot > 0:
@@ -488,17 +488,20 @@ class GameEngine:
             else:
                 result["action"] = "chance"
             
+            # Ensure action is set
+            if "action" not in result:
+                result["action"] = "chance"
+            
         elif tile.group == "Jail": # Previously Tax block was here, now combined above
             result["action"] = "safe"
-            game.logs.append(f"🕵️ {player.name} is just visiting the ICC prison. Checking on friends.")
+            game.logs.append(f"🏝️ {player.name} is just visiting Epstein Island. No questions asked.")
             
         elif tile.group == "Special" or tile.id == 0:
             result["action"] = "safe"
             game.logs.append(f"🏢 {player.name} is at Headquarters. Geopolitical strategy is being updated.")
             
-        elif tile.group in ["Station", "Utility"]:
             if tile.owner_id and tile.owner_id != player.id and not tile.is_mortgaged:
-                rent = self._calculate_rent(game, tile, game.dice)
+                rent = self._calculate_rent(game, tile, game.dice, player)
                 result["action"] = "pay_rent"
                 result["amount"] = rent
                 result["owner_id"] = tile.owner_id
@@ -514,7 +517,7 @@ class GameEngine:
                 result["action"] = "destroyed"
                 game.logs.append(f"🏚️ {tile.name} lies in ruins. No rent can be collected here.")
             elif tile.owner_id and tile.owner_id != player.id and not tile.is_mortgaged:
-                rent = self._calculate_rent(game, tile, game.dice)
+                rent = self._calculate_rent(game, tile, game.dice, player)
                 result["action"] = "pay_rent"
                 result["amount"] = rent
                 result["owner_id"] = tile.owner_id
@@ -527,7 +530,7 @@ class GameEngine:
         
         return result
     
-    def _calculate_rent(self, game: GameState, tile: Property, dice: List[int]) -> int:
+    def _calculate_rent(self, game: GameState, tile: Property, dice: List[int], player: Optional[Player] = None) -> int:
         """Calculate rent for a property."""
         if tile.is_destroyed or tile.is_mortgaged or tile.isolation_turns > 0:
             return 0
@@ -537,10 +540,17 @@ class GameEngine:
             return 0
         
         if tile.group == "Utility":
-            # Count utilities owned by owner
-            utilities_owned = sum(1 for t in game.board if t.group == "Utility" and t.owner_id == tile.owner_id and t.isolation_turns == 0)
-            multiplier = 4 if utilities_owned == 1 else 10
-            return (dice[0] + dice[1]) * multiplier
+            # Count utilities owned by owner (Rosneft/Gazprom)
+            utilities_owned = sum(1 for t in game.board if t.group == "Utility" and t.owner_id == tile.owner_id and not t.is_mortgaged)
+            
+            # 10% or 20% of CURRENT PLAYER'S money
+            # If player is not passed (should not happen for payment), default to 0
+            if not player:
+                return 0
+                
+            percent = 0.20 if utilities_owned >= 2 else 0.10
+            rent_amount = int(player.money * percent)
+            return max(10, rent_amount) # Minimum rent 10? Or just 0. Let's say min 1 to allow logic to flow.
             
         elif tile.group == "Station":
             # Count stations owned

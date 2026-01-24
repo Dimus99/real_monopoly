@@ -74,7 +74,7 @@ const DiceAnimation = ({ show, rolling, values }) => {
                         rotateZ: target.z
                     }}
                     transition={isRolling ? {
-                        duration: 0.3,
+                        duration: 0.6,
                         repeat: Infinity,
                         ease: "linear"
                     } : {

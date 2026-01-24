@@ -282,49 +282,51 @@ const GameRoom = () => {
                 setDiceValues(lastAction.dice || [1, 1]);
                 setShowDice(true);
                 setDiceRolling(true);
-                // Rolling for 0.4 second
-                setTimeout(() => setDiceRolling(false), 400);
-                // Reveal results after 0.5 more seconds (Total 0.9s)
+
+                // Rolling for 1.5 seconds
                 setTimeout(() => {
-                    setShowDice(false);
-                    // Manually sync players state to trigger movement exactly when dice stop
+                    setDiceRolling(false);
+                    setHasRolled(true);
+                    setIsRolling(false);
+
+                    // Sync players to move tokens
                     if (gameState?.players) {
                         setDelayedPlayers(gameState.players);
                     }
-                    setIsRolling(false);
 
-                    if (lastAction.player_id === playerId) {
-                        setHasRolled(true);
+                    // Show result for 3 seconds then process
+                    setTimeout(() => {
+                        setShowDice(false);
 
-                        // Check for Chance Card first (display it regardless of resulting action)
-                        if (lastAction.chance_card) {
-                            setChanceData(lastAction);
-                        }
+                        if (lastAction.player_id === playerId) {
+                            // Check for Chance card
+                            if (lastAction.chance_card) {
+                                setChanceData(lastAction);
+                            }
 
-                        // Trigger modals based on action
-                        if (lastAction.action === 'can_buy') {
-                            // Do not auto-open modal. User can use ActionPanel button.
-                            // setShowBuyModal(true); -- DISABLED per user request
-                        } else if (lastAction.action === 'pay_rent') {
-                            setRentDetails({
-                                amount: lastAction.amount,
-                                ownerId: lastAction.owner_id
-                            });
-                            setShowRentModal(true);
-                        } else if (lastAction.action === 'chance') {
-                            setChanceData(lastAction);
-                            // Chance modal handles end turn on close
-                        } else {
-                            // Passive actions (Tax, GoToJail, Safe, Destroyed, etc.)
-                            // Auto-end turn after delay if not doubles
-                            if (!lastAction.doubles) {
-                                setTimeout(() => {
-                                    if (isMyTurn) sendAction('END_TURN');
-                                }, 3000);
+                            // Trigger modals based on action
+                            if (lastAction.action === 'can_buy') {
+                                // Do not auto-open modal. User can use ActionPanel button.
+                            } else if (lastAction.action === 'pay_rent') {
+                                setRentDetails({
+                                    amount: lastAction.amount,
+                                    ownerId: lastAction.owner_id
+                                });
+                                setShowRentModal(true);
+                            } else if (lastAction.action === 'chance') {
+                                setChanceData(lastAction);
+                            } else {
+                                // Passive / Auto-end conditions
+                                if (!lastAction.doubles) {
+                                    setTimeout(() => {
+                                        if (isMyTurn) sendAction('END_TURN');
+                                    }, 1500);
+                                }
                             }
                         }
-                    }
-                }, 900); // 0.9s total animation
+                    }, 3000);
+
+                }, 1500);
                 break;
 
             case 'PROPERTY_BOUGHT':

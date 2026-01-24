@@ -95,7 +95,10 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <div className={`w-3 h-3 rounded-full bg-${prop.group === 'Special' ? 'gray' : prop.group.toLowerCase()}-500`} />
-                                                        <span className="text-white font-medium">{prop.name}</span>
+                                                        <div>
+                                                            <div className="text-white font-medium">{prop.name}</div>
+                                                            <div className="text-xs text-gray-400 opacity-60">${prop.price}</div>
+                                                        </div>
                                                     </div>
                                                     {selectedOfferProps.includes(prop.id) && <Check size={16} className="text-green-400" />}
                                                 </div>
@@ -151,7 +154,10 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <div className={`w-3 h-3 rounded-full bg-${prop.group === 'Special' ? 'gray' : prop.group.toLowerCase()}-500`} />
-                                                        <span className="text-white font-medium">{prop.name}</span>
+                                                        <div>
+                                                            <div className="text-white font-medium">{prop.name}</div>
+                                                            <div className="text-xs text-gray-400 opacity-60">${prop.price}</div>
+                                                        </div>
                                                     </div>
                                                     {selectedRequestProps.includes(prop.id) && <Check size={16} className="text-blue-400" />}
                                                 </div>

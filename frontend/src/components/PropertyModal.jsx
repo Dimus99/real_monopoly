@@ -59,7 +59,7 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
     const image = getTileImage(property);
     const displayName = DISPLAY_NAMES[property.name] || property.name;
 
-    const isPropertyType = !['Special', 'Chance', 'Tax'].includes(property.group);
+    const isPropertyType = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking'].includes(property.group);
     const housePrice = Math.floor(property.price / 2) + 50;
 
     return (
@@ -67,7 +67,7 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="w-[340px] min-h-[520px] bg-[#1a1a2e] rounded-[32px] overflow-hidden flex flex-col relative shadow-[0_30px_90px_rgba(0,0,0,0.8)] border border-white/10"
+            className="w-[400px] min-h-[600px] bg-[#1a1b26] rounded-[32px] overflow-hidden flex flex-col relative shadow-[0_30px_90px_rgba(0,0,0,0.8)] border border-white/10"
         >
             {/* Close Button */}
             <button
@@ -227,7 +227,7 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
                     </motion.button>
                 )}
 
-                {canBuild && isPropertyType && owner && property.houses < 5 && (
+                {canBuild && isPropertyType && owner && property.houses < 5 && !['Utility', 'Station'].includes(property.group) && (
                     <motion.button
                         whileHover={{ scale: 1.02, y: -5 }}
                         whileTap={{ scale: 0.98 }}
