@@ -100,13 +100,17 @@ class Property(BaseModel):
     """Property tile on the board."""
     id: int  # 0-39 index on board
     name: str
-    group: str  # Color group or Special
+    type: str = "property"  # property, transport, utility, service
+    group: str  # Color group or Special (groupId)
     price: int
     rent: List[int] = Field(default_factory=list)  # Rent values
+    action: Optional[str] = None  # For service tiles (e.g. collect_200)
+    
     owner_id: Optional[str] = None
     houses: int = 0
     is_mortgaged: bool = False
     is_destroyed: bool = False  # Putin's Oreshnik effect
+    is_monopoly: bool = False  # If part of a complete monopoly
     
     # Visual state
     destruction_turn: Optional[int] = None  # When it was destroyed
@@ -159,6 +163,7 @@ class GameState(BaseModel):
     game_mode: Literal["classic", "abilities", "oreshnik_all"] = "abilities"
     starting_money: int = 1500
     max_players: int = 6
+    turn_timer: int = 90  # Seconds per turn, 0 = infinity
     
     # Timestamps
     turn_expiry: Optional[datetime] = None
@@ -178,6 +183,7 @@ class CreateGameRequest(BaseModel):
     game_mode: str = "abilities"
     starting_money: int = 1500
     max_players: int = 6
+    turn_timer: int = 90
 
 
 class JoinGameRequest(BaseModel):

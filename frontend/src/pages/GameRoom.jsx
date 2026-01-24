@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -15,6 +15,7 @@ import ToastNotification from '../components/ToastNotification';
 import ActionPanel from '../components/ActionPanel';
 import TradeModal from '../components/TradeModal';
 import TradeNotification from '../components/TradeNotification';
+import ChanceModal from '../components/ChanceModal';
 import * as AbilityAnimations from '../components/AbilityAnimations';
 
 // Character data
@@ -47,11 +48,20 @@ const GameRoom = () => {
     const [diceRolling, setDiceRolling] = useState(false);
     const [hasRolled, setHasRolled] = useState(false);
 
+    // Log management - Update immediately to keep chat fresh
+    const [displayedLogs, setDisplayedLogs] = useState([]);
+    useEffect(() => {
+        if (gameState?.logs) {
+            setDisplayedLogs(gameState.logs);
+        }
+    }, [gameState?.logs]);
+
     // Animation States
     const [showBuyout, setShowBuyout] = useState(false);
     const [showAid, setShowAid] = useState(false);
     const [showNuke, setShowNuke] = useState(false);
     const [showVictory, setShowVictory] = useState(false);
+    const boardRef = useRef(null);
 
     // Trade States
     const [showTradeModal, setShowTradeModal] = useState(false);
@@ -68,17 +78,52 @@ const GameRoom = () => {
     const isMyTurn = gameState?.player_order?.[gameState?.current_turn_index] === playerId;
     const currentTurnPlayer = gameState?.players?.[gameState?.player_order?.[gameState?.current_turn_index]];
 
+    // Character data mapping check - Moved here to avoid initialization error
+    const char = CHARACTERS[currentPlayer?.character] || CHARACTERS.Putin;
+
     const currentTile = gameState?.board?.[currentPlayer?.position];
     // Can buy only if on the tile (UI Logic)
     const canBuy = isMyTurn &&
         currentTile &&
         !currentTile.owner_id &&
+        currentTile.price > 0 &&
         !['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax'].includes(currentTile.group) &&
         !currentTile.is_destroyed;
 
+    useEffect(() => {
+        if (isMyTurn && currentTile) {
+            console.log("canBuy Check:", {
+                isMyTurn,
+                currentTileName: currentTile.name,
+                owner: currentTile.owner_id,
+                price: currentTile.price,
+                group: currentTile.group,
+                destroyed: currentTile.is_destroyed,
+                result: canBuy
+            });
+        }
+    }, [isMyTurn, currentTile, canBuy]);
+
     const handleBuyProperty = () => {
-        if (!isMyTurn || !currentPlayer) return;
+        if (!isMyTurn || !currentPlayer) {
+            console.warn("Cannot buy: not my turn or no player", { isMyTurn, currentPlayer });
+            return;
+        }
+        console.log("Buying property at", currentPlayer.position);
         sendAction('BUY', { property_id: currentPlayer.position });
+    };
+
+    const handleBuildHouse = (propertyId) => {
+        if (!isMyTurn) return;
+        sendAction('BUILD', { property_id: propertyId });
+    };
+
+    const checkMonopolyByPlayer = (tile) => {
+        if (!tile || !tile.group || !gameState?.board) return false;
+        if (['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax'].includes(tile.group)) return false;
+        const groupTiles = gameState.board.filter(t => t.group === tile.group);
+        if (groupTiles.length === 0) return false;
+        return groupTiles.every(t => t.owner_id === playerId);
     };
 
     const copyToClipboard = (text) => {
@@ -92,7 +137,7 @@ const GameRoom = () => {
     const handleEndTurn = () => {
         if (!isMyTurn) return;
         sendAction('END_TURN');
-        setHasRolled(false);
+        // Do NOT setHasRolled(false) here. Wait for backend confirmation.
     };
 
     const handleAbility = (abilityType) => {
@@ -105,7 +150,7 @@ const GameRoom = () => {
     };
 
     // Timer
-    const [timeLeft, setTimeLeft] = useState(45);
+    const [timeLeft, setTimeLeft] = useState(90);
     useEffect(() => {
         if (!gameState?.turn_expiry) return;
         const updateTimer = () => {
@@ -119,7 +164,7 @@ const GameRoom = () => {
         updateTimer();
         const interval = setInterval(updateTimer, 1000);
         return () => clearInterval(interval);
-    }, [gameState?.turn_expiry]);
+    }, [gameState?.turn_expiry, gameState?.current_turn_index]); // Also update on turn index change
 
     const handleRoll = () => {
         if (!isMyTurn || isRolling) return;
@@ -146,11 +191,13 @@ const GameRoom = () => {
         setIncomingTrade(null);
     };
 
+    const API_BASE = import.meta.env.DEV ? 'http://localhost:8000' : `${window.location.protocol}//${window.location.host}`;
+
     // --- Waiting Room Actions ---
     const handleStartGame = async () => {
         try {
             const token = localStorage.getItem('monopoly_token');
-            const res = await fetch(`http://localhost:8000/api/games/${gameId}/start`, {
+            const res = await fetch(`${API_BASE}/api/games/${gameId}/start`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -163,7 +210,7 @@ const GameRoom = () => {
     const handleAddBot = async () => {
         try {
             const token = localStorage.getItem('monopoly_token');
-            await fetch(`http://localhost:8000/api/games/${gameId}/bots`, {
+            await fetch(`${API_BASE}/api/games/${gameId}/bots`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -173,7 +220,7 @@ const GameRoom = () => {
     const handleRemoveBot = async (botId) => {
         try {
             const token = localStorage.getItem('monopoly_token');
-            await fetch(`http://localhost:8000/api/games/${gameId}/bots/${botId}`, {
+            await fetch(`${API_BASE}/api/games/${gameId}/bots/${botId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -183,7 +230,7 @@ const GameRoom = () => {
     const fetchFriends = async () => {
         try {
             const token = localStorage.getItem('monopoly_token');
-            const res = await fetch('http://localhost:8000/api/friends', {
+            const res = await fetch(`${API_BASE}/api/friends`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) setFriends(await res.json());
@@ -193,7 +240,7 @@ const GameRoom = () => {
     const handleSendInvite = async (friendId) => {
         try {
             const token = localStorage.getItem('monopoly_token');
-            const res = await fetch(`http://localhost:8000/api/games/${gameId}/invite`, {
+            const res = await fetch(`${API_BASE}/api/games/${gameId}/invite`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -219,6 +266,8 @@ const GameRoom = () => {
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [showRentModal, setShowRentModal] = useState(false);
     const [rentDetails, setRentDetails] = useState(null);
+    const [showChanceModal, setShowChanceModal] = useState(false);
+    const [chanceData, setChanceData] = useState(null);
 
     // Effects
     useEffect(() => {
@@ -232,27 +281,82 @@ const GameRoom = () => {
                 setDiceValues(lastAction.dice || [1, 1]);
                 setShowDice(true);
                 setDiceRolling(true);
-                setTimeout(() => setDiceRolling(false), 1500);
+                // Rolling for 0.4 second
+                setTimeout(() => setDiceRolling(false), 400);
+                // Reveal results after 0.5 more seconds (Total 0.9s)
                 setTimeout(() => {
                     setShowDice(false);
+                    // Manually sync players state to trigger movement exactly when dice stop
+                    if (gameState?.players) {
+                        setDelayedPlayers(gameState.players);
+                    }
                     setIsRolling(false);
+
                     if (lastAction.player_id === playerId) {
                         setHasRolled(true);
+
+                        // Check for Chance Card first (display it regardless of resulting action)
+                        if (lastAction.chance_card) {
+                            setChanceData(lastAction);
+                        }
+
                         // Trigger modals based on action
                         if (lastAction.action === 'can_buy') {
-                            setShowBuyModal(true);
+                            // Do not auto-open modal. User can use ActionPanel button.
+                            // setShowBuyModal(true); -- DISABLED per user request
                         } else if (lastAction.action === 'pay_rent') {
                             setRentDetails({
                                 amount: lastAction.amount,
                                 ownerId: lastAction.owner_id
                             });
                             setShowRentModal(true);
+                        } else if (lastAction.action === 'chance') {
+                            setChanceData(lastAction);
+                            // Chance modal handles end turn on close
+                        } else {
+                            // Passive actions (Tax, GoToJail, Safe, Destroyed, etc.)
+                            // Auto-end turn after delay if not doubles
+                            if (!lastAction.doubles) {
+                                setTimeout(() => {
+                                    if (isMyTurn) sendAction('END_TURN');
+                                }, 3000);
+                            }
                         }
                     }
-                }, 3000);
+                }, 900); // 0.9s total animation
                 break;
+
+            case 'PROPERTY_BOUGHT':
+                if (lastAction.player_id === playerId) {
+                    setShowBuyModal(false);
+                    // Auto-end turn if not doubles
+                    // We check current dice values for doubles
+                    const isDoubles = diceValues[0] === diceValues[1];
+                    if (!isDoubles) {
+                        setTimeout(() => sendAction('END_TURN'), 1000);
+                    }
+                }
+                break;
+
+            case 'RENT_PAID':
+                if (lastAction.player_id === playerId) {
+                    setShowRentModal(false); // Close rent modal if open
+                    // Auto-end if not doubles
+                    const isDoubles = diceValues[0] === diceValues[1];
+                    if (!isDoubles) {
+                        setTimeout(() => sendAction('END_TURN'), 1000);
+                    }
+                }
+                break;
+
             case 'TURN_ENDED':
+            case 'TURN_SKIPPED':
                 setHasRolled(false);
+                break;
+            case 'ERROR':
+                setIsRolling(false);
+                setHasRolled(false);
+                // The toast component already handles displaying messages if we pass them
                 break;
             case 'GAME_OVER': setShowVictory(true); break;
             case 'TRADE_OFFERED':
@@ -260,10 +364,31 @@ const GameRoom = () => {
                 break;
             case 'TRADE_UPDATED': setIncomingTrade(null); break;
         }
-    }, [lastAction, playerId]);
+    }, [lastAction, playerId, isMyTurn, diceValues]);
 
     useEffect(() => {
         if (gameState?.players) {
+            // Check if this is a dice roll that involves movement
+            const isDiceRoll = lastAction?.type === 'DICE_ROLLED';
+
+            // Helper to check position changes
+            const hasPositionChanged = (oldP, newP) => {
+                if (!oldP || !newP) return true;
+                for (const pid in newP) {
+                    if (oldP[pid]?.position !== newP[pid]?.position) return true;
+                }
+                return false;
+            };
+
+            const positionChanged = hasPositionChanged(delayedPlayers, gameState.players);
+
+            // BLOCK update if we are about to animate dice (Pre-Animation Phase)
+            // If it's a roll, positions changed, and dice aren't showing yet -> WAIT.
+            // We rely on the dice animation completion to manually update delayedPlayers.
+            if (isDiceRoll && positionChanged && !showDice) {
+                return;
+            }
+
             if (!showDice) {
                 setDelayedPlayers(gameState.players);
             } else {
@@ -273,14 +398,26 @@ const GameRoom = () => {
                 return () => clearTimeout(timer);
             }
         }
-    }, [gameState?.players, showDice]);
+    }, [gameState?.players, showDice, lastAction]);
 
-    // Auto-open Buy Modal
+    // Auto-open Buy Modal -- DISABLED per user request
+    /*
     useEffect(() => {
         if (canBuy && hasRolled && !showBuyModal && !selectedTile) {
             setShowBuyModal(true);
         }
     }, [canBuy, hasRolled]);
+    */
+
+    // Sync state from server to handle page reloads / reconnections
+    useEffect(() => {
+        if (gameState && !isRolling && !diceRolling) {
+            setDiceValues(gameState.dice || [1, 1]);
+            if (gameState.turn_state) {
+                setHasRolled(!!gameState.turn_state.has_rolled);
+            }
+        }
+    }, [gameState, isRolling, diceRolling]);
 
     // Handle tile click
     const handleTileClick = (tileId) => {
@@ -445,8 +582,8 @@ const GameRoom = () => {
                 <div className="p-2 border-b border-white/10 bg-[#0c0c14]">
                     <div className={`flex ${sidebarCollapsed ? 'flex-col gap-2' : 'gap-2'}`}>
                         <div className={`bg-black/40 p-2 rounded-lg border border-white/5 flex flex-col items-center ${sidebarCollapsed ? 'w-full' : 'flex-1'}`}>
-                            <Clock size={12} className={timeLeft < 10 ? 'text-red-500' : 'text-gray-400'} />
-                            <span className="text-sm font-mono font-bold text-white">{timeLeft}</span>
+                            <Clock size={12} className={timeLeft <= 10 ? 'text-orange-500 animate-pulse' : 'text-gray-400'} />
+                            <span className={`text-sm font-mono font-bold ${timeLeft <= 10 ? 'text-orange-500 animate-pulse' : 'text-white'}`}>{timeLeft}</span>
                         </div>
                         <div className={`bg-black/40 p-2 rounded-lg border border-white/5 flex flex-col items-center ${sidebarCollapsed ? 'w-full' : 'flex-1'}`}>
                             <div className="w-3 h-3 rounded-full bg-yellow-500" title="Current Turn" />
@@ -506,15 +643,14 @@ const GameRoom = () => {
             </motion.div>
 
             {/* MAIN BOARD AREA */}
-            <div className="flex-1 relative bg-[#0c0c14] flex items-center justify-center p-0 overflow-hidden">
+            <div className="flex-1 relative bg-[#0c0c14] flex items-center justify-center p-8 overflow-auto">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0" />
 
                 <div className="relative z-10 shadow-2xl transition-all duration-300"
+                    ref={boardRef}
                     style={{
-                        height: 'auto',
-                        width: '100%',
-                        maxWidth: '82vh',
-                        maxHeight: '82vh',
+                        height: '92vh',
+                        minHeight: '800px', // Ensures content is visible
                         aspectRatio: '1/1',
                         margin: 'auto'
                     }}
@@ -525,39 +661,42 @@ const GameRoom = () => {
                         onTileClick={handleTileClick}
                         mapType={gameState.map_type}
                         currentPlayerId={playerId}
-                        logs={gameState.logs}
+                        logs={displayedLogs}
                         onSendMessage={handleSendMessage}
+                        externalRef={boardRef}
+                        onAvatarClick={(pid) => pid !== playerId && initiateTrade(pid)}
                     />
+                </div>
 
-                    <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
-                        <AnimatePresence>
-                            {showDice && (
-                                <div className="pointer-events-auto transform scale-150">
-                                    <DiceAnimation show={showDice} rolling={diceRolling} values={diceValues} />
-                                </div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
+                    <AnimatePresence>
+                        {showDice && (
+                            <div className="pointer-events-auto transform scale-150">
+                                <DiceAnimation show={showDice} rolling={diceRolling} values={diceValues} glow={diceValues[0] === diceValues[1]} />
+                            </div>
+                        )}
+                    </AnimatePresence>
+                </div>
 
-                    {/* Action Panel - CENTERED */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md pointer-events-auto z-40 px-4 flex justify-center items-center">
-                        <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/10">
-                            <ActionPanel
-                                isMyTurn={isMyTurn}
-                                isRolling={isRolling}
-                                hasRolled={hasRolled}
-                                onRoll={handleRoll}
-                                canBuy={canBuy}
-                                onBuy={handleBuyProperty}
-                                onEndTurn={handleEndTurn}
-                                character={currentPlayer?.character}
-                                onAbility={() => handleAbility(gameState.game_mode === 'oreshnik_all' ? 'ORESHNIK' : currentPlayer?.character)}
-                                currentTilePrice={currentTile?.price}
-                                currentTileName={currentTile?.name}
-                                gameMode={gameState.game_mode}
-                                isChatOpen={false}
-                            />
-                        </div>
+                {/* Action Panel - CENTERED */}
+                <div className="absolute top-[25%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md pointer-events-auto z-[140] px-4 flex justify-center items-center scale-90">
+                    <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/10">
+                        <ActionPanel
+                            isMyTurn={isMyTurn}
+                            isRolling={isRolling}
+                            hasRolled={hasRolled}
+                            onRoll={handleRoll}
+                            canBuy={canBuy}
+                            onBuy={handleBuyProperty}
+                            onEndTurn={handleEndTurn}
+                            character={currentPlayer?.character}
+                            onAbility={handleAbility}
+                            currentTilePrice={currentTile?.price}
+                            currentTileName={currentTile?.name}
+                            gameMode={gameState.game_mode}
+                            isChatOpen={false}
+                            isDoubles={diceValues[0] === diceValues[1]}
+                        />
                     </div>
                 </div>
             </div>
@@ -565,19 +704,35 @@ const GameRoom = () => {
             {/* Target Overlay */}
             <AnimatePresence>
                 {targetingAbility && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-[60] bg-red-500/10 pointer-events-none flex flex-col items-center justify-start pt-20">
-                        <div className="bg-black/90 px-6 py-3 rounded-full border border-red-500 shadow-2xl pointer-events-auto text-center">
-                            <div className="text-red-400 font-bold uppercase tracking-wider animate-pulse flex items-center gap-2">
-                                <Crosshair size={16} /> SELECT TARGET
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[150] pointer-events-none flex flex-col items-center justify-start pt-20"
+                    >
+                        <div className="bg-red-600/90 text-white px-8 py-4 rounded-2xl border-4 border-white shadow-[0_0_50px_rgba(255,0,0,0.5)] pointer-events-auto text-center flex flex-col items-center gap-2">
+                            <div className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
+                                <Crosshair size={32} className="animate-spin-slow" /> ВЫБЕРИТЕ ЦЕЛЬ НА КАРТЕ
                             </div>
-                            <button onClick={() => setTargetingAbility(null)} className="mt-2 text-xs text-gray-400 hover:text-white underline">Cancel</button>
+                            <p className="text-sm font-bold opacity-80 uppercase">Кликните по любому городу противника</p>
+                            <button
+                                onClick={() => setTargetingAbility(null)}
+                                className="mt-2 px-4 py-1 bg-white text-red-600 rounded-lg text-xs font-black hover:bg-gray-100 transition-colors uppercase"
+                            >
+                                Отмена
+                            </button>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             <div className="pointer-events-none fixed inset-0 z-[100]">
-                <OreshnikAnimation isVisible={showOreshnik} onComplete={() => setShowOreshnik(false)} />
+                <OreshnikAnimation
+                    isVisible={showOreshnik}
+                    onComplete={() => setShowOreshnik(false)}
+                    targetTileId={lastAction?.target_id}
+                    boardRef={boardRef}
+                />
                 <AbilityAnimations.BuyoutAnimation isVisible={showBuyout} onComplete={() => setShowBuyout(false)} />
                 <AbilityAnimations.AidAnimation isVisible={showAid} onComplete={() => setShowAid(false)} />
                 <AbilityAnimations.NukeThreatAnimation isVisible={showNuke} onComplete={() => setShowNuke(false)} />
@@ -598,6 +753,8 @@ const GameRoom = () => {
                                     setShowBuyModal(false);
                                 }}
                                 onClose={() => { setSelectedTile(null); setShowBuyModal(false); }}
+                                onBuild={handleBuildHouse}
+                                canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && checkMonopolyByPlayer(selectedTile || currentTile)}
                             />
                         </div>
                     </div>
@@ -611,15 +768,15 @@ const GameRoom = () => {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
                     >
                         <div className="bg-gradient-to-br from-gray-900 to-black p-8 rounded-3xl border border-red-500/30 shadow-2xl max-w-md w-full text-center space-y-6">
                             <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto animate-pulse">
                                 <div className="text-4xl">💸</div>
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-white mb-2">Pay Rent</h3>
-                                <p className="text-gray-400">You landed on <span className="text-white font-bold">{gameState?.players?.[rentDetails.ownerId]?.name}</span>'s property.</p>
+                                <h3 className="text-2xl font-bold text-white mb-2">Оплата аренды</h3>
+                                <p className="text-gray-400">Вы попали на территорию <span className="text-white font-bold">{gameState?.players?.[rentDetails.ownerId]?.name}</span>.</p>
                             </div>
                             <div className="py-4 border-y border-white/10">
                                 <span className="text-4xl font-mono font-bold text-red-400">-${rentDetails.amount}</span>
@@ -631,13 +788,30 @@ const GameRoom = () => {
                                 }}
                                 className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-lg shadow-lg transition-all"
                             >
-                                Pay & Continue
+                                Оплатить и продолжить
                             </button>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
+            {/* Chance Modal */}
+            <AnimatePresence>
+                {(showChanceModal || !!chanceData) && (
+                    <ChanceModal
+                        show={!!chanceData}
+                        data={chanceData}
+                        onClose={() => {
+                            setChanceData(null);
+                            // Auto-end turn on close if not doubles
+                            const isDoubles = diceValues[0] === diceValues[1];
+                            if (isMyTurn && !isDoubles) {
+                                sendAction('END_TURN');
+                            }
+                        }}
+                    />
+                )}
+            </AnimatePresence>
             {/* Also show trade modal (only needed if trading in waiting room enabled? Probably not, but safe to keep) */}
             <TradeModal isOpen={showTradeModal} onClose={() => setShowTradeModal(false)} fromPlayer={currentPlayer} toPlayer={tradeTarget} gameState={gameState} onSendOffer={handleSendOffer} />
             <TradeNotification trade={incomingTrade} fromPlayer={gameState?.players?.[incomingTrade?.from_player_id]} onRespond={handleRespondTrade} />

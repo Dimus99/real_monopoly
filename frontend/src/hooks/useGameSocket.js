@@ -5,69 +5,77 @@ const useGameSocket = (gameId, playerId) => {
     const [lastAction, setLastAction] = useState(null);
     const [chatLogs, setChatLogs] = useState([]);
     const socketRef = useRef(null);
+    const reconnectTimeoutRef = useRef(null);
+    const pingIntervalRef = useRef(null);
 
-    useEffect(() => {
+    const connect = useCallback(() => {
         if (!gameId || !playerId) return;
 
         const token = localStorage.getItem('monopoly_token');
-        const ws = new WebSocket(`ws://localhost:8000/ws/${gameId}?player_id=${playerId}&token=${token}`);
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = import.meta.env.DEV ? 'localhost:8000' : window.location.host;
+        const ws = new WebSocket(`${protocol}//${host}/ws/${gameId}?player_id=${playerId}&token=${token}`);
+
         socketRef.current = ws;
 
         ws.onopen = () => {
             console.log("Connected to game socket");
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current);
+                reconnectTimeoutRef.current = null;
+            }
+
+            // Start heartbeat
+            if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
+            pingIntervalRef.current = setInterval(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ action: 'PING' }));
+                }
+            }, 25000);
         };
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
+            if (data.type === 'PONG') return; // Ignore heartbeat responses
+
             console.log("WS Msg:", data);
 
-            // Update game state from any message that includes it
             if (data.game_state) {
                 setGameState(data.game_state);
             }
 
             if (data.type) {
                 setLastAction(data);
-
-                // Handle chat messages - no need to manually update local state if backend sends game_state
-                // But if backend doesn't send game_state, we might need it? 
-                // We patched backend to send game_state.
-                // Keeping this logic only if game_state is missing to be safe
-                if (data.type === 'CHAT_MESSAGE' && !data.game_state) {
-                    const chatMsg = `💬 ${data.player_name}: ${data.message}`;
-                    setGameState(prev => {
-                        if (!prev) return prev;
-                        return {
-                            ...prev,
-                            logs: [...(prev.logs || []), chatMsg]
-                        };
-                    });
-                }
-
-                // Handle bot actions - game_state is included
-                if (data.type === 'BOT_ACTIONS' && data.game_state) {
-                    setGameState(data.game_state);
-                }
-
-                // Handle ability used - may include game_state
-                if (data.type === 'ABILITY_USED' && data.game_state) {
-                    setGameState(data.game_state);
-                }
             }
         };
 
-        ws.onclose = () => {
-            console.log("Disconnected");
+        ws.onclose = (event) => {
+            console.log("Disconnected. Reason:", event.status, event.reason);
+            if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
+
+            // Attempt to reconnect after delay
+            if (!reconnectTimeoutRef.current) {
+                reconnectTimeoutRef.current = setTimeout(() => {
+                    reconnectTimeoutRef.current = null;
+                    connect();
+                }, 3000);
+            }
         };
 
         ws.onerror = (error) => {
             console.error("WebSocket error:", error);
-        };
-
-        return () => {
-            if (ws) ws.close();
+            ws.close();
         };
     }, [gameId, playerId]);
+
+    useEffect(() => {
+        connect();
+        return () => {
+            if (socketRef.current) socketRef.current.close();
+            if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+            if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
+        };
+    }, [connect]);
 
     const sendAction = useCallback((action, payload = {}) => {
         if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {

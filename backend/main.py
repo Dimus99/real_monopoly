@@ -300,6 +300,30 @@ async def websocket_game(
                 else:
                     await manager.broadcast(game_id, {"type": "ABILITY_USED", **result})
             
+            elif action == "BUILD":
+                property_id = action_data.get("property_id")
+                result = engine.build_house(game_id, player_id, property_id)
+                if result.get("error"):
+                    await websocket.send_json({"type": "ERROR", "message": result["error"]})
+                else:
+                    await manager.broadcast(game_id, {"type": "HOUSE_BUILT", **result})
+            
+            elif action == "MORTGAGE":
+                property_id = action_data.get("property_id")
+                result = engine.mortgage_property(game_id, player_id, property_id)
+                if result.get("error"):
+                    await websocket.send_json({"type": "ERROR", "message": result["error"]})
+                else:
+                    await manager.broadcast(game_id, {"type": "PROPERTY_MORTGAGED", **result})
+
+            elif action == "UNMORTGAGE":
+                property_id = action_data.get("property_id")
+                result = engine.unmortgage_property(game_id, player_id, property_id)
+                if result.get("error"):
+                    await websocket.send_json({"type": "ERROR", "message": result["error"]})
+                else:
+                    await manager.broadcast(game_id, {"type": "PROPERTY_UNMORTGAGED", **result})
+
             elif action == "CHAT":
                 # Simple chat broadcast
                 message = action_data.get("message", "")
@@ -377,31 +401,33 @@ async def _check_and_run_bot_turn(game_id: str):
     current_id = game.player_order[game.current_turn_index]
     player = game.players.get(current_id)
     
+    if player:
+        print(f"DEBUG: Checking turn: {player.name} (Bot: {player.is_bot})")
+    
     if player and player.is_bot:
-        # Wait a bit for realism
-        await asyncio.sleep(1.0)
+        print(f"DEBUG: Running bot turn for {player.name}")
+        # Wait a bit for realism - increased pause
+        await asyncio.sleep(2.0)
         
         # Step 1: Roll dice
         dice_result = engine.run_bot_turn(game_id)
         if dice_result:
             await manager.broadcast(game_id, dice_result)
             
-            # Wait for dice animation to complete
-            await asyncio.sleep(3.5)
+            # Wait for dice animation to complete - increased pause
+            await asyncio.sleep(3.0)
             
             # Step 2: Perform actions (buy, rent, ability)
             actions_result = engine.run_bot_post_roll(game_id, current_id)
             if actions_result:
                 await manager.broadcast(game_id, actions_result)
             
-            await asyncio.sleep(1.0)
+            await asyncio.sleep(2.0)
             
             # Step 3: Check doubles or End Turn
             # dice_result was returned by roll_dice
             if dice_result.get("doubles"):
                  # Doubles! Roll again.
-                 # Since backend didn't advance turn, current_id is still current.
-                 # Just recurse (with small delay is good)
                  await _check_and_run_bot_turn(game_id)
             else:
                  # Not doubles. End turn.
@@ -410,10 +436,10 @@ async def _check_and_run_bot_turn(game_id: str):
                      await manager.broadcast(game_id, {"type": "TURN_ENDED", **end_result})
                      
                      # Check if NEXT player is bot
-                     await asyncio.sleep(0.5)
+                     await asyncio.sleep(1.0)
                      game = engine.games.get(game_id)
                      if game and game.game_status == "active":
-                         # Re-fetch order just in case
+                         # Re-fetch order
                          next_id = game.player_order[game.current_turn_index]
                          next_player = game.players.get(next_id)
                          if next_player and next_player.is_bot:

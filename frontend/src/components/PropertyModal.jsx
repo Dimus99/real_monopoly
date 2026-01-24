@@ -51,7 +51,7 @@ const getTileImage = (property) => {
     return groupMap[property.group] || '/tiles/greenland.png';
 };
 
-const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose }) => {
+const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild, canBuild }) => {
     if (!property) return null;
 
     const groupColor = GROUP_COLORS[property.group] || GROUP_COLORS.Special;
@@ -60,6 +60,7 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose }) => {
     const displayName = DISPLAY_NAMES[property.name] || property.name;
 
     const isPropertyType = !['Special', 'Chance', 'Tax'].includes(property.group);
+    const housePrice = Math.floor(property.price / 2) + 50;
 
     return (
         <motion.div
@@ -95,7 +96,7 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose }) => {
 
                 <div className="relative z-30 h-full flex flex-col items-center justify-end p-8 pb-6 text-center">
                     <div className="mb-2 text-[10px] font-black uppercase tracking-[0.4em] text-white/50">
-                        {property.group} Assets
+                        {property.group} АКТИВЫ
                     </div>
                     <h2
                         className="font-display text-4xl font-black leading-tight text-white tracking-tight uppercase"
@@ -113,13 +114,13 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose }) => {
                         {/* Price & Stats */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="bg-white/[0.03] border border-white/5 p-4 rounded-[20px] text-center backdrop-blur-md">
-                                <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Buy Price</div>
+                                <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Цена выкупа</div>
                                 <div className="text-2xl font-black text-yellow-400 font-mono tracking-tighter">
                                     ${property.price?.toLocaleString()}
                                 </div>
                             </div>
                             <div className="bg-white/[0.03] border border-white/5 p-4 rounded-[20px] text-center backdrop-blur-md">
-                                <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Base Rent</div>
+                                <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Базовая рента</div>
                                 <div className="text-2xl font-black text-white font-mono tracking-tighter">
                                     ${property.rent?.[0]?.toLocaleString()}
                                 </div>
@@ -129,9 +130,9 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose }) => {
                         {/* Ownership Badge */}
                         <div className="flex items-center justify-between p-5 bg-white/[0.02] rounded-[24px] border border-white/5 shadow-inner">
                             <div className="flex flex-col">
-                                <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-0.5">Title Status</span>
+                                <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-0.5">Владелец</span>
                                 <span className={`text-xs font-bold ${owner ? 'text-white' : 'text-green-400'}`}>
-                                    {owner ? 'Restricted Asset' : 'Unclaimed Property'}
+                                    {owner ? 'Частный актив' : 'Свободно'}
                                 </span>
                             </div>
                             {owner ? (
@@ -153,7 +154,7 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose }) => {
                         {/* Development Rent Table */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between px-1">
-                                <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Expansion RoI</span>
+                                <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Доходность развития</span>
                                 <div className="flex gap-1.5 opacity-40">
                                     <Home size={12} />
                                     <Building2 size={12} />
@@ -162,7 +163,7 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose }) => {
                             </div>
                             <div className="grid grid-cols-5 gap-2.5">
                                 {[1, 2, 3, 4].map(h => (
-                                    <div key={h} className="bg-white/[0.02] border border-white/5 rounded-2xl p-2.5 flex flex-col items-center justify-between group hover:bg-white/[0.05] transition-all hover:border-white/20">
+                                    <div key={h} className={`bg-white/[0.02] border border-white/5 rounded-2xl p-2.5 flex flex-col items-center justify-between group px-1 ${property.houses === h ? 'border-green-500/50 bg-green-500/5' : ''}`}>
                                         <div className="flex gap-0.5 mb-2.5">
                                             {Array(h).fill(0).map((_, i) => (
                                                 <div key={i} className="w-1.5 h-2 bg-green-500 rounded-[2px] shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
@@ -173,7 +174,7 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose }) => {
                                         </div>
                                     </div>
                                 ))}
-                                <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-2.5 flex flex-col items-center justify-between shadow-[inset_0_0_20px_rgba(234,179,8,0.05)]">
+                                <div className={`bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-2.5 flex flex-col items-center justify-between shadow-[inset_0_0_20px_rgba(234,179,8,0.05)] ${property.houses === 5 ? 'border-yellow-500 bg-yellow-500/20' : ''}`}>
                                     <Hotel size={16} className="text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.4)] mb-2" />
                                     <div className="text-[11px] font-black font-mono text-yellow-500">
                                         ${property.rent?.[5]}
@@ -213,19 +214,31 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose }) => {
                 )}
             </div>
 
-            {/* Action Button */}
-            {canBuy && isPropertyType && !owner && (
-                <div className="p-8 pt-0 bg-[#0c0c14]">
+            {/* Action Buttons */}
+            <div className="p-8 pt-0 space-y-3 bg-[#0c0c14]">
+                {canBuy && isPropertyType && !owner && (
                     <motion.button
                         whileHover={{ scale: 1.02, y: -5 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={onBuy}
                         className="btn btn-success w-full h-16 text-xl tracking-tight"
                     >
-                        <DollarSign size={24} className="animate-bounce" /> ACQUIRE ASSET
+                        <DollarSign size={24} className="animate-bounce" /> КУПИТЬ АКТИВ
                     </motion.button>
-                </div>
-            )}
+                )}
+
+                {canBuild && isPropertyType && owner && property.houses < 5 && (
+                    <motion.button
+                        whileHover={{ scale: 1.02, y: -5 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onBuild(property.id)}
+                        className="btn btn-primary w-full h-16 text-xl tracking-tight flex items-center justify-center gap-2"
+                    >
+                        <Home size={24} className="animate-pulse" />
+                        ПОСТРОИТЬ {property.houses < 4 ? 'ДОМ' : 'ОТЕЛЬ'} (${housePrice})
+                    </motion.button>
+                )}
+            </div>
         </motion.div>
     );
 };

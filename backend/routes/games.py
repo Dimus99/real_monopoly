@@ -84,7 +84,8 @@ async def create_game(
         game_mode=request.game_mode,
         host_id=current_user.id,
         starting_money=starting_money,
-        max_players=request.max_players
+        max_players=request.max_players,
+        turn_timer=request.turn_timer
     )
     
     return {
@@ -306,7 +307,7 @@ async def _run_bot_after_delay(game_id: str):
     import asyncio
     from socket_manager import manager
     
-    await asyncio.sleep(1.0)  # Brief pause before bot acts
+    await asyncio.sleep(0.5)  # Brief pause before bot acts
     
     engine = get_game_engine()
     game = engine.games.get(game_id)
@@ -325,18 +326,25 @@ async def _run_bot_after_delay(game_id: str):
         await manager.broadcast(game_id, dice_result)
         
         # Wait for dice animation to complete (match frontend timing)
-        await asyncio.sleep(3.5)
+        await asyncio.sleep(2.0)
         
         # Step 2: Perform post-roll actions (buy, pay rent, etc.)
+        game = engine.games.get(game_id)
+        if not game or game.game_status != "active": 
+            return
+
         actions_result = engine.run_bot_post_roll(game_id, current_id)
         if actions_result:
             await manager.broadcast(game_id, actions_result)
         
-        await asyncio.sleep(1.0) # Pause before ending turn
+        await asyncio.sleep(0.5) # Pause before ending turn
 
         # Step 3: Check doubles or End Turn
-        # Bot logic doesn't currently handle doubling properly in this helper but for MVP we assume valid turn end
-        if dice_result.get("doubles"):
+        current_player = game.players.get(current_id) # Refresh state
+        is_jailed = current_player and current_player.is_jailed
+        
+        # Only roll again if doubles AND not jailed (standard rule)
+        if dice_result.get("doubles") and not is_jailed:
              await _run_bot_after_delay(game_id) # Recursive call for doubles
         else:
              # End current turn

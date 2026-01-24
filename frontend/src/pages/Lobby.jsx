@@ -16,7 +16,8 @@ const Lobby = () => {
     // Create Game State
     const [selectedMap, setSelectedMap] = useState('World');
     const [gameMode, setGameMode] = useState('abilities');
-    const [maxPlayers, setMaxPlayers] = useState(4);
+    const [maxPlayers, setMaxPlayers] = useState(6);
+    const [turnTimer, setTurnTimer] = useState(90);
 
     // Characters
     const CHARACTERS = [
@@ -119,6 +120,7 @@ const Lobby = () => {
                     map_type: selectedMap,
                     game_mode: gameMode,
                     max_players: maxPlayers,
+                    turn_timer: turnTimer,
                     starting_money: 1500
                 })
             });
@@ -382,16 +384,35 @@ const Lobby = () => {
                                     <button onClick={() => setGameMode('classic')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${gameMode === 'classic' ? 'bg-blue-600/20 border-blue-500 text-white' : 'bg-white/5 border-white/10 text-gray-400'}`}>Classic</button>
                                 </div>
                             </div>
-
-                            <div>
-                                <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Choose Your Leader</label>
-                                <CharacterSelection characters={CHARACTERS} selectedId={character} onSelect={setCharacter} />
-                            </div>
-
-                            <button onClick={createGame} disabled={isLoading} className="btn-primary w-full py-4 text-xl font-bold shadow-lg shadow-purple-900/20">
-                                {isLoading ? 'Creating...' : 'Launch Game'}
-                            </button>
                         </div>
+
+                        <div>
+                            <label className="label">Turn Timer</label>
+                            <div className="flex gap-4">
+                                {[
+                                    { val: 60, label: '60s' },
+                                    { val: 90, label: '90s' },
+                                    { val: 0, label: 'No Limit' }
+                                ].map(opt => (
+                                    <button
+                                        key={opt.val}
+                                        onClick={() => setTurnTimer(opt.val)}
+                                        className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${turnTimer === opt.val ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.3)]' : 'bg-white/5 border-white/10 text-gray-400'}`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Choose Your Leader</label>
+                            <CharacterSelection characters={CHARACTERS} selectedId={character} onSelect={setCharacter} />
+                        </div>
+
+                        <button onClick={createGame} disabled={isLoading} className="btn-primary w-full py-4 text-xl font-bold shadow-lg shadow-purple-900/20">
+                            {isLoading ? 'Creating...' : 'Launch Game'}
+                        </button>
                     </div>
                 )}
 
@@ -481,7 +502,7 @@ const Lobby = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

@@ -4,41 +4,25 @@ import Tile from './Tile';
 import ToastNotification from './ToastNotification';
 
 const getTileStyle = (index) => {
+    // LAYOUT V3.1: 0(TL), 10(TR), 20(BR), 30(BL)
+    // Antarctica (39) is adjacent below Start (0)
+    console.log(`Mapping Tile ${index}`);
+
+    // Corners
+    if (index === 0) return { gridRowStart: 1, gridColumnStart: 1 };
+    if (index === 10) return { gridRowStart: 1, gridColumnStart: 11 };
+    if (index === 20) return { gridRowStart: 11, gridColumnStart: 11 };
+    if (index === 30) return { gridRowStart: 11, gridColumnStart: 1 };
+
     let row, col;
-
-    // Explicit Corner Handling
-    if (index === 0) { // GO -> Top Left
-        return { gridRowStart: 1, gridRowEnd: 2, gridColumnStart: 1, gridColumnEnd: 2 };
-    }
-    if (index === 10) { // Jail -> Top Right
-        return { gridRowStart: 1, gridRowEnd: 2, gridColumnStart: 11, gridColumnEnd: 12 };
-    }
-    if (index === 20) { // Free Parking -> Bottom Right
-        return { gridRowStart: 11, gridRowEnd: 12, gridColumnStart: 11, gridColumnEnd: 12 };
-    }
-    if (index === 30) { // Go To Jail -> Bottom Left
-        return { gridRowStart: 11, gridRowEnd: 12, gridColumnStart: 1, gridColumnEnd: 2 };
-    }
-
-    // Top Row (1 -> 9): Moves Right
-    if (index > 0 && index < 10) {
-        row = 1;
-        col = 1 + index; // 1->2, 9->10
-    }
-    // Right Col (11 -> 19): Moves Down
-    else if (index > 10 && index < 20) {
-        col = 11;
-        row = 1 + (index - 10); // 11->2, 19->10
-    }
-    // Bottom Row (21 -> 29): Moves Left
-    else if (index > 20 && index < 30) {
-        row = 11;
-        col = 11 - (index - 20); // 21->10, 29->2
-    }
-    // Left Col (31 -> 39): Moves Up
-    else if (index > 30 && index < 40) {
-        col = 1;
-        row = 11 - (index - 30); // 31->10, 39->2
+    if (index > 0 && index < 10) { // Top Row (1-9)
+        row = 1; col = 1 + index;
+    } else if (index > 10 && index < 20) { // Right Col (11-19)
+        col = 11; row = 1 + (index - 10);
+    } else if (index > 20 && index < 30) { // Bottom Row (21-29)
+        row = 11; col = 11 - (index - 20);
+    } else if (index > 30 && index < 40) { // Left Col (31-39)
+        col = 1; row = 11 - (index - 30);
     }
 
     return {
@@ -83,7 +67,11 @@ const getTileCoordinates = (tileId, boardRef) => {
     if (!boardRef?.current) return { x: 0, y: 0 };
 
     const boardElement = boardRef.current;
+    if (!boardElement.getBoundingClientRect) return { x: 0, y: 0 };
+
     const boardRect = boardElement.getBoundingClientRect();
+    if (boardRect.width === 0 || boardRect.height === 0) return { x: 0, y: 0 };
+
     const gridStyle = getTileStyle(tileId);
     const GRID_GAP = 2; // Must match CSS
 
@@ -126,9 +114,10 @@ const getTileCoordinates = (tileId, boardRef) => {
 
 import PropertyDetailView from './PropertyModal';
 
-const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage }) => {
+const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage, externalRef, onAvatarClick }) => {
     const [hoveredTileId, setHoveredTileId] = React.useState(null);
-    const boardRef = useRef(null);
+    const internalRef = useRef(null);
+    const boardRef = externalRef || internalRef;
     const [playerPositions, setPlayerPositions] = useState({});
     const prevPositionsRef = useRef({});
     const lastPositionsRef = useRef({});
@@ -296,7 +285,11 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                             stiffness: 120,
                             damping: 15
                         }}
-                        className="absolute pointer-events-none flex items-center justify-center"
+                        className="absolute pointer-events-auto cursor-pointer flex items-center justify-center hover:scale-110 transition-transform"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onAvatarClick) onAvatarClick(playerId);
+                        }}
                         style={{
                             left: 0,
                             top: 0,
@@ -434,10 +427,10 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.015 }}
+                    style={getTileStyle(tile.id)}
                 >
                     <Tile
                         property={tile}
-                        style={getTileStyle(tile.id)}
                         playersHere={playersByTile[tile.id]}
                         onClick={handleTileInteraction}
                         image={TILE_IMAGES[tile.name]}

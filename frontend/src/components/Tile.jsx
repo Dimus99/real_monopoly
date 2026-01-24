@@ -63,11 +63,12 @@ const SPECIAL_ICONS = {
 
 // Determine tile orientation (which side of the board)
 const getTileOrientation = (tileId) => {
-    if (tileId >= 0 && tileId <= 10) return 'top';
-    if (tileId >= 11 && tileId <= 19) return 'right';
-    if (tileId >= 20 && tileId <= 30) return 'bottom';
-    if (tileId >= 31 && tileId <= 39) return 'left';
-    return 'top';
+    // Rotated Layout (Free Parking at Bottom Right)
+    if (tileId >= 1 && tileId <= 9) return 'top-row';
+    if (tileId >= 11 && tileId <= 19) return 'right-col';
+    if (tileId >= 21 && tileId <= 29) return 'bottom-row';
+    if (tileId >= 31 && tileId <= 39) return 'left-col';
+    return 'special';
 };
 
 // Get color bar position based on orientation (inner side)
@@ -76,21 +77,24 @@ const getColorBarStyle = (tileId) => {
     const isCorner = [0, 10, 20, 30].includes(tileId);
     if (isCorner) return null;
 
+    const barSize = '8px'; // Visible stripe
+
     switch (orientation) {
-        case 'top': return { bottom: 0, left: 0, right: 0, height: '8px' };
-        case 'bottom': return { top: 0, left: 0, right: 0, height: '8px' };
-        case 'left': return { top: 0, bottom: 0, right: 0, width: '8px' };
-        case 'right': return { top: 0, bottom: 0, left: 0, width: '8px' };
-        default: return { bottom: 0, left: 0, right: 0, height: '8px' };
+        case 'bottom-row': return { top: 0, left: 0, right: 0, height: barSize }; // Bar at Top
+        case 'left-col': return { top: 0, bottom: 0, right: 0, width: barSize }; // Bar at Right
+        case 'top-row': return { bottom: 0, left: 0, right: 0, height: barSize }; // Bar at Bottom
+        case 'right-col': return { top: 0, bottom: 0, left: 0, width: barSize }; // Bar at Left
+        default: return null;
     }
 };
 
 const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentPlayerId, allPlayers }) => {
     const groupStyle = GROUP_STYLES[property.group] || GROUP_STYLES.Special;
     const specialIcon = SPECIAL_ICONS[property.name];
-    const isPropertyTile = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking'].includes(property.group);
+    const isPropertyTile = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking'].includes(property.group) && !isCorner;
     const hasOwner = property.owner_id !== null;
     const colorBarStyle = getColorBarStyle(property.id);
+    const orientation = getTileOrientation(property.id);
 
     // Find owner's character for flag display
     let ownerCharacter = null;
@@ -107,6 +111,15 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
     }
 
     const currentPlayerHere = playersHere?.some(p => p.id === currentPlayerId);
+
+    // Dynamic padding for content to avoid overlap with color bar
+    let contentPaddingClass = 'p-1';
+    if (isPropertyTile) {
+        if (orientation === 'bottom-row') contentPaddingClass = 'pt-3 pb-1 px-1';
+        if (orientation === 'top-row') contentPaddingClass = 'pb-3 pt-1 px-1';
+        if (orientation === 'left-col') contentPaddingClass = 'pr-3 pl-1 py-1';
+        if (orientation === 'right-col') contentPaddingClass = 'pl-3 pr-1 py-1';
+    }
 
     return (
         <div
@@ -143,14 +156,13 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                     style={{
                         ...colorBarStyle,
                         background: groupStyle.gradient,
-                        // Add glow if needed
-                        boxShadow: '0 0 10px rgba(0,0,0,0.3)'
+                        boxShadow: '0 0 8px rgba(0,0,0,0.5)'
                     }}
                 />
             )}
 
             {/* Tile Content */}
-            <div className="flex-1 flex flex-col items-center justify-center p-1 relative h-full">
+            <div className={`flex-1 flex flex-col items-center justify-center relative h-full ${contentPaddingClass}`}>
                 {/* Special tile icon */}
                 {(specialIcon || groupStyle.icon) && (
                     <div className="text-xl md:text-2xl mb-0.5 drop-shadow-md">
@@ -163,8 +175,8 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                     className="tile-name leading-tight text-center px-0.5"
                     style={{
                         color: hasOwner ? '#fff' : (isCorner ? groupStyle.textColor : '#e0e0e0'),
-                        fontSize: isCorner ? '10px' : '9px',
-                        lineHeight: '1.15',
+                        fontSize: isCorner ? '10px' : '8px',
+                        lineHeight: '1.1',
                         fontWeight: isCorner ? '700' : '600',
                         textShadow: hasOwner ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(0,0,0,0.5)'
                     }}
@@ -176,7 +188,7 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                 {property.price > 0 && !hasOwner && (
                     <div
                         className="font-bold mt-0.5 text-yellow-400"
-                        style={{ fontSize: '10px', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                        style={{ fontSize: '9px', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
                     >
                         ${property.price}
                     </div>
