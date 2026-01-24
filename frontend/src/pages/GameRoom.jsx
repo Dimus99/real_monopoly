@@ -599,7 +599,9 @@ const GameRoom = () => {
 
                 {/* Players List */}
                 <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
-                    {Object.entries(delayedPlayers || {}).map(([pid, p]) => {
+                    {(gameState?.player_order || []).map(pid => {
+                        const p = delayedPlayers?.[pid];
+                        if (!p) return null;
                         const isTurn = gameState?.player_order?.[gameState?.current_turn_index] === pid;
                         const char = CHARACTERS[p.character] || {};
 
@@ -634,7 +636,7 @@ const GameRoom = () => {
                                                 ${p.money?.toLocaleString()}
                                             </div>
                                         </div>
-                                        {!isMyTurn && !p.is_bot && (
+                                        {!p.is_bot && p.id !== playerId && (
                                             <button onClick={(e) => { e.stopPropagation(); initiateTrade(p); }} className="p-1 hover:bg-white/10 rounded">
                                                 <ArrowLeftRight size={14} className="text-gray-400" />
                                             </button>

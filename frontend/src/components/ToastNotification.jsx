@@ -8,22 +8,35 @@ const ToastNotification = ({ logs, onSendMessage }) => {
     const [inputValue, setInputValue] = useState('');
     const chatEndRef = useRef(null);
 
+    const processedCountRef = useRef(0);
+    // Initialize processed count on mount if logs exist
+    useEffect(() => {
+        if (logs?.length) {
+            processedCountRef.current = Math.max(0, logs.length - 3); // Show last 3 on reload
+        }
+    }, []);
+
     // Filter to show only new logs as toasts
     useEffect(() => {
-        if (logs && logs.length > 0) {
-            const newLog = logs[logs.length - 1];
-            // Add unique ID for framer motion key
-            const logEntry = { id: Date.now(), text: newLog };
-            setRecentLogs(prev => [...prev.slice(-4), logEntry]);
+        if (logs && logs.length > processedCountRef.current) {
+            const newLogs = logs.slice(processedCountRef.current);
+            processedCountRef.current = logs.length;
+
+            const newEntries = newLogs.map((text, i) => ({
+                id: Date.now() + i,
+                text
+            }));
+
+            setRecentLogs(prev => [...prev.slice(-4), ...newEntries]);
 
             // Auto remove toast after 5 seconds
-            const timer = setTimeout(() => {
-                setRecentLogs(prev => prev.filter(l => l.id !== logEntry.id));
-            }, 5000);
-
-            return () => clearTimeout(timer);
+            newEntries.forEach(entry => {
+                setTimeout(() => {
+                    setRecentLogs(prev => prev.filter(l => l.id !== entry.id));
+                }, 5000);
+            });
         }
-    }, [logs?.length]);
+    }, [logs]);
 
     // Auto-scroll to bottom of chat
     useEffect(() => {

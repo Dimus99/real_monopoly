@@ -582,19 +582,14 @@ class GameEngine:
         ] # Replaced old cards with new specific ones requested
         
         card = random.choice(cards)
-        game.logs.append(f"Breaking News: {card['text']}")
+        log_text = f"{player.name}: {card['text']}"
+        game.logs.append(f"Breaking News: {log_text}")
         
+        # Return text with player name
         if card["type"] == "money":
             player.money += card["amount"]
-            return {"chance_card": card["text"], "amount": card["amount"]}
+            return {"chance_card": log_text, "amount": card["amount"]}
             
-        elif card["type"] == "move":
-            old_pos = player.position
-            player.position = card["position"]
-            if card["position"] == 10:
-                self._send_to_jail(game, player)
-            elif card["position"] < old_pos:
-                player.money += 200  # Passed GO
             return {"chance_card": card["text"], "new_position": card["position"]}
             
         elif card["type"] == "move_random":
@@ -1397,7 +1392,18 @@ class GameEngine:
             # Execute Trade
             self._execute_trade(game, trade, p_from, p_to)
             trade.status = "accepted"
-            game.logs.append(f"✅ Trade between {p_from.name} and {p_to.name} ACCEPTED!")
+            
+            # Detailed Logging
+            def _fmt_trade_items(money, pids):
+                items = []
+                if money > 0: items.append(f"${money}")
+                if pids: items.extend([game.board[pid].name for pid in pids])
+                return ", ".join(items) if items else "Nothing"
+                
+            given_str = _fmt_trade_items(trade.offer_money, trade.offer_properties)
+            recv_str = _fmt_trade_items(trade.request_money, trade.request_properties)
+            
+            game.logs.append(f"✅ TRADE: {p_from.name} gave [{given_str}] to {p_to.name} for [{recv_str}]")
             
         elif response == "reject":
             trade.status = "rejected"
