@@ -6,6 +6,7 @@ import {
     UserPlus, UserCheck, X, RefreshCw
 } from 'lucide-react';
 import CharacterSelection from '../components/CharacterSelection';
+import TelegramLoginButton from '../components/TelegramLoginButton';
 
 const Lobby = () => {
     const navigate = useNavigate();
@@ -43,25 +44,35 @@ const Lobby = () => {
     useEffect(() => {
         // --- Telegram Mini App Auto-Auth ---
         const tg = window.Telegram?.WebApp;
-        if (tg && tg.initData && !localStorage.getItem('monopoly_token')) {
-            console.log("Telegram WebApp detected, attempting auto-auth...");
-            setIsLoading(true);
-            fetch(`${API_BASE}/api/auth/telegram`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ init_data: tg.initData })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.token) {
-                        localStorage.setItem('monopoly_token', data.token);
-                        setUser(data.user);
-                        setMode('menu');
-                    }
+        if (tg) {
+            tg.ready();
+            tg.expand();
+
+            if (tg.initData && !localStorage.getItem('monopoly_token')) {
+                console.log("Telegram WebApp detected, attempting auto-auth...");
+                setIsLoading(true);
+                fetch(`${API_BASE}/api/auth/telegram`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ init_data: tg.initData })
                 })
-                .catch(err => console.error("Telegram auth failed", err))
-                .finally(() => setIsLoading(false));
-            return;
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.token) {
+                            localStorage.setItem('monopoly_token', data.token);
+                            setUser(data.user);
+                            setMode('menu');
+                        } else {
+                            setMode('auth');
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Telegram auth failed", err);
+                        setMode('auth');
+                    })
+                    .finally(() => setIsLoading(false));
+                return;
+            }
         }
 
         const token = localStorage.getItem('monopoly_token');
@@ -275,6 +286,51 @@ const Lobby = () => {
         }
     };
 
+    const handleTelegramLogin = async (tgUser) => {
+        setIsLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/api/auth/telegram`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ widget_data: tgUser })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem('monopoly_token', data.token);
+                setUser(data.user);
+                setMode('menu');
+            } else {
+                alert('Telegram login failed');
+            }
+        } catch (e) {
+            alert('Server error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleLinkTelegram = async (tgUser) => {
+        setIsLoading(true);
+        try {
+            const res = await authFetch('/api/auth/link-telegram', {
+                method: 'POST',
+                body: JSON.stringify({ widget_data: tgUser })
+            });
+            if (res.ok) {
+                const updatedUser = await res.json();
+                setUser(updatedUser);
+                alert('Telegram аккаунт успешно привязан!');
+            } else {
+                const data = await res.json();
+                alert(data.detail || 'Ошибка при привязке Telegram');
+            }
+        } catch (e) {
+            alert('Server error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     if (mode === 'auth' || !user) {
         return (
             <div className="min-h-screen animated-bg flex items-center justify-center p-4">
@@ -286,32 +342,51 @@ const Lobby = () => {
                         <p className="text-gray-400 font-medium tracking-widest uppercase text-xs">Satire Edition</p>
                     </div>
 
-                    <div className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold block text-left ml-2">Leader Name</label>
-                            <input
-                                type="text"
-                                placeholder="Enter your name..."
-                                className="input-premium w-full text-center"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && e.target.value.trim()) {
-                                        handleAuth(e.target.value.trim());
-                                    }
-                                }}
-                            />
+                    {isLoading ? (
+                        <div className="flex flex-col items-center gap-4 py-8">
+                            <div className="w-12 h-12 border-4 border-yellow-500/30 border-t-yellow-500 rounded-full animate-spin" />
+                            <p className="text-yellow-500 font-mono text-sm animate-pulse">AUTHENTICATING...</p>
                         </div>
+                    ) : (
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold block text-left ml-2">Leader Name</label>
+                                <input
+                                    type="text"
+                                    placeholder="Enter your name..."
+                                    className="input-premium w-full text-center"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && e.target.value.trim()) {
+                                            handleAuth(e.target.value.trim());
+                                        }
+                                    }}
+                                />
+                            </div>
 
-                        <button
-                            onClick={(e) => {
-                                const input = e.target.previousSibling.querySelector('input') || e.target.parentElement.querySelector('input');
-                                if (input && input.value.trim()) handleAuth(input.value.trim());
-                            }}
-                            className="btn-primary w-full py-4 text-xl"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Entering...' : 'Enter Arena'}
-                        </button>
-                    </div>
+                            <button
+                                onClick={(e) => {
+                                    const input = e.target.previousSibling.querySelector('input') || e.target.parentElement.querySelector('input');
+                                    if (input && input.value.trim()) handleAuth(input.value.trim());
+                                }}
+                                className="btn-primary w-full py-4 text-xl"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Entering...' : 'Enter Arena'}
+                            </button>
+
+                            <div className="relative py-2">
+                                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/10"></span></div>
+                                <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#1a1a2e] px-2 text-gray-500">Or</span></div>
+                            </div>
+
+                            <div className="flex justify-center">
+                                <TelegramLoginButton
+                                    botName={import.meta.env.VITE_BOT_USERNAME || "PoliticalMonopolyBot"}
+                                    dataOnauth={handleTelegramLogin}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         );
@@ -659,6 +734,26 @@ const Lobby = () => {
                             >
                                 {isLoading ? 'Saving...' : 'Save Changes'}
                             </button>
+
+                            {!user.telegram_id && (
+                                <div className="mt-8 p-6 bg-blue-500/10 rounded-2xl border border-blue-500/20 text-center">
+                                    <h4 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-4">Привязать Telegram</h4>
+                                    <p className="text-xs text-gray-400 mb-6">Привяжите аккаунт, чтобы сохранять прогресс и играть через Telegram Mini App.</p>
+                                    <div className="flex justify-center">
+                                        <TelegramLoginButton
+                                            botName={import.meta.env.VITE_BOT_USERNAME || "PoliticalMonopolyBot"}
+                                            dataOnauth={handleLinkTelegram}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {user.telegram_id && (
+                                <div className="mt-8 p-6 bg-green-500/10 rounded-2xl border border-green-500/20 flex items-center justify-center gap-2">
+                                    <UserCheck className="text-green-400" size={20} />
+                                    <span className="text-sm font-bold text-green-400">Telegram привязан</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

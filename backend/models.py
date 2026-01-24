@@ -227,8 +227,9 @@ class AnonymousAuthRequest(BaseModel):
 
 
 class TelegramAuthRequest(BaseModel):
-    """Request for Telegram authentication."""
-    init_data: str
+    """Request for Telegram authentication (Mini App initData or Widget data)."""
+    init_data: Optional[str] = None
+    widget_data: Optional[Dict[str, Any]] = None
 
 
 class AuthResponse(BaseModel):

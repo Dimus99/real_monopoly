@@ -17,7 +17,9 @@ from models import (
 from auth import (
     create_anonymous_user, 
     authenticate_telegram_user, 
-    get_current_user
+    get_current_user,
+    validate_telegram_init_data,
+    validate_telegram_widget_data
 )
 
 router = APIRouter(prefix="/api", tags=["users"])
@@ -50,14 +52,77 @@ async def telegram_auth(
     session: AsyncSession = Depends(get_db)
 ):
     """
-    Authenticate via Telegram WebApp initData.
+    Authenticate via Telegram WebApp initData or Widget data.
     Creates user if first time, otherwise returns existing user.
     """
-    if not request.init_data:
-        raise HTTPException(status_code=400, detail="init_data is required")
-    
-    user, token = await authenticate_telegram_user(session, request.init_data)
+    user, token = await authenticate_telegram_user(
+        session, 
+        init_data=request.init_data,
+        widget_data=request.widget_data
+    )
     return AuthResponse(token=token, user=user)
+
+
+@router.post("/auth/link-telegram", response_model=User)
+async def link_telegram(
+    request: TelegramAuthRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Link a Telegram account to an existing user profile.
+    """
+    if current_user.telegram_id:
+        raise HTTPException(status_code=400, detail="User already has a Telegram account linked")
+
+    if request.init_data:
+        tg_user = validate_telegram_init_data(request.init_data)
+    elif request.widget_data:
+        tg_user = validate_telegram_widget_data(request.widget_data)
+    else:
+        raise HTTPException(status_code=400, detail="No Telegram data provided")
+
+    if not tg_user:
+        raise HTTPException(status_code=401, detail="Invalid Telegram data")
+
+    telegram_id = tg_user.get("id")
+    
+    # Check if this telegram_id is already linked to ANOTHER user
+    existing = await db_service.get_user_by_telegram_id(session, telegram_id)
+    if existing:
+        raise HTTPException(status_code=400, detail="This Telegram account is already linked to another user")
+
+    # Update user
+    name = tg_user.get("first_name", "")
+    if tg_user.get("last_name"):
+        name += f" {tg_user['last_name']}"
+    
+    avatar_url = tg_user.get("photo_url")
+    
+    updates = {
+        "telegram_id": telegram_id,
+        "avatar_url": avatar_url or current_user.avatar_url
+    }
+    # Update name only if current name is like 'Player' or similar? 
+    # Or just keep current name. Let's keep current name but update if it was anonymous-like.
+    
+    updated = await db_service.update_user(session, current_user.id, updates)
+    
+    return User(
+        id=updated.id,
+        name=updated.name,
+        telegram_id=updated.telegram_id,
+        avatar_url=updated.avatar_url,
+        friend_code=updated.friend_code,
+        created_at=updated.created_at,
+        stats=UserStats(
+            games_played=updated.games_played,
+            wins=updated.wins,
+            losses=updated.losses,
+            total_earnings=updated.total_earnings,
+            highest_net_worth=updated.highest_net_worth
+        )
+    )
 
 
 # ============== User Management ==============

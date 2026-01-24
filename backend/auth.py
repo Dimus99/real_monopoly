@@ -155,14 +155,65 @@ def validate_telegram_init_data(init_data: str) -> Optional[dict]:
         return None
 
 
-async def authenticate_telegram_user(session: AsyncSession, init_data: str) -> tuple[User, str]:
+def validate_telegram_widget_data(widget_data: dict) -> Optional[dict]:
     """
-    Authenticate or create user from Telegram initData.
+    Validate Telegram Login Widget data.
+    Returns user data if valid, None otherwise.
+    
+    See: https://core.telegram.org/widgets/login#checking-authorization-data
+    """
+    if not BOT_TOKEN:
+        # Dev mode: skip validation
+        return widget_data
+        
+    try:
+        data = widget_data.copy()
+        check_hash = data.pop("hash", None)
+        if not check_hash:
+            return None
+            
+        # Data-check-string is alphabetical order of all remaining fields
+        data_check_arr = [f"{k}={v}" for k, v in sorted(data.items())]
+        data_check_string = "\n".join(data_check_arr)
+        
+        # Secret key for widget is just SHA256 of bot token
+        secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
+        
+        # Calculate hash
+        calculated_hash = hmac.new(
+            secret_key,
+            data_check_string.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        
+        # Validate
+        if not hmac.compare_digest(calculated_hash, check_hash):
+            return None
+            
+        return widget_data
+    except Exception as e:
+        print(f"Telegram widget validation error: {e}")
+        return None
+
+
+async def authenticate_telegram_user(
+    session: AsyncSession, 
+    init_data: Optional[str] = None,
+    widget_data: Optional[dict] = None
+) -> tuple[User, str]:
+    """
+    Authenticate or create user from Telegram initData or Widget data.
     Returns (User, token).
     """
     import uuid
     
-    user_data = validate_telegram_init_data(init_data)
+    if init_data:
+        user_data = validate_telegram_init_data(init_data)
+    elif widget_data:
+        user_data = validate_telegram_widget_data(widget_data)
+    else:
+        raise HTTPException(status_code=400, detail="No Telegram data provided")
+        
     if not user_data:
         raise HTTPException(status_code=401, detail="Invalid Telegram auth data")
     
