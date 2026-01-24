@@ -689,9 +689,11 @@ const GameRoom = () => {
                 <div className="relative z-10 shadow-2xl transition-all duration-300"
                     ref={boardRef}
                     style={{
-                        width: 'min(95vw, 95vh)',
-                        height: 'min(95vw, 95vh)',
-                        margin: 'auto'
+                        width: isMobile ? '800px' : '90vh',
+                        height: isMobile ? '800px' : '90vh',
+                        minWidth: isMobile ? '800px' : 'auto',
+                        minHeight: isMobile ? '800px' : 'auto',
+                        margin: isMobile ? '0' : 'auto'
                     }}
                 >
                     <Board
