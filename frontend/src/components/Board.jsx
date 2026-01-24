@@ -75,8 +75,8 @@ const getTileCoordinates = (tileId, boardRef) => {
     const gridStyle = getTileStyle(tileId);
     const GRID_GAP = 2; // Must match CSS
 
-    // Grid configuration must match CSS: 1.4fr - 1fr * 9 - 1.4fr
-    const totalUnits = 1.4 + 9 + 1.4; // 11.8
+    // Grid configuration must match CSS: 1.5fr - 1fr * 9 - 1.5fr
+    const totalUnits = 1.5 + 9 + 1.5; // 12.0
 
     // Calculate unit size (subtracting gaps)
     // 11 columns means 10 gaps
@@ -92,7 +92,7 @@ const getTileCoordinates = (tileId, boardRef) => {
 
         // Add width of preceding columns/rows + gaps
         for (let i = 1; i < index; i++) {
-            if (i === 1 || i === 11) pos += 1.4 * unitSize;
+            if (i === 1 || i === 11) pos += 1.5 * unitSize;
             else pos += 1 * unitSize;
 
             // Add gap after every column/row
@@ -100,7 +100,7 @@ const getTileCoordinates = (tileId, boardRef) => {
         }
 
         // Add half of current column/row
-        const currentSize = (index === 1 || index === 11) ? 1.4 : 1;
+        const currentSize = (index === 1 || index === 11) ? 1.5 : 1;
         pos += (currentSize * unitSize) / 2;
 
         return pos;

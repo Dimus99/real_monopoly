@@ -43,6 +43,18 @@ const GameRoom = () => {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [friends, setFriends] = useState([]);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            if (mobile) setSidebarCollapsed(true);
+        };
+        window.addEventListener('resize', handleResize);
+        handleResize(); // Initial check
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Dice Animation States
     const [showDice, setShowDice] = useState(false);
@@ -556,9 +568,21 @@ const GameRoom = () => {
         <div className="flex bg-[#0c0c14] h-screen w-full overflow-hidden font-sans selection:bg-purple-500/30">
             {/* COLLAPSIBLE SIDEBAR */}
             <motion.div
-                animate={{ width: sidebarCollapsed ? 80 : 300 }}
-                className="flex-shrink-0 bg-[#0c0c14] border-r border-white/10 flex flex-col z-30 shadow-2xl relative transition-all duration-300"
+                animate={{
+                    width: isMobile ? (sidebarCollapsed ? 0 : 280) : (sidebarCollapsed ? 80 : 300),
+                    x: isMobile && sidebarCollapsed ? -280 : 0
+                }}
+                className={`flex-shrink-0 bg-[#0c0c14] border-r border-white/10 flex flex-col z-30 shadow-2xl relative transition-all duration-300 ${isMobile ? 'absolute inset-y-0 left-0' : ''}`}
             >
+                {/* Mobile Toggle Button (only visible on mobile) */}
+                {isMobile && sidebarCollapsed && (
+                    <button
+                        onClick={() => setSidebarCollapsed(false)}
+                        className="fixed top-4 left-4 z-50 p-3 bg-yellow-500 rounded-full text-black shadow-lg"
+                    >
+                        <Menu size={20} />
+                    </button>
+                )}
                 {/* Top Info Bar */}
                 <div className="p-4 border-b border-white/10 bg-[#13131f] flex items-center justify-between">
                     {!sidebarCollapsed && (
@@ -659,15 +683,14 @@ const GameRoom = () => {
             </motion.div>
 
             {/* MAIN BOARD AREA */}
-            <div className="flex-1 relative bg-[#0c0c14] flex items-center justify-center p-8 overflow-auto">
+            <div className="flex-1 relative bg-[#0c0c14] flex items-center justify-center p-2 md:p-8 overflow-auto">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0" />
 
                 <div className="relative z-10 shadow-2xl transition-all duration-300"
                     ref={boardRef}
                     style={{
-                        height: '92vh',
-                        minHeight: '800px', // Ensures content is visible
-                        aspectRatio: '1/1',
+                        width: 'min(95vw, 95vh)',
+                        height: 'min(95vw, 95vh)',
                         margin: 'auto'
                     }}
                 >
