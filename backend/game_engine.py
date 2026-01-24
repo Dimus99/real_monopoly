@@ -43,33 +43,58 @@ WORLD_MAP_DATA = [
     {"name": "Роснефть", "group": "Utility", "price": 150, "rent": []},
     {"name": "Лондон", "group": "Yellow", "price": 280, "rent": [24, 120, 360, 850, 1025, 1200]},
     {"name": "На Остров Эпштейна", "group": "GoToJail", "price": 0, "rent": []},
-    {"name": "Киев", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
+    {"name": "Зеленодольск", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
     {"name": "Токио", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Вашингтон", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
     {"name": "Аэропорт Хитроу", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
-    {"name": "Гренландия", "group": "DarkBlue", "price": 350, "rent": [35, 175, 500, 1100, 1300, 1500]},
+    {"name": "Гренландия", "group": "DarkBlue", "price": 706, "rent": [35, 175, 500, 1100, 1300, 1500]},
     {"name": "Налог на Роскошь", "group": "Tax", "price": 0, "rent": [100]},
     {"name": "Антарктида", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},
 ]
 
 UKRAINE_MAP_DATA = [
-    {"name": "Киев", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},
-    {"name": "Львов", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
-    {"name": "Одесса", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
-    {"name": "Харьков", "group": "Yellow", "price": 280, "rent": [24, 120, 360, 850, 1025, 1200]},
-    {"name": "Днепр", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
-    {"name": "Запорожье", "group": "Red", "price": 240, "rent": [20, 100, 300, 750, 925, 1100]},
-    {"name": "Мариуполь", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
-    {"name": "Николаев", "group": "Orange", "price": 200, "rent": [16, 80, 220, 600, 800, 1000]},
-    {"name": "Херсон", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
-    {"name": "Винница", "group": "Pink", "price": 160, "rent": [12, 60, 180, 500, 700, 900]},
-    {"name": "Полтава", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
-    {"name": "Чернигов", "group": "LightBlue", "price": 120, "rent": [8, 40, 100, 300, 450, 600]},
+    {"name": "СТАРТ [GO]", "group": "Special", "price": 0, "rent": []},
+    {"name": "Житомир", "group": "Brown", "price": 60, "rent": [2, 10, 30, 90, 160, 250]},
+    {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
+    {"name": "Ровно", "group": "Brown", "price": 60, "rent": [4, 20, 60, 180, 320, 450]},
+    {"name": "Налог", "group": "Tax", "price": 0, "rent": [200]},
+    {"name": "Киевский Вокзал", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},
+    {"name": "Чернигов", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
+    {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Сумы", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
-    {"name": "Житомир", "group": "Brown", "price": 60, "rent": [4, 20, 60, 180, 320, 450]},
-    {"name": "Ровно", "group": "Brown", "price": 60, "rent": [2, 10, 30, 90, 160, 250]},
+    {"name": "Черкассы", "group": "LightBlue", "price": 120, "rent": [8, 40, 100, 300, 450, 600]},
+    {"name": "Остров Эпштейна", "group": "Jail", "price": 0, "rent": []},
+    {"name": "Полтава", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
+    {"name": "Укрэнерго", "group": "Utility", "price": 150, "rent": []},
+    {"name": "Херсон", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
+    {"name": "Николаев", "group": "Pink", "price": 160, "rent": [12, 60, 180, 500, 700, 900]},
+    {"name": "Одесский Порт", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},
+    {"name": "Винница", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
+    {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
+    {"name": "Хмельницкий", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
+    {"name": "Тернополь", "group": "Orange", "price": 200, "rent": [16, 80, 220, 600, 800, 1000]},
+    {"name": "Парковка", "group": "FreeParking", "price": 0, "rent": []},
+    {"name": "Луцк", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
+    {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
+    {"name": "Ужгород", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
+    {"name": "Черновцы", "group": "Red", "price": 240, "rent": [20, 100, 300, 750, 925, 1100]},
+    {"name": "ГП Антонов", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},
+    {"name": "Ивано-Франковск", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
+    {"name": "Львов", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
+    {"name": "Укртелеком", "group": "Utility", "price": 150, "rent": []},
+    {"name": "Днепр", "group": "Yellow", "price": 280, "rent": [24, 120, 360, 850, 1025, 1200]},
+    {"name": "На Остров Эпштейна", "group": "GoToJail", "price": 0, "rent": []},
+    {"name": "Запорожье", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
+    {"name": "Кривой Рог", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
+    {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
+    {"name": "Мариуполь", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
+    {"name": "Аэропорт Борисполь", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},
+    {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
+    {"name": "Харьков", "group": "DarkBlue", "price": 350, "rent": [35, 175, 500, 1100, 1300, 1500]},
+    {"name": "Налог на Роскошь", "group": "Tax", "price": 0, "rent": [100]},
+    {"name": "Киев", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},
 ]
 
 MONOPOLY1_MAP_DATA = [
@@ -166,9 +191,9 @@ def create_board(map_type: str = "World") -> List[Property]:
             ))
         return properties
 
-    if map_type == "World":
-        # World map is now fully defined in order
-        for i, prop_data in enumerate(WORLD_MAP_DATA):
+    if map_type in ["World", "Ukraine"]:
+        data = WORLD_MAP_DATA if map_type == "World" else UKRAINE_MAP_DATA
+        for i, prop_data in enumerate(data):
             # Determine type and action
             type_ = "property"
             action = None
@@ -205,65 +230,6 @@ def create_board(map_type: str = "World") -> List[Property]:
                 rent=prop_data.get("rent", [])
             ))
         return properties
-
-    # Fallback for Ukraine map (legacy)
-    data = UKRAINE_MAP_DATA
-    data_idx = 0
-    
-    for i in range(40):
-        prop_data = None
-        type_ = "property"
-        action = None
-        
-        # Special tiles at fixed positions
-        if i == 0:
-            prop_data = {"name": "СТАРТ", "group": "Start", "price": 0, "rent": []}
-            type_ = "service"; action = "collect_200"
-        elif i == 10:
-            prop_data = {"name": "ТЮРЬМА", "group": "Jail", "price": 0, "rent": []}
-            type_ = "service"; action = "just_visiting"
-        elif i == 20:
-            prop_data = {"name": "БЕСПЛАТНАЯ ПАРКОВКА", "group": "FreeParking", "price": 0, "rent": []}
-            type_ = "service"; action = "parking"
-        elif i == 30:
-            prop_data = {"name": "В ТЮРЬМУ", "group": "GoToJail", "price": 0, "rent": []}
-            type_ = "service"; action = "go_to_jail"
-        elif i in [2, 7, 17, 22, 33, 36]:
-            prop_data = {"name": "Шанс", "group": "Chance", "price": 0, "rent": []}
-            type_ = "service"; action = "chance"
-        elif i == 4:
-            prop_data = {"name": "Подоходный налог", "group": "Tax", "price": 0, "rent": [200]}
-            type_ = "service"; action = "pay_200"
-        elif i == 38:
-            prop_data = {"name": "Налог на роскошь", "group": "Tax", "price": 0, "rent": [100]}
-            type_ = "service"; action = "pay_100"
-        elif i in [5, 15, 25, 35]:
-            # Stations
-            names = {5: "Аэропорт Москвы", 15: "Аэропорт Пекина", 25: "Аэропорт Нью-Йорка", 35: "Аэропорт Лондона"}
-            prop_data = {"name": names.get(i, "Station"), "group": "Station", "price": 200, "rent": [25, 50, 100, 200]}
-            type_ = "transport"
-        elif i in [12, 28]:
-            # Utilities
-            names = {12: "Газпром", 28: "Роснефть"}
-            prop_data = {"name": names.get(i, "Utility"), "group": "Utility", "price": 150, "rent": []}
-            type_ = "utility"
-        else:
-            # Regular property
-            if data_idx < len(data):
-                prop_data = data[data_idx]
-                data_idx += 1
-            else:
-                prop_data = {"name": f"City {i}", "group": "Generic", "price": 100, "rent": [10]}
-        
-        properties.append(Property(
-            id=i,
-            name=prop_data["name"],
-            group=prop_data["group"],
-            type=type_,
-            action=action,
-            price=prop_data["price"],
-            rent=prop_data.get("rent", [])
-        ))
     
     return properties
 
@@ -273,6 +239,29 @@ class GameEngine:
     
     def __init__(self):
         self.games: Dict[str, GameState] = {}
+    
+    def get_user_active_games(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get summary of active/waiting games for a specific user."""
+        result = []
+        for game in self.games.values():
+            # Check if user is a player in this game
+            is_player_in_game = any(p.user_id == user_id for p in game.players.values())
+            
+            if is_player_in_game and game.game_status != "finished":
+                # Find player name/character
+                player_info = next((p for p in game.players.values() if p.user_id == user_id), None)
+                
+                result.append({
+                    "game_id": game.game_id,
+                    "status": game.game_status,
+                    "map_type": game.map_type,
+                    "turn": game.current_turn_index,
+                    "player_count": len(game.players),
+                    "max_players": game.max_players,
+                    "my_character": player_info.character if player_info else "Unknown",
+                    "my_money": player_info.money if player_info else 0
+                })
+        return result
         
     def _reset_timer(self, game: GameState):
         """Reset turn timer based on game settings."""

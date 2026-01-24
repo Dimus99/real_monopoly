@@ -5,13 +5,15 @@ const DiceAnimation = ({ show, rolling, values }) => {
     // Simplified Face Component
     const SimpleFace = ({ n, transform }) => (
         <div
-            className="absolute w-full h-full bg-gradient-to-br from-gray-100 to-white border-2 border-gray-300 rounded-xl shadow-[inset_0_0_15px_rgba(0,0,0,0.1)] flex items-center justify-center backface-hidden"
+            className="absolute w-full h-full bg-white border border-gray-200 rounded-xl shadow-[inset_0_0_20px_rgba(0,0,0,0.1)] flex items-center justify-center backface-hidden"
             style={{
                 transform: transform,
                 backfaceVisibility: 'hidden',
-                WebkitBackfaceVisibility: 'hidden'
+                WebkitBackfaceVisibility: 'hidden',
+                boxShadow: 'inset 0 0 15px rgba(0,0,0,0.1), 0 0 5px rgba(0,0,0,0.1)'
             }}
         >
+            <div className="absolute inset-0 bg-gradient-to-tr from-gray-200/50 to-transparent pointer-events-none rounded-xl" />
             {getDots(n)}
         </div>
     );
@@ -60,27 +62,50 @@ const DiceAnimation = ({ show, rolling, values }) => {
         const target = getTarget(value);
 
         return (
-            <div className={`w-28 h-28 relative perspective-[1000px] ${glow ? 'animate-pulse' : ''}`}>
+            <motion.div
+                className={`w-28 h-28 relative perspective-[1000px] ${glow ? 'z-50' : 'z-10'}`}
+                animate={isRolling ? {
+                    y: [0, -100, 0],
+                    x: [0, (Math.random() - 0.5) * 50, 0],
+                    scale: [1, 1.2, 1],
+                    rotate: [0, (Math.random() - 0.5) * 180, 0]
+                } : {
+                    y: 0,
+                    x: 0,
+                    scale: 1,
+                    rotate: 0
+                }}
+                transition={isRolling ? {
+                    duration: 0.5,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                } : {
+                    type: "spring",
+                    stiffness: 200,
+                    damping: 20
+                }}
+            >
                 <motion.div
-                    className={`w-full h-full relative preserve-3d ${glow ? 'drop-shadow-[0_0_20px_rgba(255,215,0,0.8)]' : ''}`}
+                    className={`w-full h-full relative preserve-3d ${glow ? 'drop-shadow-[0_0_30px_rgba(255,215,0,0.6)]' : 'drop-shadow-[0_5px_15px_rgba(0,0,0,0.3)]'}`}
                     style={{ transformStyle: 'preserve-3d' }}
                     animate={isRolling ? {
-                        rotateX: [0, 360, 720, 1080],
-                        rotateY: [0, 480, 960, 1440],
-                        rotateZ: [0, 360, 720]
+                        rotateX: [0, 360, 720],
+                        rotateY: [0, 720, 1440],
+                        rotateZ: [0, 360]
                     } : {
                         rotateX: target.x,
                         rotateY: target.y,
                         rotateZ: target.z
                     }}
                     transition={isRolling ? {
-                        duration: 0.6,
+                        duration: 0.4,
                         repeat: Infinity,
                         ease: "linear"
                     } : {
                         type: "spring",
-                        stiffness: 150,
-                        damping: 20
+                        stiffness: 100,
+                        damping: 15,
+                        mass: 1
                     }}
                 >
                     {faces.map((f, i) => (
@@ -91,7 +116,7 @@ const DiceAnimation = ({ show, rolling, values }) => {
                         />
                     ))}
                 </motion.div>
-            </div>
+            </motion.div>
         );
     };
 

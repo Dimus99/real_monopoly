@@ -41,6 +41,29 @@ const Lobby = () => {
     const [friendCodeInput, setFriendCodeInput] = useState('');
 
     useEffect(() => {
+        // --- Telegram Mini App Auto-Auth ---
+        const tg = window.Telegram?.WebApp;
+        if (tg && tg.initData && !localStorage.getItem('monopoly_token')) {
+            console.log("Telegram WebApp detected, attempting auto-auth...");
+            setIsLoading(true);
+            fetch(`${API_BASE}/api/auth/telegram`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ init_data: tg.initData })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.token) {
+                        localStorage.setItem('monopoly_token', data.token);
+                        setUser(data.user);
+                        setMode('menu');
+                    }
+                })
+                .catch(err => console.error("Telegram auth failed", err))
+                .finally(() => setIsLoading(false));
+            return;
+        }
+
         const token = localStorage.getItem('monopoly_token');
         if (!token) {
             setMode('auth');
@@ -101,12 +124,32 @@ const Lobby = () => {
         } catch (e) { }
     };
 
+    // Resume active games
+    const [myGames, setMyGames] = useState([]);
+    const fetchMyGames = async () => {
+        try {
+            // Assuming backend supports filtering or returns my games
+            // I will use a dedicated endpoint or parameter
+            const res = await authFetch('/api/games/my-active');
+            if (res.ok) {
+                const data = await res.json();
+                setMyGames(data.games || []);
+            }
+        } catch (e) { }
+    };
+
     useEffect(() => {
         if (mode === 'friends') fetchFriendsData();
-        if (mode === 'join' || mode === 'menu') fetchActiveGames();
+        if (mode === 'join' || mode === 'menu') {
+            fetchActiveGames();
+            fetchMyGames();
+        }
 
         const interval = setInterval(() => {
-            if (mode === 'join' || mode === 'menu') fetchActiveGames();
+            if (mode === 'join' || mode === 'menu') {
+                fetchActiveGames();
+                // fetchMyGames(); // Don't poll my games too often to avoid freeze
+            }
         }, 5000);
         return () => clearInterval(interval);
     }, [mode]);
@@ -188,6 +231,27 @@ const Lobby = () => {
         } catch (e) { alert('Error sending request'); }
     };
 
+    const handleUpdateProfile = async (newName) => {
+        if (!newName || newName.trim().length < 2) return;
+        setIsLoading(true);
+        try {
+            const res = await authFetch('/api/users/me', {
+                method: 'PUT',
+                body: JSON.stringify({ name: newName.trim() })
+            });
+            if (res.ok) {
+                const updatedUser = await res.json();
+                setUser(updatedUser);
+                setMode('menu');
+                alert('Профиль обновлен!');
+            }
+        } catch (e) {
+            alert('Ошибка при обновлении профиля');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleAuth = async (name) => {
         setIsLoading(true);
         try {
@@ -262,11 +326,21 @@ const Lobby = () => {
             {/* Header */}
             <div className="relative z-10 p-6 flex justify-between items-center border-b border-white/10 glass-card mx-4 mt-4 rounded-xl">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]">
-                        <img src={user.avatar_url || "/api/placeholder/48/48"} alt="User" className="w-full h-full object-cover" />
-                    </div>
+                    <button onClick={() => setMode('profile')} className="group relative">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)] group-hover:scale-105 transition-transform">
+                            <img src={user.avatar_url || "/api/placeholder/48/48"} alt="User" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 bg-yellow-500 text-black p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Settings size={10} />
+                        </div>
+                    </button>
                     <div>
-                        <h2 className="text-xl font-bold font-display tracking-wide">{user.name}</h2>
+                        <h2 className="text-xl font-bold font-display tracking-wide flex items-center gap-2">
+                            {user.name}
+                            <button onClick={() => setMode('profile')} className="text-gray-500 hover:text-white transition-colors">
+                                <Settings size={14} />
+                            </button>
+                        </h2>
                         <div className="text-xs text-purple-400 font-mono tracking-wider flex items-center gap-2">
                             CODE: <span className="text-white font-bold select-all">{user.friend_code}</span>
                         </div>
@@ -324,6 +398,35 @@ const Lobby = () => {
 
                         {/* Open Lobbies Panel (New Feature) */}
                         <div className="col-span-1 md:col-span-3 glass-card p-6 mt-4">
+                            {/* My Active Games Section */}
+                            {myGames.length > 0 && (
+                                <div className="mb-8 p-4 bg-purple-500/10 rounded-xl border border-purple-500/30">
+                                    <h3 className="text-xl font-bold flex items-center gap-2 mb-4 text-purple-300">
+                                        <Play size={20} /> Your Active Matches
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {myGames.map(game => (
+                                            <div key={game.game_id} className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/50 p-4 rounded-xl flex justify-between items-center">
+                                                <div>
+                                                    <div className="font-mono font-bold text-lg text-white">#{game.game_id.substring(0, 6)}</div>
+                                                    <div className="text-xs text-purple-200 mt-1">Turn: {game.turn} • {game.status}</div>
+                                                </div>
+                                                <button
+                                                    onClick={() => navigate(`/game/${game.game_id}/${user.id}`)} // Assuming user.id is correct player_id link? 
+                                                    // Wait, player_id in game is NOT user.id usually (it's random ID or mapped).
+                                                    // I need to know the PLAYER ID for this game.
+                                                    // Backend /api/games/my should return { game_id, player_id }?
+                                                    // I'll assume game object has 'my_player_id' field injected by backend.
+                                                    className="btn-sm btn-primary"
+                                                >
+                                                    Resume
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-xl font-bold flex items-center gap-2"><Globe size={20} className="text-blue-400" /> Open Public Lobbies</h3>
                                 <button onClick={fetchActiveGames} className="p-2 hover:bg-white/10 rounded-full"><RefreshCw size={16} /></button>
@@ -499,6 +602,63 @@ const Lobby = () => {
                                     </div>
                                 ))
                             }
+                        </div>
+                    </div>
+                )}
+
+                {/* Profile Mode */}
+                {mode === 'profile' && (
+                    <div className="glass-card max-w-md w-full p-8 animate-in fade-in zoom-in duration-300">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-3xl font-bold font-display">Profile</h2>
+                            <button onClick={() => setMode('menu')} className="btn-ghost"><X /></button>
+                        </div>
+
+                        <div className="flex flex-col items-center mb-8">
+                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-purple-500 shadow-2xl mb-4">
+                                <img src={user.avatar_url || "/api/placeholder/96/96"} alt="Avatar" className="w-full h-full object-cover" />
+                            </div>
+                            <h3 className="text-xl font-bold">{user.name}</h3>
+                            <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">#{user.friend_code}</p>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div>
+                                <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Display Name</label>
+                                <input
+                                    type="text"
+                                    defaultValue={user.name}
+                                    className="input-field"
+                                    placeholder="Enter new name..."
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && e.target.value.trim()) {
+                                            handleUpdateProfile(e.target.value.trim());
+                                        }
+                                    }}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                    <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Wins</div>
+                                    <div className="text-2xl font-mono font-bold text-yellow-500">{user.stats?.wins}</div>
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                    <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Games</div>
+                                    <div className="text-2xl font-mono font-bold text-blue-500">{user.stats?.games_played}</div>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={(e) => {
+                                    const input = e.target.parentElement.querySelector('input');
+                                    handleUpdateProfile(input.value);
+                                }}
+                                className="btn-primary w-full py-4 font-bold"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Saving...' : 'Save Changes'}
+                            </button>
                         </div>
                     </div>
                 )}

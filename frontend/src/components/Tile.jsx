@@ -175,7 +175,7 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                     className="tile-name leading-tight text-center px-0.5"
                     style={{
                         color: hasOwner ? '#fff' : (isCorner ? groupStyle.textColor : '#e0e0e0'),
-                        fontSize: isCorner ? '10px' : '8px',
+                        fontSize: isCorner ? '12px' : '10px',
                         lineHeight: '1.1',
                         fontWeight: isCorner ? '700' : '600',
                         textShadow: hasOwner ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(0,0,0,0.5)'
@@ -188,7 +188,7 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                 {property.price > 0 && !hasOwner && (
                     <div
                         className="font-bold mt-0.5 text-yellow-400"
-                        style={{ fontSize: '9px', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                        style={{ fontSize: '10px', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
                     >
                         ${property.price}
                     </div>

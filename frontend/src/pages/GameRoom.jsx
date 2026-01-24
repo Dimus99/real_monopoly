@@ -333,7 +333,7 @@ const GameRoom = () => {
                 if (lastAction.player_id === playerId) {
                     setShowBuyModal(false);
                     // Auto-end turn if not doubles
-                    // We check current dice values for doubles
+                    // Dummy chunk current dice values for doubles
                     const isDoubles = diceValues[0] === diceValues[1];
                     if (!isDoubles) {
                         setTimeout(() => sendAction('END_TURN'), 1000);
