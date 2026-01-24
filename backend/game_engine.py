@@ -49,7 +49,7 @@ WORLD_MAP_DATA = [
     {"name": "Вашингтон", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
     {"name": "Аэропорт Хитроу", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
-    {"name": "Гренландия", "group": "DarkBlue", "price": 706, "rent": [35, 175, 500, 1100, 1300, 1500]},
+    {"name": "Гренландия", "group": "DarkBlue", "price": 350, "rent": [35, 175, 500, 1100, 1300, 1500]},
     {"name": "Налог на Роскошь", "group": "Tax", "price": 0, "rent": [100]},
     {"name": "Антарктида", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},
 ]
@@ -460,7 +460,15 @@ class GameEngine:
                 game.logs.append(f"🏖️ {player.name} is on vacation. No funding available right now.")
                 
         elif tile.group == "Chance" or tile.group == "Tax":
-            # "Stavka" (Tax) now triggers Chance cards per user request
+            # Charge tax if it's a tax tile
+            if tile.group == "Tax":
+                tax_amount = tile.rent[0] if tile.rent else 200
+                player.money -= tax_amount
+                game.pot += tax_amount
+                game.logs.append(f"💸 {player.name} оплатил налог в казну: ${tax_amount}")
+                result["tax_paid"] = tax_amount
+
+            # Trigger Chance card
             chance_result = self._draw_chance_card(game, player)
             result.update(chance_result)
             
@@ -469,17 +477,11 @@ class GameEngine:
                 new_tile = game.board[player.position]
                 landing_res = self._handle_landing(game, player, new_tile)
                 
-                # Merge results (landing action overrides chance action)
+                # Merge results
                 result.update(landing_res)
-                
-                # Update location info for frontend
                 result["landed_on"] = new_tile.name
                 result["tile_type"] = new_tile.group
             else:
-                result["action"] = "chance"
-            
-            # Ensure action is set
-            if "action" not in result:
                 result["action"] = "chance"
             
         elif tile.group == "Jail": # Previously Tax block was here, now combined above
@@ -568,19 +570,20 @@ class GameEngine:
             {"type": "money", "amount": 200, "text": "Получил откат 200 долларов! (+200)"},
             {"type": "money", "amount": 400, "text": "Украл налогов на 400! (+400)"},
             {"type": "money", "amount": -200, "text": "Сбил пешехода, нужно заплатить жертве 200 (-200)"},
+            {"type": "money", "amount": -300, "text": "Проиграл в казино 300! (-300)"},
             {"type": "move_random", "min": 3, "max": 12, "text": "Скрываешься от преследования! Перемещение вперед..."},
-        ] # Replaced old cards with new specific ones requested
+            {"type": "move_to", "position": 0, "text": "Срочный вызов в Штаб! Возвращайся на СТАРТ."},
+            {"type": "move_to", "position": 25, "text": "Следственный комитет ждет тебя на Острове Эпштейна!"},
+            {"type": "money", "amount": 500, "text": "Нашел секретный офшор! (+500)"},
+        ]
         
         card = random.choice(cards)
         log_text = f"{player.name}: {card['text']}"
         game.logs.append(f"Breaking News: {log_text}")
         
-        # Return text with player name
         if card["type"] == "money":
             player.money += card["amount"]
             return {"chance_card": log_text, "amount": card["amount"]}
-            
-            return {"chance_card": card["text"], "new_position": card["position"]}
             
         elif card["type"] == "move_random":
             steps = random.randint(card["min"], card["max"])
@@ -588,29 +591,28 @@ class GameEngine:
             new_pos = (player.position + steps) % 40
             player.position = new_pos
             
-            # Check for GO
-            # If we wrapped around (new < old), we passed GO (unless we just started at 0)
             if new_pos < old_pos and old_pos != 0:
                  player.money += 200
                  
-            return {"chance_card": card["text"] + f" ({steps} steps)", "new_position": new_pos}
+            return {"chance_card": log_text + f" (на {steps} шагов)", "new_position": new_pos}
 
-        elif card["type"] == "back":
-            player.position = (player.position - card["steps"]) % 40
-            return {"chance_card": card["text"], "new_position": player.position}
+        elif card["type"] == "move_to":
+            player.position = card["position"]
+            if card["position"] == 25: # Go to jail
+                player.is_jailed = True
+                player.jail_turns = 0
+            return {"chance_card": log_text, "new_position": card["position"]}
             
         elif card["type"] == "repair":
+            # (Keeping old logic if it was ever used, but adding to cards above is better)
             total = 0
             for prop in game.board:
                 if prop.owner_id == player.id:
-                    if prop.houses == 5:  # Hotel
-                        total += card["hotel_cost"]
-                    else:
-                        total += prop.houses * card["house_cost"]
+                    total += prop.houses * 25
             player.money -= total
-            return {"chance_card": card["text"], "amount": -total}
+            return {"chance_card": log_text, "amount": -total}
         
-        return {"chance_card": card["text"]}
+        return {"chance_card": log_text}
     
     def _send_to_jail(self, game: GameState, player: Player):
         """Send player to jail."""
