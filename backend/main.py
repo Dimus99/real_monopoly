@@ -8,6 +8,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from typing import Optional
 
 from socket_manager import manager
@@ -108,6 +109,29 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+# Serve Frontend static files
+# Check if static directory exists (it will in Docker)
+static_path = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_path):
+    # Mount assets
+    assets_path = os.path.join(static_path, "assets")
+    if os.path.exists(assets_path):
+        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
+    
+    # Static files like favicon, robots.txt etc
+    app.mount("/static", StaticFiles(directory=static_path), name="static_files")
+
+    # Catch-all for React Router (SPA)
+    from fastapi.responses import FileResponse
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # If it looks like an API call or file that doesn't exist, handle accordingly
+        # But for SPA, we usually serve index.html for everything not matched by API
+        file_path = os.path.join(static_path, full_path)
+        if full_path != "" and os.path.exists(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(static_path, "index.html"))
 
 
 # ============== Health Check ==============

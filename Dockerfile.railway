@@ -1,5 +1,14 @@
-FROM python:3.11-slim
+# Stage 1: Build Frontend
+FROM node:20-slim AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+# VITE_API_URL is empty for same-domain deployment
+RUN VITE_API_URL= npm run build
 
+# Stage 2: Final Image
+FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies
@@ -8,13 +17,15 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-# We copy from backend/ because build context is root
+# Install python dependencies from backend folder
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code from backend directory
+# Copy backend source
 COPY backend/ .
+
+# Copy built frontend from Stage 1 to backend/static
+COPY --from=frontend-builder /app/frontend/dist ./static
 
 # Ensure entrypoint is executable
 RUN chmod +x entrypoint.sh
@@ -22,5 +33,5 @@ RUN chmod +x entrypoint.sh
 # Expose port
 EXPOSE 8000
 
-# Run entrypoint
+# Run entrypoint (which runs migrations and starts uvicorn)
 CMD ["./entrypoint.sh"]
