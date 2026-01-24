@@ -382,7 +382,6 @@ class GameEngine:
             "passed_go": False,
             "action": None,
             "amount": None
-            "amount": None
         }
         
         self._reset_timer(game)
