@@ -102,36 +102,45 @@ app.include_router(users_router)
 app.include_router(friends_router)
 app.include_router(games_router)
 
-@app.get("/")
-async def root():
-    return {"status": "ok", "message": "Political Monopoly API is running", "version": "1.0.0"}
-
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
 
 # Serve Frontend static files
-# Check if static directory exists (it will in Docker)
 static_path = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_path):
-    # Mount assets
+    # Mount assets (CSS/JS)
     assets_path = os.path.join(static_path, "assets")
     if os.path.exists(assets_path):
         app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
     
-    # Static files like favicon, robots.txt etc
-    app.mount("/static", StaticFiles(directory=static_path), name="static_files")
+    from fastapi.responses import FileResponse
+    
+    # Static files like favicon.ico, etc.
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon():
+        return FileResponse(os.path.join(static_path, "favicon.ico"))
 
     # Catch-all for React Router (SPA)
-    from fastapi.responses import FileResponse
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
-        # If it looks like an API call or file that doesn't exist, handle accordingly
-        # But for SPA, we usually serve index.html for everything not matched by API
+        # Prevent infinite loop if file not found
+        if full_path.startswith("api/"):
+            return {"error": "API route not found", "path": full_path}
+            
         file_path = os.path.join(static_path, full_path)
-        if full_path != "" and os.path.exists(file_path):
+        if full_path != "" and os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path)
-        return FileResponse(os.path.join(static_path, "index.html"))
+        
+        # Default to index.html for SPA
+        index_file = os.path.join(static_path, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        return {"error": "Frontend not built", "static_path": static_path}
+else:
+    @app.get("/")
+    async def root_fallback():
+        return {"status": "ok", "message": "API is running, but static files are missing."}
 
 
 # ============== Health Check ==============
