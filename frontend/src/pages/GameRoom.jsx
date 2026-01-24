@@ -310,11 +310,14 @@ const GameRoom = () => {
                     setTimeout(() => {
                         setShowDice(false);
 
+                        // Chance data should be shown to EVERYONE
+                        if (lastAction.chance_card) {
+                            console.log("Showing Chance card to everyone:", lastAction.chance_card);
+                            setChanceData(lastAction);
+                        }
+
                         if (lastAction.player_id === playerId) {
-                            // Check for Chance card
-                            if (lastAction.chance_card) {
-                                setChanceData(lastAction);
-                            }
+                            console.log("Processing my turn actions:", lastAction.action);
 
                             // Trigger modals based on action
                             if (lastAction.action === 'can_buy') {
@@ -326,13 +329,16 @@ const GameRoom = () => {
                                 });
                                 setShowRentModal(true);
                             } else if (lastAction.action === 'chance') {
-                                setChanceData(lastAction);
+                                // Already handled above for everyone
                             } else {
                                 // Passive / Auto-end conditions
                                 if (!lastAction.doubles) {
                                     setTimeout(() => {
-                                        if (isMyTurn) sendAction('END_TURN');
-                                    }, 1500);
+                                        if (isMyTurn) {
+                                            console.log("Auto-ending turn...");
+                                            sendAction('END_TURN');
+                                        }
+                                    }, 2000);
                                 }
                             }
                         }

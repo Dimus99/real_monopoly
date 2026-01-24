@@ -408,8 +408,9 @@ class GameEngine:
             game.doubles_count = 0
         
         # Move player
+        board_size = len(game.board)
         old_position = player.position
-        new_position = (player.position + d1 + d2) % 40
+        new_position = (player.position + d1 + d2) % board_size
         player.position = new_position
         
         # Check if passed GO
@@ -427,6 +428,10 @@ class GameEngine:
         landing_result = self._handle_landing(game, player, tile)
         result.update(landing_result)
         
+        # Ensure if it was a chance/tax tile, the UI shows the modal
+        if tile.group in ["Chance", "Tax"]:
+            result["action"] = "chance"
+
         game.logs.append(f"{player.name} rolled {d1}+{d2} and moved to {tile.name}")
         
         # If doubles, remind to roll again
@@ -477,12 +482,14 @@ class GameEngine:
                 new_tile = game.board[player.position]
                 landing_res = self._handle_landing(game, player, new_tile)
                 
-                # Merge results
-                result.update(landing_res)
-                result["landed_on"] = new_tile.name
-                result["tile_type"] = new_tile.group
-            else:
-                result["action"] = "chance"
+                # Merge results, but keep the chance_card and force chance action for UI
+                for k, v in landing_res.items():
+                    if k not in result: # Don't overwrite what chance_result set (like amount)
+                        result[k] = v
+                
+                result["landed_on_after_chance"] = new_tile.name
+            
+            result["action"] = "chance"
             
         elif tile.group == "Jail": # Previously Tax block was here, now combined above
             result["action"] = "safe"
@@ -583,18 +590,19 @@ class GameEngine:
         
         if card["type"] == "money":
             player.money += card["amount"]
-            return {"chance_card": log_text, "amount": card["amount"]}
+            return {"chance_card": card["text"], "amount": card["amount"]}
             
         elif card["type"] == "move_random":
             steps = random.randint(card["min"], card["max"])
+            board_size = len(game.board)
             old_pos = player.position
-            new_pos = (player.position + steps) % 40
+            new_pos = (player.position + steps) % board_size
             player.position = new_pos
             
             if new_pos < old_pos and old_pos != 0:
                  player.money += 200
                  
-            return {"chance_card": log_text + f" (на {steps} шагов)", "new_position": new_pos}
+            return {"chance_card": card["text"] + f" (на {steps} шагов)", "new_position": new_pos}
 
         elif card["type"] == "move_to":
             player.position = card["position"]

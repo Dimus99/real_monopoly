@@ -250,6 +250,16 @@ async def websocket_game(
                 else:
                     await manager.broadcast(game_id, {"type": "DICE_ROLLED", **result})
                     
+                    # If chance card drawn, also send as a system chat message
+                    if result.get("chance_card"):
+                        await manager.broadcast(game_id, {
+                            "type": "CHAT_MESSAGE",
+                            "player_id": "SYSTEM",
+                            "player_name": "Breaking News",
+                            "message": result["chance_card"],
+                            "game_state": game.dict()
+                        })
+
                     # Check if next player is bot
                     await _check_and_run_bot_turn(game_id)
             
