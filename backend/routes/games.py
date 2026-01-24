@@ -155,9 +155,13 @@ async def join_game(
         raise HTTPException(status_code=400, detail="Game is full")
     
     # Check if already in game
-    for player in game.players.values():
+    for pid, player in game.players.items():
         if player.user_id == current_user.id:
-            raise HTTPException(status_code=400, detail="Already in this game")
+            return {
+                "player_id": pid,
+                "game_state": game.dict(),
+                "message": "Already in this game"
+            }
     
     # Check if character is taken
     used_chars = [p.character for p in game.players.values()]

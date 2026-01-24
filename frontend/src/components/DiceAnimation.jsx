@@ -120,28 +120,26 @@ const DiceAnimation = ({ show, rolling, values }) => {
         );
     };
 
-    return (
-        <AnimatePresence>
-            {show && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex flex-col items-center justify-center fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
-                >
-                    <div className="flex gap-8 mb-8">
-                        <Cube value={values ? values[0] : 1} isRolling={rolling} glow={show && !rolling && (values?.[0] === values?.[1])} />
-                        <Cube value={values ? values[1] : 1} isRolling={rolling} glow={show && !rolling && (values?.[0] === values?.[1])} />
-                    </div>
+    if (!show) return null;
 
-                    <div className="bg-black/80 px-6 py-2 rounded-full border border-yellow-500/30">
-                        <span className="text-2xl font-black text-yellow-400 font-mono">
-                            {rolling ? "ROLLING..." : `TOTAL: ${(values?.[0] || 0) + (values?.[1] || 0)}`}
-                        </span>
-                    </div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
+        >
+            <div className="flex gap-8 mb-8">
+                <Cube value={values ? values[0] : 1} isRolling={rolling} glow={show && !rolling && (values?.[0] === values?.[1])} />
+                <Cube value={values ? values[1] : 1} isRolling={rolling} glow={show && !rolling && (values?.[0] === values?.[1])} />
+            </div>
+
+            <div className="bg-black/80 px-6 py-2 rounded-full border border-yellow-500/30">
+                <span className="text-2xl font-black text-yellow-400 font-mono">
+                    {rolling ? "ROLLING..." : `TOTAL: ${(values?.[0] || 0) + (values?.[1] || 0)}`}
+                </span>
+            </div>
+        </motion.div>
     );
 };
 

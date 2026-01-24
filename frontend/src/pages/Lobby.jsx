@@ -202,18 +202,6 @@ const Lobby = () => {
 
             if (!res.ok) {
                 const err = await res.json();
-                // Check if already joined (400) -> Just navigate
-                if (err.detail === 'Already in this game') {
-                    navigate(`/game/${gameId}/${res.ok ? (await res.json()).player_id : ''}`); // Need player ID?
-                    // If already in game, we need to find our player ID. 
-                    // Usually the backend join response would give it, but if error...
-                    // We should just navigate and let GameRoom handle reconnection? 
-                    // But GameRoom needs playerId.
-                    // Let's assume joining works first time.
-                    alert(err.detail);
-                    setIsLoading(false);
-                    return;
-                }
                 throw new Error(err.detail || "Failed to join");
             }
 
@@ -487,11 +475,7 @@ const Lobby = () => {
                                                     <div className="text-xs text-purple-200 mt-1">Turn: {game.turn} • {game.status}</div>
                                                 </div>
                                                 <button
-                                                    onClick={() => navigate(`/game/${game.game_id}/${user.id}`)} // Assuming user.id is correct player_id link? 
-                                                    // Wait, player_id in game is NOT user.id usually (it's random ID or mapped).
-                                                    // I need to know the PLAYER ID for this game.
-                                                    // Backend /api/games/my should return { game_id, player_id }?
-                                                    // I'll assume game object has 'my_player_id' field injected by backend.
+                                                    onClick={() => navigate(`/game/${game.game_id}/${game.player_id}`)}
                                                     className="btn-sm btn-primary"
                                                 >
                                                     Resume

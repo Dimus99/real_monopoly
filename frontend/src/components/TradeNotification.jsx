@@ -2,8 +2,10 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeftRight, Check, X } from 'lucide-react';
 
-const TradeNotification = ({ trade, fromPlayer, onRespond }) => {
+const TradeNotification = ({ trade, fromPlayer, onRespond, board }) => {
     if (!trade || !fromPlayer) return null;
+
+    const getPropName = (id) => board?.find(t => t.id === id)?.name || `#${id}`;
 
     return (
         <motion.div
@@ -34,8 +36,8 @@ const TradeNotification = ({ trade, fromPlayer, onRespond }) => {
                             <div className="space-y-1">
                                 {trade.offer_properties.map(pid => (
                                     <div key={pid} className="text-sm text-white flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-gray-500" />
-                                        Property #{pid}
+                                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                                        {getPropName(pid)}
                                     </div>
                                 ))}
                             </div>
@@ -56,8 +58,8 @@ const TradeNotification = ({ trade, fromPlayer, onRespond }) => {
                             <div className="space-y-1">
                                 {trade.request_properties.map(pid => (
                                     <div key={pid} className="text-sm text-white flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-gray-500" />
-                                        Property #{pid}
+                                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                        {getPropName(pid)}
                                     </div>
                                 ))}
                             </div>

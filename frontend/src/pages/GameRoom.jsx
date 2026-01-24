@@ -355,6 +355,9 @@ const GameRoom = () => {
             case 'TURN_ENDED':
             case 'TURN_SKIPPED':
                 setHasRolled(false);
+                setShowDice(false);
+                setDiceRolling(false);
+                setIsRolling(false);
                 break;
             case 'ERROR':
                 setIsRolling(false);
@@ -636,11 +639,17 @@ const GameRoom = () => {
                                                 ${p.money?.toLocaleString()}
                                             </div>
                                         </div>
-                                        {!p.is_bot && p.id !== playerId && (
-                                            <button onClick={(e) => { e.stopPropagation(); initiateTrade(p); }} className="p-1 hover:bg-white/10 rounded">
-                                                <ArrowLeftRight size={14} className="text-gray-400" />
-                                            </button>
-                                        )}
+                                        {!p.is_bot && p.id !== playerId ? (
+                                            sidebarCollapsed ? (
+                                                <button onClick={(e) => { e.stopPropagation(); initiateTrade(p); }} className="absolute -top-1 -right-1 bg-blue-600 rounded-full p-1 border border-white/20 shadow-lg z-10" title="Trade">
+                                                    <ArrowLeftRight size={10} className="text-white" />
+                                                </button>
+                                            ) : (
+                                                <button onClick={(e) => { e.stopPropagation(); initiateTrade(p); }} className="p-1 hover:bg-white/10 rounded">
+                                                    <ArrowLeftRight size={14} className="text-gray-400" />
+                                                </button>
+                                            )
+                                        ) : null}
                                     </div>
                                 )}
                             </motion.div>
@@ -671,7 +680,7 @@ const GameRoom = () => {
                         logs={displayedLogs}
                         onSendMessage={handleSendMessage}
                         externalRef={boardRef}
-                        onAvatarClick={(pid) => pid !== playerId && initiateTrade(pid)}
+                        onAvatarClick={(pid) => pid !== playerId && initiateTrade(gameState.players[pid])}
                     />
                 </div>
 
@@ -821,7 +830,7 @@ const GameRoom = () => {
             </AnimatePresence>
             {/* Also show trade modal (only needed if trading in waiting room enabled? Probably not, but safe to keep) */}
             <TradeModal isOpen={showTradeModal} onClose={() => setShowTradeModal(false)} fromPlayer={currentPlayer} toPlayer={tradeTarget} gameState={gameState} onSendOffer={handleSendOffer} />
-            <TradeNotification trade={incomingTrade} fromPlayer={gameState?.players?.[incomingTrade?.from_player_id]} onRespond={handleRespondTrade} />
+            <TradeNotification trade={incomingTrade} fromPlayer={gameState?.players?.[incomingTrade?.from_player_id]} onRespond={handleRespondTrade} board={gameState?.board} />
         </div>
     );
 };

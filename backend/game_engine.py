@@ -244,22 +244,23 @@ class GameEngine:
         """Get summary of active/waiting games for a specific user."""
         result = []
         for game in self.games.values():
-            # Check if user is a player in this game
-            is_player_in_game = any(p.user_id == user_id for p in game.players.values())
-            
-            if is_player_in_game and game.game_status != "finished":
-                # Find player name/character
-                player_info = next((p for p in game.players.values() if p.user_id == user_id), None)
+            if game.game_status == "finished":
+                continue
                 
+            # Find if user is in this game
+            player_info = next((p for p in game.players.values() if p.user_id == user_id), None)
+            
+            if player_info and not player_info.is_bankrupt:
                 result.append({
                     "game_id": game.game_id,
                     "status": game.game_status,
                     "map_type": game.map_type,
-                    "turn": game.current_turn_index,
+                    "turn": game.turn_number if game.game_status == "active" else 0,
                     "player_count": len(game.players),
                     "max_players": game.max_players,
-                    "my_character": player_info.character if player_info else "Unknown",
-                    "my_money": player_info.money if player_info else 0
+                    "player_id": player_info.id,
+                    "my_character": player_info.character,
+                    "my_money": player_info.money
                 })
         return result
         
@@ -713,22 +714,6 @@ class GameEngine:
             "game_deleted": game_deleted
         }
 
-    def get_user_active_games(self, user_id: str) -> List[Dict[str, Any]]:
-        """Get active games for a user."""
-        active = []
-        for gid, game in self.games.items():
-            if game.game_status == "active":
-                player = next((p for p in game.players.values() if p.user_id == user_id), None)
-                if player and not player.is_bankrupt:
-                    active.append({
-                        "game_id": gid,
-                        "map_type": game.map_type,
-                        "turn": game.turn_number,
-                        "character": player.character,
-                        "players_count": len(game.player_order),
-                        "player_id": player.id
-                    })
-        return active
     
     def pay_tax(self, game_id: str, player_id: str) -> Dict[str, Any]:
         """Pay tax for the current tile (Bot or Manual)."""
