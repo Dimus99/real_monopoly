@@ -2,7 +2,7 @@
 set -e
 
 echo "=========================================="
-echo "🚀 Starting Political Monopoly Backend"
+echo "🚀 Starting MonopolyX Backend"
 echo "=========================================="
 
 # Wait for database to be ready (with retries)

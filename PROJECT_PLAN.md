@@ -1,4 +1,4 @@
-# PROJECT_PLAN.md - Political Monopoly (Satire Edition)
+# PROJECT_PLAN.md - MonopolyX (Satire Edition)
 
 ## 1. Project Overview
 **Goal**: Create a multiplayer, browser-based Monopoly-style game with a satirical political theme.

@@ -216,7 +216,7 @@ const Lobby = () => {
                 <div className="glass-card max-w-md w-full p-10 text-center space-y-8 animate-fadeIn">
                     <div className="space-y-4">
                         <h1 className="text-5xl font-display font-black tracking-tighter italic">
-                            POLITICAL <span className="text-yellow-400">MONOPOLY</span>
+                            MONOPOLY <span className="text-yellow-400">X</span>
                         </h1>
                         <p className="text-gray-400 font-medium tracking-widest uppercase text-xs">Satire Edition</p>
                     </div>

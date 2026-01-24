@@ -64,7 +64,7 @@ async def lifespan(app: FastAPI):
     
     # Start background tasks
     task = asyncio.create_task(game_loop())
-    print("🎮 Political Monopoly Backend started!")
+    print("🎮 MonopolyX Backend started!")
     
     yield
     
@@ -81,8 +81,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Political Monopoly API",
-    description="Backend API for Political Monopoly - a satirical multiplayer board game",
+    title="MonopolyX API",
+    description="Backend API for MonopolyX - a satirical multiplayer board game",
     version="1.0.0",
     lifespan=lifespan
 )

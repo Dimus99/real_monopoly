@@ -1,5 +1,5 @@
 """
-Game engine for Political Monopoly.
+Game engine for MonopolyX.
 Handles all game logic: movement, buying, rent, abilities, etc.
 """
 from typing import List, Optional, Dict, Any
