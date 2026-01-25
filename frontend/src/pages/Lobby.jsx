@@ -124,13 +124,8 @@ const Lobby = () => {
         }
     }, [API_BASE]);
 
-    // This makes the callback globally available as soon as Lobby is loaded
-    useEffect(() => {
-        window.onTelegramAuth = (data) => {
-            console.log("DEBUG AUTH: [Global] window.onTelegramAuth TRIGGERED!");
-            handleTelegramLogin(data);
-        };
-    }, [handleTelegramLogin]);
+    // Telegram auth callback is handled by TelegramLoginButton component
+    // through setting window.onTelegramAuth when it mounts.
 
     useEffect(() => {
         const init = async () => {

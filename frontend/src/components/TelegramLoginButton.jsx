@@ -15,6 +15,15 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
         // We use the standardized name that Lobby.jsx also listens to
         const callbackName = 'onTelegramAuth';
 
+        // Define the global callback BEFORE appending the script
+        // This prevents race conditions where Telegram script might call it immediately
+        if (dataOnauth) {
+            window[callbackName] = (data) => {
+                console.log("DEBUG AUTH: [Widget] Global callback triggered!");
+                dataOnauth(data);
+            };
+        }
+
         // Ensure the container is truly empty
         if (containerRef.current) {
             containerRef.current.innerHTML = '';
@@ -42,7 +51,7 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
             // Cleanup on unmount - but carefully
             // Actually better not to touch global callback here to avoid race conditions
         };
-    }, [botName, buttonSize, cornerRadius, requestAccess, usePic]); // Removed dataOnauth to avoid re-runs
+    }, [botName, buttonSize, cornerRadius, requestAccess, usePic, dataOnauth]);
 
     return (
         <div className="telegram-login-button-container">
