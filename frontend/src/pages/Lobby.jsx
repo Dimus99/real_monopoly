@@ -8,6 +8,21 @@ import {
 import CharacterSelection from '../components/CharacterSelection';
 import TelegramLoginButton from '../components/TelegramLoginButton';
 
+// Helper component
+const Globe = ({ size, className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+);
+
+// Character data constant
+const LOBBY_CHARACTERS = [
+    { id: 'Putin', name: 'Putin', avatar: '/avatars/putin.png', color: '#C41E3A', ability: 'ORESHNIK', country: 'RU', abilityDesc: 'Launch a rocket that destroys a tile.' },
+    { id: 'Trump', name: 'Trump', avatar: '/avatars/trump.png', color: '#FF6B35', ability: 'BUYOUT', country: 'USA', abilityDesc: 'Buy any property even if owned.' },
+    { id: 'Zelensky', name: 'Zelensky', avatar: '/avatars/zelensky.png', color: '#0057B8', ability: 'AID', country: 'UA', abilityDesc: 'Collect aid from all players.' },
+    { id: 'Kim', name: 'Kim', avatar: '/avatars/kim.png', color: '#8B0000', ability: 'NUKE', country: 'NK', abilityDesc: 'Nuke threat to block rent.' },
+    { id: 'Biden', name: 'Biden', avatar: '/avatars/biden.png', color: '#3C3B6E', ability: 'SANCTIONS', country: 'USA', abilityDesc: 'Freeze enemy property profits.' },
+    { id: 'Xi', name: 'Xi', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT', country: 'CN', abilityDesc: 'Ensnare opponent in debt trap.' }
+];
+
 const Lobby = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
@@ -22,15 +37,7 @@ const Lobby = () => {
     const [maxPlayers, setMaxPlayers] = useState(6);
     const [turnTimer, setTurnTimer] = useState(90);
 
-    // Characters
-    const CHARACTERS = [
-        { id: 'Putin', name: 'Putin', avatar: '/avatars/putin.png', color: '#C41E3A', ability: 'ORESHNIK', country: 'RU', abilityDesc: 'Launch a rocket that destroys a tile.' },
-        { id: 'Trump', name: 'Trump', avatar: '/avatars/trump.png', color: '#FF6B35', ability: 'BUYOUT', country: 'USA', abilityDesc: 'Buy any property even if owned.' },
-        { id: 'Zelensky', name: 'Zelensky', avatar: '/avatars/zelensky.png', color: '#0057B8', ability: 'AID', country: 'UA', abilityDesc: 'Collect aid from all players.' },
-        { id: 'Kim', name: 'Kim', avatar: '/avatars/kim.png', color: '#8B0000', ability: 'NUKE', country: 'NK', abilityDesc: 'Nuke threat to block rent.' },
-        { id: 'Biden', name: 'Biden', avatar: '/avatars/biden.png', color: '#3C3B6E', ability: 'SANCTIONS', country: 'USA', abilityDesc: 'Freeze enemy property profits.' },
-        { id: 'Xi', name: 'Xi', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT', country: 'CN', abilityDesc: 'Ensnare opponent in debt trap.' }
-    ];
+
 
     // Join Game State
     const [gameIdInput, setGameIdInput] = useState('');
@@ -397,10 +404,15 @@ const Lobby = () => {
                                         Войти через Telegram
                                     </button>
                                 ) : (
-                                    <TelegramLoginButton
-                                        botName={import.meta.env.VITE_BOT_USERNAME || "PoliticalMonopolyBot"}
-                                        dataOnauth={handleTelegramLogin}
-                                    />
+                                    <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
+                                        <TelegramLoginButton
+                                            botName={import.meta.env.VITE_BOT_USERNAME || "PoliticalMonopolyBot"}
+                                            dataOnauth={handleTelegramLogin}
+                                        />
+                                        <div className="mt-2 text-[10px] text-gray-500 font-mono">
+                                            Bot: {import.meta.env.VITE_BOT_USERNAME || "PoliticalMonopolyBot (Default)"}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -600,7 +612,7 @@ const Lobby = () => {
 
                         <div>
                             <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Choose Your Leader</label>
-                            <CharacterSelection characters={CHARACTERS} selectedId={character} onSelect={setCharacter} />
+                            <CharacterSelection characters={LOBBY_CHARACTERS} selectedId={character} onSelect={setCharacter} />
                         </div>
 
                         <button onClick={createGame} disabled={isLoading} className="btn-primary w-full py-4 text-xl font-bold shadow-lg shadow-purple-900/20">
@@ -631,7 +643,7 @@ const Lobby = () => {
 
                             <div>
                                 <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Select Leader</label>
-                                <CharacterSelection characters={CHARACTERS} selectedId={character} onSelect={setCharacter} />
+                                <CharacterSelection characters={LOBBY_CHARACTERS} selectedId={character} onSelect={setCharacter} />
                             </div>
 
                             <button onClick={() => joinGame(gameIdInput)} disabled={isLoading || !gameIdInput} className="btn-primary w-full py-4 text-xl font-bold">
@@ -776,9 +788,6 @@ const Lobby = () => {
     );
 };
 
-// Simple globe icon mock
-const Globe = ({ size, className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
-);
+
 
 export default Lobby;

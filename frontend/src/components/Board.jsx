@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Tile from './Tile';
 import ToastNotification from './ToastNotification';
+import PropertyDetailView from './PropertyModal';
 
 const getTileStyle = (index) => {
     // LAYOUT V3.1: 0(TL), 10(TR), 20(BR), 30(BL)
@@ -112,10 +113,10 @@ const getTileCoordinates = (tileId, boardRef) => {
     return { x, y };
 };
 
-import PropertyDetailView from './PropertyModal';
+
 
 const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage, externalRef, onAvatarClick, winner }) => {
-    const [hoveredTileId, setHoveredTileId] = React.useState(null);
+    const [hoveredTileId, setHoveredTileId] = useState(null);
     const internalRef = useRef(null);
     const boardRef = externalRef || internalRef;
     const [playerPositions, setPlayerPositions] = useState({});
