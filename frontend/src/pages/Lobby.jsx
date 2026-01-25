@@ -29,6 +29,7 @@ const Lobby = () => {
     const [mode, setMode] = useState('auth'); // Default to auth to force initialization
     const [isLoading, setIsLoading] = useState(false);
     const [showTelegramLogin, setShowTelegramLogin] = useState(false);
+    const isMiniApp = !!(window.Telegram?.WebApp?.initData);
     const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
 
     // Create Game State
@@ -333,7 +334,7 @@ const Lobby = () => {
     const handleTelegramLogin = useCallback(async (tgUser) => {
         if (!tgUser) return;
         setIsLoading(true);
-        console.log("LOGIN START: Telegram Widget data received", tgUser);
+        console.log("LOGIN ATTEMPT:", tgUser);
         try {
             const res = await fetch(`${API_BASE}/api/auth/telegram`, {
                 method: 'POST',
@@ -341,26 +342,27 @@ const Lobby = () => {
                 body: JSON.stringify({ widget_data: tgUser })
             });
 
-            console.log("LOGIN RESPONSE STATUS:", res.status);
-
             if (res.ok) {
                 const data = await res.json();
-                console.log("LOGIN SUCCESS: Token and User received");
                 localStorage.setItem('monopoly_token', data.token);
                 setUser(data.user);
                 setMode('menu');
             } else {
                 const errData = await res.json();
-                console.error("LOGIN FAILED:", errData);
-                alert('Ошибка входа: ' + (errData.detail || 'Сервер отклонил авторизацию'));
+                alert('Ошибка: ' + (errData.detail || 'Не удалось войти'));
             }
         } catch (e) {
-            console.error("LOGIN EXCEPTION:", e);
-            alert('Ошибка сервера при авторизации через Telegram');
+            alert('Ошибка сервера');
         } finally {
             setIsLoading(false);
         }
     }, [API_BASE]);
+
+    // Make it available globally for the widget
+    useEffect(() => {
+        window.onTelegramAuth = handleTelegramLogin;
+        return () => { delete window.onTelegramAuth; };
+    }, [handleTelegramLogin]);
 
     const handleLinkTelegram = useCallback(async (tgUser) => {
         setIsLoading(true);
@@ -836,12 +838,14 @@ const Lobby = () => {
                                 </div>
                             )}
 
-                            <button
-                                onClick={handleLogout}
-                                className="w-full py-4 mt-8 flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl border border-red-500/20 font-bold transition-all"
-                            >
-                                <X size={20} /> Выйти из аккаунта
-                            </button>
+                            {!isMiniApp && (
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full py-4 mt-8 flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl border border-red-500/20 font-bold transition-all"
+                                >
+                                    <X size={20} /> Выйти из аккаунта
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}
