@@ -65,10 +65,10 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
         return (
             <motion.div
                 animate={isRolling ? {
-                    x: [0, -4, 4, -4, 0],
-                    y: [0, 4, -4, 4, 0],
-                    rotate: [0, -2, 2, -2, 0],
-                    scale: 0.95,
+                    x: [0, -8, 8, -8, 0],
+                    y: [0, 8, -8, 8, 0],
+                    rotate: [0, 180, 360], /* Full rotation */
+                    scale: [1, 0.9, 0.95, 1],
                 } : {
                     scale: [0.8, 1.15, 1], // Impact "pop" when stopping
                     rotate: 0,
@@ -76,8 +76,9 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                     y: 0
                 }}
                 transition={isRolling ? {
-                    duration: 0.15,
+                    duration: 0.4,
                     repeat: Infinity,
+                    ease: "linear"
                 } : {
                     duration: 0.4,
                     type: "spring",
@@ -102,37 +103,34 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
         <AnimatePresence>
             {show && (
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 1.1 }}
-                    className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/60 backdrop-blur-md"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm"
                 >
-                    <div className="flex gap-8 md:gap-16 mb-16 relative">
+                    <div className="flex gap-8 md:gap-12 relative p-12">
+                        {/* Glow effect background */}
+                        <div className="absolute inset-0 bg-blue-500/10 blur-[100px] rounded-full" />
+
                         <DiceFace value={displayValues[0]} isRolling={rolling} isGlow={glow} />
                         <DiceFace value={displayValues[1]} isRolling={rolling} isGlow={glow} />
                     </div>
 
-                    <motion.div
-                        initial={{ y: 30, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className={`bg-gray-900/90 backdrop-blur-xl px-12 py-5 rounded-3xl border-2 border-white/10 shadow-3xl text-center`}
-                    >
-                        <div className="flex flex-col items-center gap-1">
-                            <span className={`text-5xl font-black font-display tracking-tighter transition-colors duration-300 ${glow && !rolling ? 'text-yellow-400 drop-shadow-[0_0_10px_rgba(255,215,0,0.5)]' : 'text-white'}`}>
-                                {rolling ? "БРОСАЕМ..." : (displayValues[0] + displayValues[1])}
-                            </span>
-                            {!rolling && (
-                                <motion.span
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="text-[11px] font-black uppercase tracking-[0.3em] text-yellow-500/70"
-                                >
-                                    Результат броска
-                                </motion.span>
-                            )}
-                        </div>
-                    </motion.div>
+                    {/* Result Sum Indicator - Shows ONLY after rolling stops */}
+                    <AnimatePresence>
+                        {!rolling && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.5 }}
+                                className="mt-8 bg-black/80 text-white px-8 py-2 rounded-full border border-white/10 shadow-2xl backdrop-blur-md"
+                            >
+                                <span className="text-3xl font-black font-mono tracking-widest">
+                                    {displayValues[0] + displayValues[1]}
+                                </span>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </motion.div>
             )}
         </AnimatePresence>

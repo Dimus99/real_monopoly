@@ -683,6 +683,40 @@ class GameEngine:
                     })
         return updates
 
+    def surrender_player(self, game_id: str, player_id: str) -> Dict[str, Any]:
+        """Handle player surrender."""
+        game = self.games.get(game_id)
+        if not game: return {"error": "Game not found"}
+        
+        player = game.players.get(player_id)
+        if not player: return {"error": "Player not found"}
+        
+        if player.is_bankrupt:
+            return {"error": "Already bankrupt"}
+
+        # Voluntary bankruptcy (to Bank)
+        self._handle_bankruptcy(game, player, None, 0)
+        
+        game.logs.append(f"🏳️ {player.name} SURRENDERED and left the game!")
+        
+        # Determine Game Over status
+        active_players = [p for p in game.players.values() if not p.is_bankrupt]
+        game_over = False
+        
+        if len(active_players) < 2 and game.game_status == "active":
+             game.game_status = "finished"
+             if active_players:
+                 game.winner_id = active_players[0].id
+                 game.logs.append(f"🏆 {active_players[0].name} wins by default!")
+             game_over = True
+
+        return {
+            "success": True,
+            "player_id": player_id,
+            "game_over": game_over,
+            "game_state": game.dict()
+        }
+
     def _kick_player(self, game: GameState, player: Player, reason: str) -> Dict[str, Any]:
         """Remove a player from the game (timeout/quit)."""
         # 1. Bankrupt logic (return assets to bank)

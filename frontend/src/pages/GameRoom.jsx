@@ -282,9 +282,16 @@ const GameRoom = () => {
     const [showChanceModal, setShowChanceModal] = useState(false);
     const [chanceData, setChanceData] = useState(null);
 
+    // Track processed actions to prevent loops/re-triggers
+    const lastProcessedActionRef = useRef(null);
+
     // Effects
     useEffect(() => {
         if (!lastAction) return;
+
+        // Prevent processing the same action object multiple times
+        if (lastProcessedActionRef.current === lastAction) return;
+        lastProcessedActionRef.current = lastAction;
         switch (lastAction.type) {
             case 'ORESHNIK': setShowOreshnik(true); break;
             case 'BUYOUT': setShowBuyout(true); break;
@@ -294,6 +301,7 @@ const GameRoom = () => {
                 setDiceValues(lastAction.dice || [1, 1]);
                 setShowDice(true);
                 setDiceRolling(true);
+                setIsRolling(true);
 
                 // Phase 1: Rolling animation (variable speed handled in component)
                 // We keep it longer (2.5s) to allow the "slow down" effect to be appreciated
@@ -301,31 +309,35 @@ const GameRoom = () => {
                     setDiceRolling(false); // Show final result
 
                     // Phase 2: Show result for a few seconds
+                    // Phase 2: Show result for a few seconds
                     setTimeout(() => {
                         setShowDice(false);
 
-                        // Phase 3: Execute Movement and Update Interface
-                        // This ensures movement happens ONLY after dice are gone
-                        if (gameState?.players) {
-                            setDelayedPlayers(gameState.players);
-                        }
+                        // Small buffer to let the dice modal fade out before movement starts
+                        setTimeout(() => {
+                            // Phase 3: Execute Movement and Update Interface
+                            // This ensures movement happens ONLY after dice are gone
+                            if (gameState?.players) {
+                                setDelayedPlayers(gameState.players);
+                            }
 
-                        // Update local turn state to show buttons
-                        if (lastAction.doubles) {
-                            setHasRolled(false);
-                        } else {
-                            setHasRolled(true);
-                        }
-                        setIsRolling(false);
+                            // Update local turn state to show buttons
+                            if (lastAction.doubles) {
+                                setHasRolled(false);
+                            } else {
+                                setHasRolled(true);
+                            }
+                            setIsRolling(false);
 
-                        // Handle other post-roll actions (Rent, etc.)
-                        if (lastAction.action === 'pay_rent' && lastAction.player_id === playerId) {
-                            setRentDetails({
-                                amount: lastAction.amount,
-                                ownerId: lastAction.owner_id
-                            });
-                            setShowRentModal(true);
-                        }
+                            // Handle other post-roll actions (Rent, etc.)
+                            if (lastAction.action === 'pay_rent' && lastAction.player_id === playerId) {
+                                setRentDetails({
+                                    amount: lastAction.amount,
+                                    ownerId: lastAction.owner_id
+                                });
+                                setShowRentModal(true);
+                            }
+                        }, 300);
 
                     }, 2000); // 2 seconds delay to read the dice
                 }, 2500); // 2.5 seconds rolling time
@@ -360,7 +372,7 @@ const GameRoom = () => {
                 break;
             case 'TRADE_UPDATED': setIncomingTrade(null); break;
         }
-    }, [lastAction, playerId, isMyTurn, diceValues]);
+    }, [lastAction]); // STRICT DEPENDENCY: Only lastAction. NO diceValues.
 
     // Optimized Player Sync Effect
     useEffect(() => {
@@ -688,7 +700,7 @@ const GameRoom = () => {
                         minWidth: isMobile ? '800px' : 'auto',
                         minHeight: isMobile ? '800px' : 'auto',
                         margin: isMobile ? '0' : '0',
-                        maxHeight: '100vh',
+                        maxHeight: '100%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'

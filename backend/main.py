@@ -374,6 +374,22 @@ async def websocket_game(
                 else:
                     await manager.broadcast(game_id, {"type": "TRADE_UPDATED", **result})
             
+            elif action == "SURRENDER":
+                result = engine.surrender_player(game_id, player_id)
+                if result.get("error"):
+                    await websocket.send_json({"type": "ERROR", "message": result["error"]})
+                else:
+                    await manager.broadcast(game_id, {"type": "PLAYER_SURRENDERED", **result})
+                    
+                    if result.get("game_over"):
+                         await manager.broadcast(game_id, {
+                            "type": "GAME_OVER",
+                            "game_state": result["game_state"]
+                        })
+                    else:
+                        await _check_and_run_bot_turn(game_id)
+            
+            
             elif action == "PING":
                 await websocket.send_json({"type": "PONG"})
             

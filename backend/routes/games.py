@@ -516,8 +516,9 @@ async def invite_friend(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
     
-    if game.game_status != "waiting":
-        raise HTTPException(status_code=400, detail="Cannot invite players after game started")
+    # Remove restriction on inviting after start
+    # if game.game_status != "waiting":
+    #    raise HTTPException(status_code=400, detail="Cannot invite players after game started")
     
     # Verify user is in game
     in_game = any(p.user_id == current_user.id for p in game.players.values())
