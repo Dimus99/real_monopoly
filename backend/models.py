@@ -21,7 +21,7 @@ class User(BaseModel):
     """User account model."""
     id: str
     name: str
-    telegram_id: Optional[int] = None
+    telegram_id: int
     avatar_url: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     stats: UserStats = Field(default_factory=UserStats)
@@ -221,9 +221,7 @@ class GameActionResponse(BaseModel):
 
 # ============== Auth Models ==============
 
-class AnonymousAuthRequest(BaseModel):
-    """Request for anonymous authentication."""
-    name: str
+
 
 
 class TelegramAuthRequest(BaseModel):

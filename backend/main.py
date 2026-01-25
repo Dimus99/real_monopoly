@@ -62,6 +62,19 @@ async def lifespan(app: FastAPI):
     else:
         print(f"✓ Database URL configured")
     
+    # Database cleanup: Remove users without a Telegram ID
+    try:
+        from sqlalchemy import delete
+        from db.models import UserDB
+        async with async_session() as session:
+            async with session.begin():
+                stmt = delete(UserDB).where(UserDB.telegram_id == None)
+                result = await session.execute(stmt)
+                if result.rowcount > 0:
+                    print(f"🧹 Database Cleanup: Deleted {result.rowcount} orphan users without Telegram ID")
+    except Exception as e:
+        print(f"⚠ Cleanup failed: {e}")
+
     # Start background tasks
     task = asyncio.create_task(game_loop())
     print("🎮 MonopolyX Backend started!")

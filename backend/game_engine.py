@@ -1712,6 +1712,13 @@ class GameEngine:
         if game:
             game.logs.append(f"💬 {player_name}: {message}")
 
+    def update_user_profile(self, user_id: str, name: str, avatar_url: str):
+        """Update user name and avatar in all active games."""
+        for game in self.games.values():
+            for player in game.players.values():
+                if player.user_id == user_id:
+                    player.name = name
+                    player.avatar_url = avatar_url
 
 # Global engine instance
 engine = GameEngine()

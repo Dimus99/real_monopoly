@@ -49,44 +49,7 @@ async def generate_friend_code(session: AsyncSession) -> str:
             return code
 
 
-async def create_anonymous_user(session: AsyncSession, name: str) -> tuple[User, str]:
-    """
-    Create an anonymous user for dev/testing.
-    Returns (User, token).
-    """
-    import uuid
-    
-    user_id = str(uuid.uuid4())
-    token = f"anon_{generate_token()}"
-    
-    user_data = {
-        "id": user_id,
-        "name": name,
-        "telegram_id": None,
-        "avatar_url": None,
-        "friend_code": await generate_friend_code(session)
-    }
-    
-    user_db = await db_service.create_user(session, user_data)
-    await db_service.create_session(session, token, user_id)
-    
-    # Convert to Pydantic model
-    user = User(
-        id=user_db.id,
-        name=user_db.name,
-        telegram_id=user_db.telegram_id,
-        avatar_url=user_db.avatar_url,
-        friend_code=user_db.friend_code,
-        created_at=user_db.created_at,
-        stats=UserStats(
-            games_played=user_db.games_played,
-            wins=user_db.wins,
-            losses=user_db.losses,
-            total_earnings=user_db.total_earnings,
-            highest_net_worth=user_db.highest_net_worth
-        )
-    )
-    return user, token
+
 
 
 def validate_telegram_init_data(init_data: str) -> Optional[dict]:

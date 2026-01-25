@@ -496,7 +496,15 @@ const GameRoom = () => {
                                 <div key={p.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
                                         <div className="relative">
-                                            <img src={ROOM_CHARACTERS[p.character]?.avatar} className="w-12 h-12 rounded-lg bg-black/30 object-cover" />
+                                            <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-black/40 flex items-center justify-center text-2xl">
+                                                {ROOM_CHARACTERS[p.character] && p.avatar_url && (p.avatar_url.startsWith('http') || p.avatar_url.startsWith('/')) ? (
+                                                    <img src={p.avatar_url} className="w-full h-full object-cover" />
+                                                ) : p.avatar_url ? (
+                                                    <span>{p.avatar_url}</span>
+                                                ) : (
+                                                    <img src={ROOM_CHARACTERS[p.character]?.avatar} className="w-full h-full object-cover" />
+                                                )}
+                                            </div>
                                             {p.is_bot && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-[10px] px-1 rounded">BOT</div>}
                                         </div>
                                         <div>
@@ -671,7 +679,15 @@ const GameRoom = () => {
                             >
                                 {sidebarCollapsed ? (
                                     <div className="relative group">
-                                        <img src={char.avatar} className="w-10 h-10 rounded-lg bg-black/40 object-cover" />
+                                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-black/40 flex items-center justify-center text-xl">
+                                            {p.avatar_url && (p.avatar_url.startsWith('http') || p.avatar_url.startsWith('/')) ? (
+                                                <img src={p.avatar_url} className="w-full h-full object-cover" />
+                                            ) : p.avatar_url ? (
+                                                <span>{p.avatar_url}</span>
+                                            ) : (
+                                                <img src={char.avatar} className="w-full h-full object-cover" />
+                                            )}
+                                        </div>
                                         {isTurn && <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border border-black" />}
                                         {/* Tooltip */}
                                         <div className="absolute left-14 top-0 bg-black/90 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none">
@@ -680,8 +696,14 @@ const GameRoom = () => {
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 flex-shrink-0">
-                                            <img src={char.avatar} className="w-full h-full object-cover bg-black/40" />
+                                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-black/40 flex items-center justify-center text-xl">
+                                            {p.avatar_url && (p.avatar_url.startsWith('http') || p.avatar_url.startsWith('/')) ? (
+                                                <img src={p.avatar_url} className="w-full h-full object-cover" />
+                                            ) : p.avatar_url ? (
+                                                <span>{p.avatar_url}</span>
+                                            ) : (
+                                                <img src={char.avatar} className="w-full h-full object-cover" />
+                                            )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-0.5">

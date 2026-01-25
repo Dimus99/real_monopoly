@@ -317,9 +317,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                         />
 
                         {/* Avatar Image */}
-                        <motion.img
-                            src={char.avatar || '/avatars/putin.png'}
-                            alt={player.name}
+                        <motion.div
                             style={{
                                 width: '40px',
                                 height: '40px',
@@ -331,10 +329,12 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                                 border: `2px solid ${char.color || '#fff'}`,
                                 position: 'relative',
                                 zIndex: 2,
-                                objectFit: 'cover',
-                                display: 'block',
                                 backgroundColor: '#1a1a2e',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                overflow: 'hidden'
                             }}
                             animate={isMoving ? {
                                 scale: [1, 1.2, 1],
@@ -350,7 +350,15 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                                 repeat: Infinity,
                                 repeatType: "reverse"
                             }}
-                        />
+                        >
+                            {player.avatar_url && (player.avatar_url.startsWith('http') || player.avatar_url.startsWith('/')) ? (
+                                <img src={player.avatar_url} alt={player.name} className="w-full h-full object-cover" />
+                            ) : player.avatar_url ? (
+                                <span className="text-xl">{player.avatar_url}</span>
+                            ) : (
+                                <img src={char.avatar} alt={player.name} className="w-full h-full object-cover" />
+                            )}
+                        </motion.div>
                     </motion.div>
                 );
             })}

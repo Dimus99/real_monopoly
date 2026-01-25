@@ -56,7 +56,7 @@ class UserDB(Base):
     
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    telegram_id: Mapped[Optional[int]] = mapped_column(BigInteger, unique=True, nullable=True, index=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False, index=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     friend_code: Mapped[Optional[str]] = mapped_column(String(10), unique=True, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

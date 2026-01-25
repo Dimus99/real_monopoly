@@ -316,6 +316,12 @@ const Lobby = () => {
         }
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('monopoly_token');
+        setUser(null);
+        setMode('auth');
+    };
+
     const handleAuth = async (name) => {
         setIsLoading(true);
         try {
@@ -415,62 +421,17 @@ const Lobby = () => {
                         </div>
                     ) : (
                         <div className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold block text-left ml-2">Leader Name</label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter your name..."
-                                    className="input-premium w-full text-center"
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && e.target.value.trim()) {
-                                            handleAuth(e.target.value.trim());
-                                        }
-                                    }}
+                            <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
+                                <TelegramLoginButton
+                                    botName={import.meta.env.VITE_BOT_USERNAME || "monopoly_haha_bot"}
+                                    dataOnauth={handleTelegramLogin}
                                 />
-                            </div>
-
-                            <button
-                                onClick={(e) => {
-                                    // Robust way to find the input in the same glass-card
-                                    const card = e.target.closest('.glass-card');
-                                    const input = card?.querySelector('input');
-                                    if (input && input.value.trim()) {
-                                        handleAuth(input.value.trim());
-                                    }
-                                }}
-                                className="btn-primary w-full py-4 text-xl"
-                                disabled={isLoading}
-                            >
-                                {isLoading ? 'Entering...' : 'Enter Arena'}
-                            </button>
-
-                            <div className="relative py-2">
-                                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/10"></span></div>
-                                <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#1a1a2e] px-2 text-gray-500">Or</span></div>
-                            </div>
-
-                            <div className="flex flex-col items-center">
-                                {!showTelegramLogin ? (
-                                    <button
-                                        onClick={() => setShowTelegramLogin(true)}
-                                        className="btn-purple px-8 py-3 rounded-full flex items-center gap-2 font-bold shadow-lg shadow-blue-900/20 hover:scale-105 transition-transform"
-                                    >
-                                        <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center">
-                                            <svg viewBox="0 0 24 24" fill="#229ED9" className="w-3 h-3"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82.1.23-.972-.327-1.477.966-2.33 2.073-1.356 1.764-.78 2.744.156 3.012 2.07-.384 3.084.776 2.502 3.128-.84 1.118-4.47 1.155-4.856.035-.347-.768-.53-2.196-.917-1.042-.28 4.218 1.379 2.19 2.071 1.096.377 4.187 2.716 5.562 8.161z" /></svg>
-                                        </div>
-                                        Войти через Telegram
-                                    </button>
-                                ) : (
-                                    <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
-                                        <TelegramLoginButton
-                                            botName={import.meta.env.VITE_BOT_USERNAME || "monopoly_haha_bot"}
-                                            dataOnauth={handleTelegramLogin}
-                                        />
-                                        <div className="mt-2 text-[10px] text-gray-500 font-mono">
-                                            Bot: {import.meta.env.VITE_BOT_USERNAME || "monopoly_haha_bot"}
-                                        </div>
-                                    </div>
-                                )}
+                                <div className="mt-4 text-[11px] text-gray-500 font-mono tracking-widest uppercase">
+                                    Secure Authentication via Telegram
+                                </div>
+                                <div className="mt-2 text-[9px] text-gray-600 font-mono">
+                                    Bot: {import.meta.env.VITE_BOT_USERNAME || "monopoly_haha_bot"}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -489,8 +450,12 @@ const Lobby = () => {
             <div className="relative z-10 p-6 flex justify-between items-center border-b border-white/10 glass-card mx-4 mt-4 rounded-xl">
                 <div className="flex items-center gap-4">
                     <button onClick={() => setMode('profile')} className="group relative">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)] group-hover:scale-105 transition-transform">
-                            <img src={user.avatar_url || "/api/placeholder/48/48"} alt="User" className="w-full h-full object-cover" />
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)] group-hover:scale-105 transition-transform bg-[#1a1a2e] flex items-center justify-center text-2xl">
+                            {user.avatar_url && (user.avatar_url.startsWith('http') || user.avatar_url.startsWith('/')) ? (
+                                <img src={user.avatar_url} alt="User" className="w-full h-full object-cover" />
+                            ) : (
+                                <span>{user.avatar_url || '👤'}</span>
+                            )}
                         </div>
                         <div className="absolute -bottom-1 -right-1 bg-yellow-500 text-black p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                             <Settings size={10} />
@@ -735,7 +700,18 @@ const Lobby = () => {
                                     <h3 className="text-sm text-gray-400 uppercase tracking-widest mb-2">Requests</h3>
                                     {friendRequests.map(req => (
                                         <div key={req.id} className="bg-white/10 p-3 rounded-lg flex justify-between items-center border border-purple-500/30">
-                                            <div className="font-bold">{req.from_user?.name}</div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center font-bold text-xs overflow-hidden">
+                                                    {req.from_user?.avatar_url && (req.from_user.avatar_url.startsWith('http') || req.from_user.avatar_url.startsWith('/')) ? (
+                                                        <img src={req.from_user.avatar_url} className="w-full h-full object-cover" />
+                                                    ) : req.from_user?.avatar_url ? (
+                                                        <span className="text-lg">{req.from_user.avatar_url}</span>
+                                                    ) : (
+                                                        req.from_user?.name?.[0] || '?'
+                                                    )}
+                                                </div>
+                                                <div className="font-bold">{req.from_user?.name}</div>
+                                            </div>
                                             <div className="flex gap-2">
                                                 <button onClick={() => authFetch(`/api/friends/requests/${req.id}/accept`, { method: 'POST' }).then(fetchFriendsData)} className="p-1 bg-green-500 rounded hover:bg-green-600"><UserCheck size={16} /></button>
                                                 <button onClick={() => authFetch(`/api/friends/requests/${req.id}/reject`, { method: 'POST' }).then(fetchFriendsData)} className="p-1 bg-red-500 rounded hover:bg-red-600"><X size={16} /></button>
@@ -750,7 +726,15 @@ const Lobby = () => {
                                 friends.map(f => (
                                     <div key={f.id} className="bg-white/5 p-3 rounded-lg flex justify-between items-center">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center font-bold text-xs">{f.name[0]}</div>
+                                            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center font-bold text-xs overflow-hidden">
+                                                {f.avatar_url && (f.avatar_url.startsWith('http') || f.avatar_url.startsWith('/')) ? (
+                                                    <img src={f.avatar_url} className="w-full h-full object-cover" />
+                                                ) : f.avatar_url ? (
+                                                    <span className="text-lg">{f.avatar_url}</span>
+                                                ) : (
+                                                    f.name[0]
+                                                )}
+                                            </div>
                                             <div>
                                                 <div className="font-bold text-sm">{f.name}</div>
                                                 <div className="text-[10px] text-gray-500 font-mono">#{f.friend_code}</div>
@@ -862,11 +846,18 @@ const Lobby = () => {
                                     <span className="text-sm font-bold text-green-400">Telegram привязан</span>
                                 </div>
                             )}
+
+                            <button
+                                onClick={handleLogout}
+                                className="w-full py-4 mt-8 flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl border border-red-500/20 font-bold transition-all"
+                            >
+                                <X size={20} /> Выйти из аккаунта
+                            </button>
                         </div>
                     </div>
                 )}
             </div>
-        </div >
+        </div>
     );
 };
 

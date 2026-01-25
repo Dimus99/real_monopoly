@@ -12,41 +12,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import db
 from db.base import get_db
 from db import service as db_service
+from game_engine import engine
 from models import (
     User, UserPublic, UserStats,
-    AnonymousAuthRequest, TelegramAuthRequest, AuthResponse,
+    TelegramAuthRequest, AuthResponse,
     UpdateUserRequest
 )
 from auth import (
-    create_anonymous_user, 
     authenticate_telegram_user, 
     get_current_user,
     validate_telegram_init_data,
     validate_telegram_widget_data
 )
+from socket_manager import manager
+import asyncio
 
 router = APIRouter(prefix="/api", tags=["users"])
 
 
 # ============== Authentication ==============
 
-@router.post("/auth/anonymous", response_model=AuthResponse)
-async def anonymous_auth(
-    request: AnonymousAuthRequest,
-    session: AsyncSession = Depends(get_db)
-):
-    """
-    Create an anonymous user for dev/testing.
-    Returns a token for subsequent requests.
-    """
-    if not request.name or len(request.name.strip()) < 2:
-        raise HTTPException(status_code=400, detail="Name must be at least 2 characters")
-    
-    if len(request.name) > 32:
-        raise HTTPException(status_code=400, detail="Name must be at most 32 characters")
-    
-    user, token = await create_anonymous_user(session, request.name.strip())
-    return AuthResponse(token=token, user=user)
+
 
 
 @router.post("/auth/telegram", response_model=AuthResponse)
@@ -157,6 +143,19 @@ async def update_me(
     
     if updates:
         updated = await db_service.update_user(session, current_user.id, updates)
+        
+        # Propagate to active games
+        engine.update_user_profile(updated.id, updated.name, updated.avatar_url)
+        
+        # Broadcast to all active games of this user
+        for game_id, game in engine.games.items():
+            if any(p.user_id == updated.id for p in game.players.values()):
+                asyncio.create_task(manager.broadcast(game_id, {
+                    "type": "PLAYER_UPDATED",
+                    "player_id": next(pid for pid, p in game.players.items() if p.user_id == updated.id),
+                    "game_state": game.dict()
+                }))
+        
         return User(
             id=updated.id,
             name=updated.name,
@@ -206,6 +205,18 @@ async def upload_avatar(
     # Update user in DB
     avatar_url = f"/uploads/{filename}"
     updated = await db_service.update_user(session, current_user.id, {"avatar_url": avatar_url})
+    
+    # Propagate to active games
+    engine.update_user_profile(updated.id, updated.name, updated.avatar_url)
+    
+    # Broadcast to all active games of this user
+    for game_id, game in engine.games.items():
+        if any(p.user_id == updated.id for p in game.players.values()):
+            asyncio.create_task(manager.broadcast(game_id, {
+                "type": "PLAYER_UPDATED",
+                "player_id": next(pid for pid, p in game.players.items() if p.user_id == updated.id),
+                "game_state": game.dict()
+            }))
     
     return User(
         id=updated.id,
