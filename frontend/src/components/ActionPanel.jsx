@@ -16,7 +16,10 @@ const ActionPanel = ({
     currentTileName,
     gameMode = 'abilities',
     isChatOpen = false,
-    isDoubles = false
+    gameMode = 'abilities',
+    isChatOpen = false,
+    isDoubles = false,
+    abilityCooldown = 0
 }) => {
 
     // Ability configurations
@@ -59,18 +62,27 @@ const ActionPanel = ({
             >
                 {/* 1. Ability Button (Left) */}
                 {ability && (
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => onAbility(ability.id)}
-                        className={`h-[56px] w-[56px] md:w-auto md:px-4 ${ability.color} hover:brightness-110 text-white rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg border border-white/20`}
-                        title={ability.name}
-                    >
-                        <span className="text-2xl filter drop-shadow-md">{ability.icon}</span>
-                        <span className="hidden md:block text-[10px] uppercase font-bold max-w-[60px] leading-tight truncat text-left">
-                            {ability.name.split(' ')[0]}
-                        </span>
-                    </motion.button>
+                    <div className="relative group">
+                        <motion.button
+                            whileHover={abilityCooldown === 0 ? { scale: 1.05 } : {}}
+                            whileTap={abilityCooldown === 0 ? { scale: 0.95 } : {}}
+                            onClick={() => abilityCooldown === 0 && onAbility(ability.id)}
+                            disabled={abilityCooldown > 0}
+                            className={`h-[56px] w-[56px] md:w-auto md:px-4 ${abilityCooldown > 0 ? 'bg-gray-600 grayscale cursor-not-allowed' : ability.color} text-white rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg border border-white/20 relative overflow-hidden`}
+                            title={ability.name}
+                        >
+                            <span className="text-2xl filter drop-shadow-md">{ability.icon}</span>
+                            <span className="hidden md:block text-[10px] uppercase font-bold max-w-[60px] leading-tight truncat text-left">
+                                {ability.name.split(' ')[0]}
+                            </span>
+                            {/* Cooldown Overlay */}
+                            {abilityCooldown > 0 && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                    <span className="text-xl font-bold text-white">{abilityCooldown}</span>
+                                </div>
+                            )}
+                        </motion.button>
+                    </div>
                 )}
 
                 {/* 2. Roll Button (Center-Left) */}
@@ -101,7 +113,7 @@ const ActionPanel = ({
                                 {isDoubles ? '⚡' : '🎲'}
                             </span>
                             <span className="text-[10px] font-black uppercase tracking-wider">
-                                {isDoubles ? 'ЕЩЕ!' : 'БРОСОК'}
+                                {isDoubles ? 'БРОСОК' : 'БРОСОК'}
                             </span>
                         </>
                     )}

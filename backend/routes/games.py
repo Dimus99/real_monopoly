@@ -241,6 +241,28 @@ async def leave_game(
             "game_state": game.dict()
         })
     )
+
+    # Check if no humans left -> Delete game
+    active_humans = [p for p in game.players.values() if not p.is_bot]
+    if not active_humans:
+        if game_id.upper() in engine.games:
+            del engine.games[game_id.upper()]
+            print(f"Game {game_id} deleted because no humans left.")
+    
+    # Check if only 1 player (human or bot) left in active game -> End game
+    elif game.game_status == "active" and len(game.players) < 2:
+         game.game_status = "finished"
+         if len(game.players) == 1:
+             winner = list(game.players.values())[0]
+             game.winner_id = winner.id
+             game.logs.append(f"🏆 {winner.name} wins by default!")
+             # Broadcast finish
+             asyncio.create_task(
+                manager.broadcast(game_id.upper(), {
+                    "type": "GAME_OVER",
+                    "game_state": game.dict()
+                })
+             )
     
     return {"success": True, "message": "Left the game"}
 

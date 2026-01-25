@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Copy, Users, Bot, Play, Check, Home, Clock, ArrowLeftRight,
     ArrowLeft, MessageSquare, Settings, Bell,
-    Menu, UserPlus, X, MapPin, ChevronLeft, ChevronRight, Crosshair
+    Menu, UserPlus, X, MapPin, ChevronLeft, ChevronRight, Crosshair, Flag
 } from 'lucide-react';
 import useGameSocket from '../hooks/useGameSocket';
 import Board from '../components/Board';
@@ -298,7 +298,15 @@ const GameRoom = () => {
                 // Rolling for 1.5 seconds
                 setTimeout(() => {
                     setDiceRolling(false);
-                    setHasRolled(true);
+                    // FIX: If doubles, we have NOT rolled "for the purpose of ending turn".
+                    // But we don't want to enable roll button immediately until animation is done.
+                    // Actually, if doubles, hasRolled should be false so "Roll" appears.
+                    // If not doubles, hasRolled = true so "End Turn" appears.
+                    if (lastAction.doubles) {
+                        setHasRolled(false);
+                    } else {
+                        setHasRolled(true);
+                    }
                     setIsRolling(false);
 
                     // Sync players to move tokens
@@ -310,10 +318,11 @@ const GameRoom = () => {
                     setTimeout(() => {
                         setShowDice(false);
 
-                        // Chance data should be shown to EVERYONE
+                        // Chance data should NOT be shown to EVERYONE as a modal
+                        // FIX: Only show via logs (already handled). Remove modal trigger.
                         if (lastAction.chance_card) {
-                            console.log("Showing Chance card to everyone:", lastAction.chance_card);
-                            setChanceData(lastAction);
+                            console.log("Chance card drawn:", lastAction.chance_card);
+                            // setChanceData(lastAction); // Removed to prevent modal spam
                         }
 
                         if (lastAction.player_id === playerId) {
@@ -330,16 +339,6 @@ const GameRoom = () => {
                                 setShowRentModal(true);
                             } else if (lastAction.action === 'chance') {
                                 // Already handled above for everyone
-                            } else {
-                                // Passive / Auto-end conditions
-                                if (!lastAction.doubles) {
-                                    setTimeout(() => {
-                                        if (isMyTurn) {
-                                            console.log("Auto-ending turn...");
-                                            sendAction('END_TURN');
-                                        }
-                                    }, 2000);
-                                }
                             }
                         }
                     }, 3000);
@@ -350,23 +349,12 @@ const GameRoom = () => {
             case 'PROPERTY_BOUGHT':
                 if (lastAction.player_id === playerId) {
                     setShowBuyModal(false);
-                    // Auto-end turn if not doubles
-                    // Dummy chunk current dice values for doubles
-                    const isDoubles = diceValues[0] === diceValues[1];
-                    if (!isDoubles) {
-                        setTimeout(() => sendAction('END_TURN'), 1000);
-                    }
                 }
                 break;
 
             case 'RENT_PAID':
                 if (lastAction.player_id === playerId) {
                     setShowRentModal(false); // Close rent modal if open
-                    // Auto-end if not doubles
-                    const isDoubles = diceValues[0] === diceValues[1];
-                    if (!isDoubles) {
-                        setTimeout(() => sendAction('END_TURN'), 1000);
-                    }
                 }
                 break;
 
@@ -478,6 +466,7 @@ const GameRoom = () => {
                             <div className="bg-white/10 px-3 py-1 rounded font-mono">ID: {gameId}</div>
                             <div className="flex items-center justify-center gap-2"><Users size={16} /> {Object.keys(gameState.players).length}/{gameState.max_players} Players</div>
                             {!isHost && <div className="text-yellow-500 animate-pulse">Waiting for host to start...</div>}
+                            <button onClick={() => navigate('/')} className="px-3 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/40 rounded text-sm transition-colors border border-red-500/30">Leave Lobby</button>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
@@ -669,17 +658,23 @@ const GameRoom = () => {
                                                 ${p.money?.toLocaleString()}
                                             </div>
                                         </div>
-                                        {!p.is_bot && p.id !== playerId ? (
-                                            sidebarCollapsed ? (
-                                                <button onClick={(e) => { e.stopPropagation(); initiateTrade(p); }} className="absolute -top-1 -right-1 bg-blue-600 rounded-full p-1 border border-white/20 shadow-lg z-10" title="Trade">
-                                                    <ArrowLeftRight size={10} className="text-white" />
-                                                </button>
-                                            ) : (
-                                                <button onClick={(e) => { e.stopPropagation(); initiateTrade(p); }} className="p-1 hover:bg-white/10 rounded">
+                                        <div className="flex items-center gap-1">
+                                            {p.id !== playerId ? (
+                                                <button onClick={(e) => { e.stopPropagation(); initiateTrade(p); }} className="p-1 hover:bg-white/10 rounded" title="Trade">
                                                     <ArrowLeftRight size={14} className="text-gray-400" />
                                                 </button>
-                                            )
-                                        ) : null}
+                                            ) : (
+                                                // Self actions
+                                                <button onClick={() => { if (window.confirm('Surrender?')) sendAction('SURRENDER'); }} className="p-1 hover:bg-red-500/20 rounded text-red-500" title="Surrender">
+                                                    <Flag size={14} />
+                                                </button>
+                                            )}
+                                            {!p.is_bot && p.id !== playerId && (
+                                                <button onClick={(e) => { e.stopPropagation(); handleSendInvite(p.user_id); }} className="p-1 hover:bg-white/10 rounded" title="Add Friend">
+                                                    <UserPlus size={14} className="text-gray-400" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </motion.div>
@@ -695,11 +690,15 @@ const GameRoom = () => {
                 <div className="relative z-10 shadow-2xl transition-all duration-300"
                     ref={boardRef}
                     style={{
-                        width: isMobile ? '800px' : '90vh',
-                        height: isMobile ? '800px' : '90vh',
+                        width: isMobile ? '800px' : '100%',
+                        height: isMobile ? '800px' : '100%',
                         minWidth: isMobile ? '800px' : 'auto',
                         minHeight: isMobile ? '800px' : 'auto',
-                        margin: isMobile ? '0' : 'auto'
+                        margin: isMobile ? '0' : '0',
+                        maxHeight: '100vh',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                     }}
                 >
                     <Board
@@ -740,9 +739,11 @@ const GameRoom = () => {
                             onAbility={handleAbility}
                             currentTilePrice={currentTile?.price}
                             currentTileName={currentTile?.name}
+
                             gameMode={gameState.game_mode}
                             isChatOpen={false}
                             isDoubles={diceValues[0] === diceValues[1]}
+                            abilityCooldown={currentPlayer?.ability_cooldown}
                         />
                     </div>
                 </div>
@@ -850,11 +851,7 @@ const GameRoom = () => {
                         data={chanceData}
                         onClose={() => {
                             setChanceData(null);
-                            // Auto-end turn on close if not doubles
-                            const isDoubles = diceValues[0] === diceValues[1];
-                            if (isMyTurn && !isDoubles) {
-                                sendAction('END_TURN');
-                            }
+                            setShowChanceModal(false);
                         }}
                     />
                 )}

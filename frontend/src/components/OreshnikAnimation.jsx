@@ -26,7 +26,7 @@ const OreshnikAnimation = ({ isVisible, onComplete, targetTileId = null, boardRe
             const explodeTimeout = setTimeout(() => setAnimationPhase('exploding'), 2000);
             const completeTimeout = setTimeout(() => {
                 if (onComplete) onComplete();
-            }, 4000);
+            }, 3500);
 
             return () => {
                 clearTimeout(flyTimeout);

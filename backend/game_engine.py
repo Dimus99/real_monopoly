@@ -393,7 +393,8 @@ class GameEngine:
                 else:
                     result["action"] = "still_jailed"
                     game.logs.append(f"{player.name} is still in jail ({player.jail_turns}/3 turns)")
-                    self._next_turn(game)
+                    game.turn_state["has_rolled"] = True
+                    result["game_state"] = game.dict()
                     return result
         
         # Handle consecutive doubles (go to jail on 3rd)
@@ -403,7 +404,8 @@ class GameEngine:
                 self._send_to_jail(game, player)
                 result["action"] = "go_to_jail"
                 game.logs.append(f"{player.name} rolled 3 doubles in a row - sent to jail!")
-                self._next_turn(game)
+                game.turn_state["has_rolled"] = True
+                result["game_state"] = game.dict()
                 return result
         else:
             game.doubles_count = 0
