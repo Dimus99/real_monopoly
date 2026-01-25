@@ -23,6 +23,8 @@ const LOBBY_CHARACTERS = [
     { id: 'Xi', name: 'Xi', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT', country: 'CN', abilityDesc: 'Ensnare opponent in debt trap.' }
 ];
 
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
+
 const Lobby = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
@@ -30,7 +32,6 @@ const Lobby = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [showTelegramLogin, setShowTelegramLogin] = useState(false);
     const isMiniApp = !!(window.Telegram?.WebApp?.initData);
-    const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
 
     // Create Game State
     const [selectedMap, setSelectedMap] = useState('World');
@@ -57,7 +58,7 @@ const Lobby = () => {
     const handleTelegramLogin = useCallback(async (data) => {
         if (!data) return;
         setIsLoading(true);
-        console.verbose && console.log("AUTH: Processing data", data);
+        console.log("AUTH: Starting Telegram authentication...", data.id || "MiniApp");
 
         try {
             const body = {};
@@ -93,15 +94,19 @@ const Lobby = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [API_BASE]);
+    }, []);
 
     // This makes the callback globally available as soon as Lobby is loaded
     useEffect(() => {
-        window.onTelegramAuth = (data) => {
-            console.log("Global onTelegramAuth called by Widget");
+        const authCallback = (data) => {
+            console.log("Global onTelegramAuth triggered by Widget");
             handleTelegramLogin(data);
         };
-        return () => { window.onTelegramAuth = null; };
+
+        window.onTelegramAuth = authCallback;
+
+        // No cleanup to null to avoid race conditions with Telegram script
+        // It will be overwritten by subsequent mounts anyway
     }, [handleTelegramLogin]);
 
     useEffect(() => {

@@ -4,22 +4,19 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
     const containerRef = useRef(null);
 
     useEffect(() => {
-        // Prevent multiple buttons
-        if (containerRef.current) {
-            containerRef.current.innerHTML = '';
+        // Prevent multiple buttons/scripts from being added if already initialized
+        if (containerRef.current && containerRef.current.innerHTML !== '') {
+            return;
         }
 
-        // Create a persistent stable callback
-        const authCallback = (user) => {
-            console.log("Global onTelegramAuth triggered!", user);
+        const cleanBotName = botName.replace('@', '');
+        console.log('Initializing Telegram Widget for:', cleanBotName);
+
+        // Persistent callback for the widget
+        window.onTelegramAuth = (user) => {
+            console.log("Telegram Auth callback received", user);
             if (dataOnauth) dataOnauth(user);
         };
-
-        window.onTelegramAuth = authCallback;
-
-        // Sanitize bot name (remove @ if present)
-        const cleanBotName = botName.replace('@', '');
-        console.log('Initializing Telegram Widget with bot:', cleanBotName);
 
         const script = document.createElement('script');
         script.src = 'https://telegram.org/js/telegram-widget.js?22';
@@ -31,13 +28,15 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
         if (!usePic) script.setAttribute('data-userpic', 'false');
         script.async = true;
 
-        containerRef.current.appendChild(script);
+        if (containerRef.current) {
+            containerRef.current.appendChild(script);
+        }
 
         return () => {
-            // We don't remove the global callback immediately to avoid race conditions
-            // during component unmounting/loading state changes
+            // Cleanup on unmount - but carefully
+            // Actually better not to touch global callback here to avoid race conditions
         };
-    }, [botName, dataOnauth, buttonSize, cornerRadius, requestAccess, usePic]);
+    }, [botName, buttonSize, cornerRadius, requestAccess, usePic]); // Removed dataOnauth to avoid re-runs
 
     return (
         <div className="telegram-login-button-container">
