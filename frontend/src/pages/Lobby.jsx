@@ -378,8 +378,12 @@ const Lobby = () => {
 
                             <button
                                 onClick={(e) => {
-                                    const input = e.target.previousSibling.querySelector('input') || e.target.parentElement.querySelector('input');
-                                    if (input && input.value.trim()) handleAuth(input.value.trim());
+                                    // Robust way to find the input in the same glass-card
+                                    const card = e.target.closest('.glass-card');
+                                    const input = card?.querySelector('input');
+                                    if (input && input.value.trim()) {
+                                        handleAuth(input.value.trim());
+                                    }
                                 }}
                                 className="btn-primary w-full py-4 text-xl"
                                 disabled={isLoading}
@@ -752,8 +756,9 @@ const Lobby = () => {
 
                             <button
                                 onClick={(e) => {
-                                    const input = e.target.parentElement.querySelector('input');
-                                    handleUpdateProfile(input.value);
+                                    const card = e.target.closest('.glass-card');
+                                    const input = card?.querySelector('input');
+                                    if (input) handleUpdateProfile(input.value);
                                 }}
                                 className="btn-primary w-full py-4 font-bold"
                                 disabled={isLoading}

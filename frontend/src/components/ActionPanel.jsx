@@ -19,7 +19,8 @@ const ActionPanel = ({
 
     isDoubles = false,
     abilityCooldown = 0,
-    onSurrender
+    onSurrender,
+    isChanceOpen = false
 }) => {
 
     // Ability configurations

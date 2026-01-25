@@ -22,7 +22,7 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
         script.setAttribute('data-telegram-login', cleanBotName);
         script.setAttribute('data-size', buttonSize);
         script.setAttribute('data-radius', cornerRadius);
-        script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+        script.setAttribute('data-onauth', 'onTelegramAuth');
         script.setAttribute('data-request-access', requestAccess);
         if (!usePic) script.setAttribute('data-userpic', 'false');
         script.async = true;
