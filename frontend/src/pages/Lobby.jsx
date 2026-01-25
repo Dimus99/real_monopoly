@@ -58,17 +58,20 @@ const Lobby = () => {
     const handleTelegramLogin = useCallback(async (data) => {
         if (!data) return;
         setIsLoading(true);
-        console.log("AUTH: Starting Telegram authentication...", data.id || "MiniApp");
+        console.log("AUTH: Starting Telegram authentication...", data.id || "MiniApp", data);
 
         try {
             const body = {};
             // Determine if data is from Widget/Redirect (dictionary) or Mini App (string/init_data)
             if (data.hash && data.id) {
+                console.log("AUTH: Using Widget/Redirect data");
                 body.widget_data = data;
             } else {
+                console.log("AUTH: Using Mini App init_data");
                 body.init_data = typeof data === 'string' ? data : data.init_data;
             }
 
+            console.log("AUTH: Sending POST to", `${API_BASE}/api/auth/telegram`);
             const res = await fetch(`${API_BASE}/api/auth/telegram`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -77,15 +80,15 @@ const Lobby = () => {
 
             if (res.ok) {
                 const authData = await res.json();
-                console.log("AUTH SUCCESS:", authData.user.name);
+                console.log("AUTH SUCCESS:", authData.user.name, authData.token.substring(0, 10) + "...");
                 localStorage.setItem('monopoly_token', authData.token);
                 setProfileName(authData.user.name);
                 setUser(authData.user);
                 setMode('menu');
             } else {
                 const errorData = await res.json();
-                console.error("AUTH FAILED:", errorData);
-                alert(`Ошибка: ${errorData.detail || 'Сервер отклонил вход'}`);
+                console.error("AUTH FAILED:", res.status, errorData);
+                alert(`Ошибка (${res.status}): ${typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail) || 'Сервер отклонил вход'}`);
                 setMode('auth');
             }
         } catch (err) {
@@ -122,7 +125,8 @@ const Lobby = () => {
                 urlParams.forEach((value, key) => { tgData[key] = value; });
                 window.history.replaceState({}, document.title, window.location.pathname);
                 handleTelegramLogin(tgData);
-                return;
+                // Don't return here, let it finish setting isInitializing to false 
+                // handleTelegramLogin will manage the mode
             }
 
             const tg = window.Telegram?.WebApp;

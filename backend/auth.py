@@ -126,18 +126,23 @@ def validate_telegram_widget_data(widget_data: dict) -> Optional[dict]:
     See: https://core.telegram.org/widgets/login#checking-authorization-data
     """
     if not BOT_TOKEN:
-        # Dev mode: skip validation
+        print("DEBUG AUTH: No BOT_TOKEN set, skipping Telegram widget validation (dev mode)")
         return widget_data
         
     try:
         data = widget_data.copy()
         check_hash = data.pop("hash", None)
         if not check_hash:
+            print("DEBUG AUTH: Missing hash in widget_data")
             return None
             
         # Data-check-string is alphabetical order of all remaining fields
         # IMPORTANT: Convert all values to strings to match Telegram's signing method
-        data_check_arr = [f"{k}={v}" for k, v in sorted(data.items())]
+        # Also, ONLY include fields that are part of Telegram's auth to avoid extra fields breaking the hash
+        tg_fields = ['auth_date', 'first_name', 'id', 'last_name', 'photo_url', 'username']
+        data_to_check = {k: v for k, v in data.items() if k in tg_fields}
+        
+        data_check_arr = [f"{k}={v}" for k, v in sorted(data_to_check.items())]
         data_check_string = "\n".join(data_check_arr)
         
         # Secret key for widget is just SHA256 of bot token
@@ -152,11 +157,18 @@ def validate_telegram_widget_data(widget_data: dict) -> Optional[dict]:
         
         # Validate
         if not hmac.compare_digest(calculated_hash, check_hash):
+            print(f"DEBUG AUTH: Hash mismatch!")
+            print(f"DEBUG AUTH: Received hash: {check_hash}")
+            print(f"DEBUG AUTH: Calculated: {calculated_hash}")
+            print(f"DEBUG AUTH: Data string: {data_check_string}")
             return None
             
+        print(f"DEBUG AUTH: Telegram widget validation successful for ID {data.get('id')}")
         return widget_data
     except Exception as e:
-        print(f"Telegram widget validation error LOG: {e}")
+        print(f"DEBUG AUTH: Telegram widget validation error: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
@@ -184,6 +196,10 @@ async def authenticate_telegram_user(
     telegram_id = user_data.get("id")
     if not telegram_id:
         raise HTTPException(status_code=401, detail="No Telegram user ID")
+    
+    # Ensure it's an integer for DB lookup
+    telegram_id = int(telegram_id)
+    print(f"DEBUG AUTH: Authenticating Telegram ID: {telegram_id}")
     
     # Check if user exists
     existing = await db_service.get_user_by_telegram_id(session, telegram_id)
