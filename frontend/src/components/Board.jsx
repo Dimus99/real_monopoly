@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Tile from './Tile';
 import ToastNotification from './ToastNotification';
-import PropertyDetailView from './PropertyModal';
+
 
 const getTileStyle = (index) => {
     // LAYOUT V3.1: 0(TL), 10(TR), 20(BR), 30(BL)
@@ -426,15 +426,13 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
 
                 {/* Center Content: Either Property Details or Chat/Logs */}
                 <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
-                    {hoveredTileId ? (
-                        <div className="w-full h-full pointer-events-none p-4">
-                            <PropertyDetailView
-                                property={tiles.find(t => t.id === hoveredTileId)}
-                                players={players}
-                                canBuy={false} // Hover view is just for info
-                            />
+                    {/* Hover info moved to a simpler tooltip or handled by GameRoom */}
+                    {hoveredTileId && (
+                        <div className="bg-black/80 backdrop-blur-md p-4 rounded-xl border border-white/20 text-white shadow-2xl animate-in fade-in zoom-in duration-200">
+                            <div className="font-bold text-lg">{tiles.find(t => t.id === hoveredTileId)?.name}</div>
+                            <div className="text-yellow-400 font-mono">${tiles.find(t => t.id === hoveredTileId)?.price}</div>
                         </div>
-                    ) : null}
+                    )}
                 </div>
 
                 {/* Log Panel / Chat - Positioned at the very bottom edge of inner area */}
