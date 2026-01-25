@@ -322,52 +322,32 @@ const Lobby = () => {
         setMode('auth');
     };
 
-    const handleAuth = async (name) => {
-        setIsLoading(true);
-        try {
-            const res = await fetch(`${API_BASE}/api/auth/anonymous`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                localStorage.setItem('monopoly_token', data.token);
-                setUser(data.user);
-                setMode('menu');
-            } else {
-                alert('Login failed');
-            }
-        } catch (e) {
-            alert('Server error');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     const handleTelegramLogin = async (tgUser) => {
         setIsLoading(true);
-        console.log("Telegram Widget login attempt:", tgUser);
+        console.log("LOGIN START: Telegram Widget data received", tgUser);
         try {
             const res = await fetch(`${API_BASE}/api/auth/telegram`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ widget_data: tgUser })
             });
+
+            console.log("LOGIN RESPONSE STATUS:", res.status);
+
             if (res.ok) {
                 const data = await res.json();
-                console.log("Telegram login successful!");
+                console.log("LOGIN SUCCESS: Token and User received");
                 localStorage.setItem('monopoly_token', data.token);
                 setUser(data.user);
                 setMode('menu');
             } else {
                 const errData = await res.json();
-                console.error("Telegram login error:", errData);
-                alert('Telegram login failed: ' + (errData.detail || 'Unknown error'));
+                console.error("LOGIN FAILED:", errData);
+                alert('Ошибка входа: ' + (errData.detail || 'Сервер отклонил авторизацию'));
             }
         } catch (e) {
-            console.error("Telegram auth exception:", e);
-            alert('Server error during Telegram auth');
+            console.error("LOGIN EXCEPTION:", e);
+            alert('Ошибка сервера при авторизации через Telegram');
         } finally {
             setIsLoading(false);
         }

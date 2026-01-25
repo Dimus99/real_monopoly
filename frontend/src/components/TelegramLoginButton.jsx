@@ -9,8 +9,12 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
             containerRef.current.innerHTML = '';
         }
 
+        // Create a stable callback
         window.onTelegramAuth = (user) => {
-            dataOnauth(user);
+            console.log("Global onTelegramAuth triggered!", user);
+            if (dataOnauth) {
+                dataOnauth(user);
+            }
         };
 
         // Sanitize bot name (remove @ if present)
