@@ -126,53 +126,59 @@ const Lobby = () => {
 
     useEffect(() => {
         const init = async () => {
+            console.log("DEBUG AUTH: [Init] Starting initialization...");
             // --- 0. CHECK URL SCAN FOR REDIRECT AUTH ---
             const urlParams = new URLSearchParams(window.location.search);
             const tgId = urlParams.get('id');
             const tgHash = urlParams.get('hash');
 
             if (tgId && tgHash) {
-                console.log("DETECTED: Telegram Auth data in URL. Processing redirect...");
+                console.log("DEBUG AUTH: [Init] Detected redirect data in URL");
                 const tgData = {};
                 urlParams.forEach((value, key) => { tgData[key] = value; });
                 window.history.replaceState({}, document.title, window.location.pathname);
-                handleTelegramLogin(tgData);
-                // Don't return here, let it finish setting isInitializing to false 
-                // handleTelegramLogin will manage the mode
+                await handleTelegramLogin(tgData);
+                setIsInitializing(false);
+                return; // Stop here, handleTelegramLogin took over
             }
 
             const tg = window.Telegram?.WebApp;
             // 1. Mini App Auto-Auth
             if (tg && tg.initData) {
+                console.log("DEBUG AUTH: [Init] Detected Mini App environment");
                 tg.ready();
                 tg.expand();
-                console.log("Mini App: Attempting auth...");
-                handleTelegramLogin(tg.initData);
+                await handleTelegramLogin(tg.initData);
                 setIsInitializing(false);
-                return;
+                return; // Stop here
             }
 
             // 2. Token Validation
             const token = localStorage.getItem('monopoly_token');
             if (token) {
                 try {
-                    console.log("Browser: Validating existing session...");
+                    console.log("DEBUG AUTH: [Init] Validating existing token...");
                     const res = await fetch(`${API_BASE}/api/users/me`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (res.ok) {
                         const data = await res.json();
+                        console.log("DEBUG AUTH: [Init] Token valid, user:", data.name);
                         setUser(data);
                         setProfileName(data.name);
                         setMode('menu');
                         setIsInitializing(false);
                         return;
                     } else {
+                        console.log("DEBUG AUTH: [Init] Token invalid or expired");
                         localStorage.removeItem('monopoly_token');
                     }
-                } catch (e) { console.error(e); }
+                } catch (e) {
+                    console.error("DEBUG AUTH: [Init] Token validation error:", e);
+                }
             }
 
+            console.log("DEBUG AUTH: [Init] No active session, showing auth screen");
             setMode('auth');
             setIsInitializing(false);
         };
