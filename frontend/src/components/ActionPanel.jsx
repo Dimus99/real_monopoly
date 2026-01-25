@@ -16,8 +16,7 @@ const ActionPanel = ({
     currentTileName,
     gameMode = 'abilities',
     isChatOpen = false,
-    gameMode = 'abilities',
-    isChatOpen = false,
+
     isDoubles = false,
     abilityCooldown = 0,
     onSurrender
