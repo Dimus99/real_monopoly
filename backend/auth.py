@@ -150,7 +150,9 @@ def validate_telegram_widget_data(widget_data: dict) -> Optional[dict]:
         # Data-check-string is alphabetical order of all remaining fields
         # IMPORTANT: Use all fields except hash, and convert to string
         # Filter out None values and the hash itself
-        data_to_check = {k: str(v) for k, v in data.items() if v is not None}
+        # And only use expected telegram fields to avoid interference from request body
+        tg_fields = ['auth_date', 'first_name', 'id', 'last_name', 'photo_url', 'username']
+        data_to_check = {k: str(v) for k, v in data.items() if k in tg_fields and v is not None}
         
         data_check_arr = [f"{k}={v}" for k, v in sorted(data_to_check.items())]
         data_check_string = "\n".join(data_check_arr)

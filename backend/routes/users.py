@@ -45,14 +45,57 @@ async def telegram_auth(
     Creates user if first time, otherwise returns existing user.
     """
     print(f"DEBUG AUTH: Received auth request. Has init_data: {bool(request.init_data)}, Has widget_data: {bool(request.widget_data)}")
-    if request.widget_data:
-        print(f"DEBUG AUTH: Widget data keys: {list(request.widget_data.keys())}")
-        
+    
     user, token = await authenticate_telegram_user(
         session, 
         init_data=request.init_data,
         widget_data=request.widget_data
     )
+    return AuthResponse(token=token, user=user)
+
+
+@router.post("/auth/guest", response_model=AuthResponse)
+async def guest_auth(
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Guest login for development/testing.
+    Only works if DEBUG=true.
+    """
+    if os.getenv("DEBUG", "false").lower() != "true":
+        raise HTTPException(status_code=403, detail="Guest login disabled in production")
+    
+    import uuid
+    import secrets
+    import string
+    
+    user_id = str(uuid.uuid4())
+    token = f"guest_{secrets.token_urlsafe(32)}"
+    name = f"Guest_{secrets.token_hex(2)}"
+    
+    # friend code
+    chars = string.ascii_uppercase + string.digits
+    friend_code = ''.join(secrets.choice(chars) for _ in range(6))
+
+    new_user_data = {
+        "id": user_id,
+        "name": name,
+        "telegram_id": -1,
+        "avatar_url": None,
+        "friend_code": friend_code
+    }
+    
+    user_db = await db_service.create_user(session, new_user_data)
+    await db_service.create_session(session, token, user_id)
+    
+    user = User(
+        id=user_id,
+        name=name,
+        telegram_id=-1,
+        friend_code=friend_code,
+        stats=UserStats()
+    )
+    
     return AuthResponse(token=token, user=user)
 
 

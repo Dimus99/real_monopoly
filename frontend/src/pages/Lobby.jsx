@@ -40,7 +40,9 @@ const Lobby = () => {
     const [mode, setMode] = useState('auth'); // Default to auth to force initialization
     const [isLoading, setIsLoading] = useState(false);
     const [showTelegramLogin, setShowTelegramLogin] = useState(false);
-    const isMiniApp = !!(window.Telegram?.WebApp?.initData);
+
+    // Check if we are in Mini App environment more robustly
+    const [isMiniApp, setIsMiniApp] = useState(false);
 
     // Create Game State
     const [selectedMap, setSelectedMap] = useState('World');
@@ -88,6 +90,7 @@ const Lobby = () => {
 
             const endpoint = `${API_BASE}/api/auth/telegram`;
             console.log("DEBUG AUTH: [handleTelegramLogin] ATTEMPTING FETCH to:", endpoint);
+            console.log("DEBUG AUTH: [handleTelegramLogin] Body keys:", Object.keys(body));
 
             let res;
             try {
@@ -98,6 +101,7 @@ const Lobby = () => {
                 });
             } catch (networkErr) {
                 console.error("DEBUG AUTH: [handleTelegramLogin] FETCH FAILED completely:", networkErr);
+                alert("Сетевая ошибка при запросе к серверу. Проверьте соединение.");
                 throw networkErr;
             }
 
@@ -105,14 +109,16 @@ const Lobby = () => {
 
             if (res.ok) {
                 const authData = await res.json();
-                console.log("DEBUG AUTH: [handleTelegramLogin] Success! User:", authData.user.name);
+                console.log("DEBUG AUTH: [handleTelegramLogin] SUCCESS! User name:", authData.user.name);
+                console.log("DEBUG AUTH: [handleTelegramLogin] Token stored in localStorage");
                 localStorage.setItem('monopoly_token', authData.token);
                 setProfileName(authData.user.name);
                 setUser(authData.user);
                 setMode('menu');
             } else {
-                const errorData = await res.json();
-                console.error("DEBUG AUTH: [handleTelegramLogin] Server returned error:", errorData);
+                let errorData = {};
+                try { errorData = await res.json(); } catch (e) { console.warn("DEBUG AUTH: Failed to parse error JSON"); }
+                console.error(`DEBUG AUTH: [handleTelegramLogin] SERVER ERROR. Status: ${res.status}, Detail:`, errorData.detail || errorData);
                 alert(`Ошибка (${res.status}): ${typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail) || 'Сервер отклонил вход'}`);
                 setMode('auth');
             }
@@ -124,12 +130,40 @@ const Lobby = () => {
         }
     }, [API_BASE]);
 
+    const handleGuestLogin = async () => {
+        setIsLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/api/auth/guest`, { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem('monopoly_token', data.token);
+                setUser(data.user);
+                setMode('menu');
+            } else {
+                alert("Guest login not allowed or failed.");
+            }
+        } catch (e) {
+            alert("Network error " + e.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // Telegram auth callback is handled by TelegramLoginButton component
     // through setting window.onTelegramAuth when it mounts.
 
     useEffect(() => {
         const init = async () => {
             console.log("DEBUG AUTH: [Init] Starting initialization...");
+
+            // Check for Telegram WebApp
+            const tg = window.Telegram?.WebApp;
+
+            // Update Mini App status state
+            if (tg && (tg.initData || tg.platform !== 'unknown')) {
+                setIsMiniApp(true);
+            }
+
             // --- 0. CHECK URL SCAN FOR REDIRECT AUTH ---
             const urlParams = new URLSearchParams(window.location.search);
             const tgId = urlParams.get('id');
@@ -142,46 +176,77 @@ const Lobby = () => {
                 window.history.replaceState({}, document.title, window.location.pathname);
                 await handleTelegramLogin(tgData);
                 setIsInitializing(false);
-                return; // Stop here, handleTelegramLogin took over
+                return;
             }
 
-            const tg = window.Telegram?.WebApp;
-            // 1. Mini App Auto-Auth
-            if (tg && tg.initData) {
-                console.log("DEBUG AUTH: [Init] Detected Mini App environment");
-                tg.ready();
-                tg.expand();
-                await handleTelegramLogin(tg.initData);
-                setIsInitializing(false);
-                return; // Stop here
+            // --- 1. MINI APP AUTO-AUTH ---
+            if (tg) {
+                console.log("DEBUG AUTH: [Init] Telegram WebApp detected. Platform:", tg.platform);
+
+                // Sometimes initData takes a moment to be available
+                let initData = tg.initData;
+
+                // Fallback: check the fragment manually if tg.initData is empty
+                if (!initData && window.location.hash) {
+                    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                    initData = hashParams.get('tgWebAppData');
+                    if (initData) console.log("DEBUG AUTH: [Init] Found initData in fragment fallback");
+                }
+
+                if (initData) {
+                    console.log("DEBUG AUTH: [Init] Mini App initData found, authenticating...");
+                    tg.ready();
+                    tg.expand();
+                    await handleTelegramLogin(initData);
+                    setIsInitializing(false);
+                    return;
+                } else {
+                    console.log("DEBUG AUTH: [Init] WebApp detected but no initData found yet");
+                    // If it's a known telegram platform but no initData, we might want to wait a bit
+                    if (tg.platform !== 'unknown') {
+                        console.log("DEBUG AUTH: [Init] Known TG platform, waiting for initData...");
+                        // Brief wait to see if it populates
+                        await new Promise(r => setTimeout(r, 500));
+                        if (tg.initData) {
+                            console.log("DEBUG AUTH: [Init] initData populated after wait!");
+                            tg.ready();
+                            tg.expand();
+                            await handleTelegramLogin(tg.initData);
+                            setIsInitializing(false);
+                            return;
+                        }
+                    }
+                }
             }
 
-            // 2. Token Validation
+            // --- 2. TOKEN VALIDATION ---
             const token = localStorage.getItem('monopoly_token');
             if (token) {
                 try {
-                    console.log("DEBUG AUTH: [Init] Validating existing token...");
+                    console.log("DEBUG AUTH: [Init] Found saved token, validating with /api/users/me");
                     const res = await fetch(`${API_BASE}/api/users/me`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (res.ok) {
                         const data = await res.json();
-                        console.log("DEBUG AUTH: [Init] Token valid, user:", data.name);
+                        console.log("DEBUG AUTH: [Init] Token VALID! User:", data.name);
                         setUser(data);
                         setProfileName(data.name);
                         setMode('menu');
                         setIsInitializing(false);
                         return;
                     } else {
-                        console.log("DEBUG AUTH: [Init] Token invalid or expired");
+                        console.log("DEBUG AUTH: [Init] Token INVALID or EXPIRED (status:", res.status, ")");
                         localStorage.removeItem('monopoly_token');
                     }
                 } catch (e) {
-                    console.error("DEBUG AUTH: [Init] Token validation error:", e);
+                    console.error("DEBUG AUTH: [Init] Network error during token validation:", e);
                 }
+            } else {
+                console.log("DEBUG AUTH: [Init] No saved token in localStorage");
             }
 
-            console.log("DEBUG AUTH: [Init] No active session, showing auth screen");
+            console.log("DEBUG AUTH: [Init] Final fallback: showing Auth Screen");
             setMode('auth');
             setIsInitializing(false);
         };
@@ -421,8 +486,20 @@ const Lobby = () => {
                                 botName={import.meta.env.VITE_BOT_USERNAME || "monopoly_haha_bot"}
                                 dataOnauth={handleTelegramLogin}
                             />
-                            <div className="mt-4 text-[11px] text-gray-500 font-mono tracking-widest uppercase">
-                                {isLoading ? 'Authenticating...' : 'Secure Authentication via Telegram'}
+
+                            <div className="mt-6 flex flex-col items-center gap-3">
+                                <div className="text-[11px] text-gray-500 font-mono tracking-widest uppercase text-center">
+                                    {isLoading ? 'Authenticating...' : 'Secure Authentication via Telegram'}
+                                </div>
+
+                                {import.meta.env.DEV && (
+                                    <button
+                                        onClick={handleGuestLogin}
+                                        className="text-xs text-yellow-500/50 hover:text-yellow-500 underline underline-offset-4 transition-colors font-mono uppercase"
+                                    >
+                                        [Debug] Guest Login
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
