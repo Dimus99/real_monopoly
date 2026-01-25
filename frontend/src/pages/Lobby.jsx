@@ -55,56 +55,63 @@ const Lobby = () => {
         const init = async () => {
             // --- Telegram Mini App Auto-Auth ---
             const tg = window.Telegram?.WebApp;
-            if (tg) {
+            if (tg && tg.initData) {
                 tg.ready();
                 tg.expand();
 
-                if (tg.initData && !localStorage.getItem('monopoly_token')) {
-                    console.log("Telegram WebApp detected, attempting auto-auth...");
+                const savedToken = localStorage.getItem('monopoly_token');
+                if (!savedToken) {
+                    console.log("Mini App detected, attempting auto-auth with initData...");
                     try {
                         const res = await fetch(`${API_BASE}/api/auth/telegram`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ init_data: tg.initData })
                         });
-                        const data = await res.json();
-                        if (data.token) {
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            console.log("Auto-auth SUCCESS");
                             localStorage.setItem('monopoly_token', data.token);
                             setUser(data.user);
                             setMode('menu');
+                            setIsInitializing(false);
+                            return;
                         } else {
-                            setMode('auth');
+                            console.warn("Auto-auth failed (expected if new user)", res.status);
                         }
                     } catch (err) {
-                        console.error("Telegram auth failed", err);
-                        setMode('auth');
+                        console.error("Auto-auth error", err);
                     }
-                    setIsInitializing(false);
-                    return;
                 }
             }
 
+            // --- Standard Token Check ---
             const token = localStorage.getItem('monopoly_token');
             if (!token) {
+                console.log("No token found, staying on auth screen");
                 setMode('auth');
                 setIsInitializing(false);
                 return;
             }
 
             try {
+                console.log("Validating existing token...");
                 const res = await fetch(`${API_BASE}/api/users/me`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
                     const data = await res.json();
+                    console.log("Token is valid, user loaded:", data.name);
                     setUser(data);
-                    // Force menu mode if we have a user, preventing auth screen flicker
                     setMode('menu');
                 } else {
+                    console.warn("Token expired or invalid, clearing storage");
                     localStorage.removeItem('monopoly_token');
                     setMode('auth');
                 }
             } catch (e) {
+                console.error("Auth check failed", e);
                 setMode('auth');
             } finally {
                 setIsInitializing(false);
