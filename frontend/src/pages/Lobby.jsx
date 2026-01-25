@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     Plus, LogIn, Users, Play, Settings, CreditCard,
     MessageSquare, Music, Volume2, Shield, Search,
-    UserPlus, UserCheck, X, RefreshCw
+    UserPlus, UserCheck, X, RefreshCw, Camera, Smile
 } from 'lucide-react';
 import CharacterSelection from '../components/CharacterSelection';
 import TelegramLoginButton from '../components/TelegramLoginButton';
@@ -26,7 +26,7 @@ const LOBBY_CHARACTERS = [
 const Lobby = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
-    const [mode, setMode] = useState('menu'); // menu, create, join, friends, settings
+    const [mode, setMode] = useState('auth'); // Default to auth to force initialization
     const [isLoading, setIsLoading] = useState(false);
     const [showTelegramLogin, setShowTelegramLogin] = useState(false);
     const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
@@ -111,11 +111,7 @@ const Lobby = () => {
             }
         };
 
-        if (mode !== 'menu' && mode !== 'create' && mode !== 'join' && mode !== 'friends' && mode !== 'profile') {
-            init();
-        } else {
-            setIsInitializing(false); // If deep linking or state restoration handled elsewhere
-        }
+        init();
     }, []); // Run once on mount
 
     const authFetch = async (url, options = {}) => {
@@ -268,6 +264,58 @@ const Lobby = () => {
         }
     };
 
+    const handleAvatarUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem('monopoly_token');
+            const res = await fetch(`${API_BASE}/api/users/me/avatar`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            if (res.ok) {
+                const updatedUser = await res.json();
+                setUser(updatedUser);
+                alert('Фото профиля обновлено!');
+            } else {
+                const err = await res.json();
+                alert(err.detail || 'Ошибка при загрузке фото');
+            }
+        } catch (e) {
+            alert('Ошибка при загрузке фото');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleEmojiSelect = async (emoji) => {
+        setIsLoading(true);
+        try {
+            const res = await authFetch('/api/users/me', {
+                method: 'PUT',
+                body: JSON.stringify({ avatar_url: emoji })
+            });
+            if (res.ok) {
+                const updatedUser = await res.json();
+                setUser(updatedUser);
+                alert('Смайлик установлен!');
+            }
+        } catch (e) {
+            alert('Ошибка при смене смайлика');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleAuth = async (name) => {
         setIsLoading(true);
         try {
@@ -293,6 +341,7 @@ const Lobby = () => {
 
     const handleTelegramLogin = async (tgUser) => {
         setIsLoading(true);
+        console.log("Telegram Widget login attempt:", tgUser);
         try {
             const res = await fetch(`${API_BASE}/api/auth/telegram`, {
                 method: 'POST',
@@ -301,14 +350,18 @@ const Lobby = () => {
             });
             if (res.ok) {
                 const data = await res.json();
+                console.log("Telegram login successful!");
                 localStorage.setItem('monopoly_token', data.token);
                 setUser(data.user);
                 setMode('menu');
             } else {
-                alert('Telegram login failed');
+                const errData = await res.json();
+                console.error("Telegram login error:", errData);
+                alert('Telegram login failed: ' + (errData.detail || 'Unknown error'));
             }
         } catch (e) {
-            alert('Server error');
+            console.error("Telegram auth exception:", e);
+            alert('Server error during Telegram auth');
         } finally {
             setIsLoading(false);
         }
@@ -720,14 +773,38 @@ const Lobby = () => {
                         </div>
 
                         <div className="flex flex-col items-center mb-8">
-                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-purple-500 shadow-2xl mb-4">
-                                <img src={user.avatar_url || "/api/placeholder/96/96"} alt="Avatar" className="w-full h-full object-cover" />
+                            <div className="relative group">
+                                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-purple-500 shadow-2xl mb-4 bg-[#1a1a2e] flex items-center justify-center text-4xl">
+                                    {user.avatar_url && (user.avatar_url.startsWith('http') || user.avatar_url.startsWith('/')) ? (
+                                        <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span>{user.avatar_url || '👤'}</span>
+                                    )}
+                                </div>
+                                <label className="absolute bottom-4 right-0 bg-purple-600 p-2 rounded-full cursor-pointer hover:bg-purple-500 transition-colors shadow-lg">
+                                    <Camera size={16} />
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+                                </label>
                             </div>
                             <h3 className="text-xl font-bold">{user.name}</h3>
                             <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">#{user.friend_code}</p>
                         </div>
 
                         <div className="space-y-6">
+                            <div>
+                                <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-3 block">Choose Emoji</label>
+                                <div className="grid grid-cols-6 gap-2 p-3 bg-white/5 rounded-xl border border-white/10 mb-4">
+                                    {['😎', '🦾', '🤡', '🤑', '🦁', '👑', '🤌', '🤝', '🚀', '🎯', '🎰', '💎'].map(emoji => (
+                                        <button
+                                            key={emoji}
+                                            onClick={() => handleEmojiSelect(emoji)}
+                                            className="text-2xl hover:scale-125 transition-transform p-1 rounded-lg hover:bg-white/10"
+                                        >
+                                            {emoji}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             <div>
                                 <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Display Name</label>
                                 <input

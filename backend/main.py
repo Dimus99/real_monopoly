@@ -106,6 +106,12 @@ app.include_router(games_router)
 async def health():
     return {"status": "healthy"}
 
+# Serve static files for uploads
+uploads_path = os.path.join(os.path.dirname(__file__), "uploads")
+if not os.path.exists(uploads_path):
+    os.makedirs(uploads_path)
+app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
+
 # Serve Frontend static files
 static_path = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_path):

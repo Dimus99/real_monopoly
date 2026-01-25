@@ -2,7 +2,10 @@
 User and authentication routes.
 Uses PostgreSQL for persistent storage.
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, File, UploadFile
+import os
+import uuid
+import shutil
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -171,6 +174,54 @@ async def update_me(
         )
     
     return current_user
+
+
+@router.post("/users/me/avatar", response_model=User)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    """Upload a new avatar image."""
+    # Validate file type
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    # Create uploads directory if it doesn't exist
+    uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+    if not os.path.exists(uploads_dir):
+        os.makedirs(uploads_dir)
+    
+    # Generate unique filename
+    ext = os.path.splitext(file.filename)[1]
+    if not ext:
+        ext = ".png" # default
+    filename = f"{current_user.id}_{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(uploads_dir, filename)
+    
+    # Save file
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    # Update user in DB
+    avatar_url = f"/uploads/{filename}"
+    updated = await db_service.update_user(session, current_user.id, {"avatar_url": avatar_url})
+    
+    return User(
+        id=updated.id,
+        name=updated.name,
+        telegram_id=updated.telegram_id,
+        avatar_url=updated.avatar_url,
+        friend_code=updated.friend_code,
+        created_at=updated.created_at,
+        stats=UserStats(
+            games_played=updated.games_played,
+            wins=updated.wins,
+            losses=updated.losses,
+            total_earnings=updated.total_earnings,
+            highest_net_worth=updated.highest_net_worth
+        )
+    )
 
 
 @router.get("/users/{user_id}", response_model=UserPublic)
