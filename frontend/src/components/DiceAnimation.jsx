@@ -14,7 +14,7 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                     Math.floor(Math.random() * 6) + 1,
                     Math.floor(Math.random() * 6) + 1
                 ]);
-            }, 120); // Increased from 80ms
+            }, 50);
         } else if (values) {
             // When rolling stops, set to final values immediately
             setDisplayValues(values);

@@ -466,7 +466,12 @@ const GameRoom = () => {
                             <div className="bg-white/10 px-3 py-1 rounded font-mono">ID: {gameId}</div>
                             <div className="flex items-center justify-center gap-2"><Users size={16} /> {Object.keys(gameState.players).length}/{gameState.max_players} Players</div>
                             {!isHost && <div className="text-yellow-500 animate-pulse">Waiting for host to start...</div>}
-                            <button onClick={() => navigate('/')} className="px-3 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/40 rounded text-sm transition-colors border border-red-500/30">Leave Lobby</button>
+                            <button
+                                onClick={() => navigate('/')}
+                                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg text-sm font-bold transition-colors shadow-lg flex items-center gap-2"
+                            >
+                                <X size={16} /> LEAVE LOBBY
+                            </button>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
@@ -520,9 +525,16 @@ const GameRoom = () => {
 
                             <button
                                 onClick={() => copyToClipboard(gameId)}
-                                className="btn-ghost py-3 px-6 flex items-center gap-2 border border-white/20 hover:bg-white/10 ml-auto"
+                                className="btn-ghost py-3 px-6 flex items-center gap-2 border border-white/20 hover:bg-white/10"
                             >
                                 <Copy size={20} /> Copy ID
+                            </button>
+
+                            <button
+                                onClick={() => navigate('/')}
+                                className="btn-ghost py-3 px-6 flex items-center gap-2 border border-red-500/30 text-red-400 hover:bg-red-500/20 ml-auto"
+                            >
+                                <X size={20} /> Leave
                             </button>
                         </div>
                     </div>
@@ -580,11 +592,22 @@ const GameRoom = () => {
                 )}
                 {/* Top Info Bar */}
                 <div className="p-4 border-b border-white/10 bg-[#13131f] flex items-center justify-between">
-                    {!sidebarCollapsed && (
-                        <button onClick={() => navigate('/')} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400">
-                            <ArrowLeft size={16} />
+                    <div className="flex items-center gap-2">
+                        {!sidebarCollapsed && (
+                            <button onClick={() => navigate('/')} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400">
+                                <ArrowLeft size={16} />
+                            </button>
+                        )}
+                        {/* Persistent Surrender Button */}
+                        <button
+                            onClick={() => { if (window.confirm('Сдаться и покинуть игру?')) sendAction('SURRENDER'); }}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg transition-colors"
+                            title="Сдаться"
+                        >
+                            <Flag size={14} />
+                            <span className="text-xs font-bold uppercase hidden sm:inline">Сдаться</span>
                         </button>
-                    )}
+                    </div>
 
                     <button onClick={() => copyToClipboard(gameId)} className={`flex flex-col ${sidebarCollapsed ? 'items-center w-full' : 'items-end'}`}>
                         {sidebarCollapsed ? <Copy size={16} className="text-blue-400 mb-1" /> : (
@@ -744,6 +767,7 @@ const GameRoom = () => {
                             isChatOpen={false}
                             isDoubles={diceValues[0] === diceValues[1]}
                             abilityCooldown={currentPlayer?.ability_cooldown}
+                            onSurrender={() => sendAction('SURRENDER')}
                         />
                     </div>
                 </div>

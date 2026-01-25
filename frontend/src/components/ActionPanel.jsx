@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Check, Zap } from 'lucide-react';
+import { ShoppingCart, Check, Zap, Flag } from 'lucide-react';
 
 const ActionPanel = ({
     isMyTurn,
@@ -19,7 +19,8 @@ const ActionPanel = ({
     gameMode = 'abilities',
     isChatOpen = false,
     isDoubles = false,
-    abilityCooldown = 0
+    abilityCooldown = 0,
+    onSurrender
 }) => {
 
     // Ability configurations
@@ -162,6 +163,17 @@ const ActionPanel = ({
                         </motion.button>
                     )}
                 </AnimatePresence>
+
+                {/* 5. Surrender Button (Far Right) */}
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => { if (window.confirm('Сдаться?')) onSurrender?.(); }}
+                    className="h-[64px] ml-2 px-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-xl flex flex-col items-center justify-center gap-1 transition-colors"
+                >
+                    <Flag size={18} />
+                    <span className="text-[8px] font-bold uppercase tracking-widest">SURRENDER</span>
+                </motion.button>
 
             </motion.div>
         </div>

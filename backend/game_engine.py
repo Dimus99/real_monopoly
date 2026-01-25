@@ -662,8 +662,8 @@ class GameEngine:
         active_games = [g for g in self.games.values() if g.game_status == "active"]
         
         for game in active_games:
-            # Check timeout
-            if game.turn_expiry and datetime.utcnow() > game.turn_expiry:
+            # Check timeout (with 5s grace period)
+            if game.turn_expiry and datetime.utcnow() > game.turn_expiry + timedelta(seconds=5):
                 current_pid = game.player_order[game.current_turn_index]
                 player = game.players.get(current_pid)
                 
