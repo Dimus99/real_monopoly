@@ -173,6 +173,7 @@ def validate_telegram_widget_data(widget_data: dict) -> Optional[dict]:
             return None
             
         # Data-check-string is alphabetical order of all remaining fields
+        # IMPORTANT: Convert all values to strings to match Telegram's signing method
         data_check_arr = [f"{k}={v}" for k, v in sorted(data.items())]
         data_check_string = "\n".join(data_check_arr)
         
@@ -262,9 +263,18 @@ async def authenticate_telegram_user(
     user_id = str(uuid.uuid4())
     token = f"tg_{generate_token()}"
     
-    name = user_data.get("first_name", "Player")
-    if user_data.get("last_name"):
-        name += f" {user_data['last_name']}"
+    # Name Logic: First Last (username)
+    first = user_data.get("first_name", "")
+    last = user_data.get("last_name", "")
+    username = user_data.get("username", "")
+    
+    name_parts = [p for p in [first, last] if p]
+    name = " ".join(name_parts)
+    
+    if not name and username:
+        name = username
+    elif not name:
+        name = "Player"
     
     new_user_data = {
         "id": user_id,

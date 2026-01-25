@@ -62,7 +62,7 @@ const SPECIAL_ICONS = {
 };
 
 // Character data for avatars
-const CHARACTERS = {
+const AVATAR_MAP = {
     Putin: { avatar: '/avatars/putin.png', color: '#C41E3A' },
     Trump: { avatar: '/avatars/trump.png', color: '#FF6B35' },
     Zelensky: { avatar: '/avatars/zelensky.png', color: '#0057B8' },
@@ -70,6 +70,10 @@ const CHARACTERS = {
     Biden: { avatar: '/avatars/biden.png', color: '#3C3B6E' },
     Xi: { avatar: '/avatars/xi.png', color: '#DE2910' }
 };
+
+// ... (skipping unchanged functions)
+
+
 
 // Determine tile orientation (which side of the board)
 const getTileOrientation = (tileId) => {
@@ -155,7 +159,7 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
             {hasOwner && owner && !property.is_destroyed && (
                 <div className="absolute top-0.5 right-0.5 z-30 filter drop-shadow-md transform hover:scale-125 transition-transform" title={`Owned by ${owner.name}`}>
                     <div className="w-5 h-5 md:w-6 md:h-6 rounded-full overflow-hidden border-2" style={{ borderColor: ownerColors?.border || '#fff' }}>
-                        <img src={CHARACTERS[owner.character]?.avatar || '/avatars/putin.png'} alt={ownerCharacter} className="w-full h-full object-cover" />
+                        <img src={AVATAR_MAP[owner.character]?.avatar || '/avatars/putin.png'} alt={ownerCharacter} className="w-full h-full object-cover" />
                     </div>
                 </div>
             )}
