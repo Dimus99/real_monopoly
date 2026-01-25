@@ -10,14 +10,13 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
         }
 
         const cleanBotName = botName.replace('@', '');
-        console.log('DEBUG AUTH: [Widget] Initializing for:', cleanBotName);
+        const currentOrigin = window.location.origin;
+        console.log('DEBUG AUTH: [Widget] Initializing for:', cleanBotName, 'on origin:', currentOrigin);
+        console.log('DEBUG AUTH: [Widget] IMPORTANT: Check if', currentOrigin, 'is allowed in @BotFather /setdomain');
 
-        // Define a truly global callback with a unique name if possible, 
-        // but the widget attribute 'data-onauth' needs a static string.
-        const callbackName = 'onTelegramAuthInternal';
-
+        const callbackName = 'onTelegramAuth';
         window[callbackName] = (user) => {
-            console.log("DEBUG AUTH: [Widget] Global callback triggered!", user);
+            console.log("DEBUG AUTH: [Widget] Global callback triggered! Data:", user);
             if (dataOnauth) {
                 dataOnauth(user);
             } else {
@@ -25,7 +24,7 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
             }
         };
 
-        console.log(`DEBUG AUTH: [Widget] Callback ${callbackName} registered:`, typeof window[callbackName]);
+        console.log(`DEBUG AUTH: [Widget] Global callback window.${callbackName} is ready:`, typeof window[callbackName]);
 
         const script = document.createElement('script');
         script.src = 'https://telegram.org/js/telegram-widget.js?22';
@@ -41,6 +40,7 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
         script.onerror = (e) => console.error("DEBUG AUTH: [Widget] Script failed to load", e);
 
         if (containerRef.current) {
+            containerRef.current.innerHTML = '';
             console.log("DEBUG AUTH: [Widget] Appending script to container");
             containerRef.current.appendChild(script);
         }
