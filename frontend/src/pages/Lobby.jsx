@@ -55,6 +55,7 @@ const Lobby = () => {
         const init = async () => {
             // --- Telegram Mini App Auto-Auth ---
             const tg = window.Telegram?.WebApp;
+            console.log("TG OBJECT CHECK:", !!tg, "INIT DATA PRESENT:", !!tg?.initData);
             if (tg && tg.initData) {
                 tg.ready();
                 tg.expand();
@@ -170,19 +171,20 @@ const Lobby = () => {
     };
 
     useEffect(() => {
-        if (mode === 'friends') fetchFriendsData();
-        if (mode === 'join' || mode === 'menu') {
+        let interval;
+        if (mode === 'menu' || mode === 'join') {
             fetchActiveGames();
-            fetchMyGames();
+            interval = setInterval(fetchActiveGames, 5000);
         }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [mode]);
 
-        const interval = setInterval(() => {
-            if (mode === 'join' || mode === 'menu') {
-                fetchActiveGames();
-                // fetchMyGames(); // Don't poll my games too often to avoid freeze
-            }
-        }, 5000);
-        return () => clearInterval(interval);
+    useEffect(() => {
+        if (mode === 'menu' || mode === 'friends' || mode === 'profile') {
+            fetchFriendsData();
+        }
     }, [mode]);
 
     const createGame = async () => {
