@@ -23,7 +23,16 @@ const LOBBY_CHARACTERS = [
     { id: 'Xi', name: 'Xi', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT', country: 'CN', abilityDesc: 'Ensnare opponent in debt trap.' }
 ];
 
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
+const getApiBase = () => {
+    let base = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
+    if (base && !base.startsWith('http')) {
+        base = `https://${base}`;
+    }
+    return base.replace(/\/$/, '');
+};
+
+const API_BASE = getApiBase();
+console.log("DEBUG AUTH: [Global] API_BASE configured as:", API_BASE);
 
 const Lobby = () => {
     const navigate = useNavigate();
@@ -65,63 +74,56 @@ const Lobby = () => {
 
         try {
             const body = {};
-            // Determine if data is from Widget/Redirect (dictionary) or Mini App (string/init_data)
             if (data.hash && data.id) {
-                console.log("DEBUG AUTH: Detected Widget data format");
+                console.log("DEBUG AUTH: [handleTelegramLogin] Widget data format");
                 body.widget_data = data;
             } else if (typeof data === 'string' || data.init_data) {
-                console.log("DEBUG AUTH: Detected Mini App data format");
+                console.log("DEBUG AUTH: [handleTelegramLogin] Mini App data format");
                 body.init_data = typeof data === 'string' ? data : data.init_data;
             } else {
-                console.error("DEBUG AUTH: Unknown data format received:", data);
+                console.error("DEBUG AUTH: [handleTelegramLogin] Unknown data format:", data);
                 setIsLoading(false);
                 return;
             }
 
-            const url = `${API_BASE}/api/auth/telegram`;
-            console.log("DEBUG AUTH: Sending POST to", url, "Body keys:", Object.keys(body));
+            const endpoint = `${API_BASE}/api/auth/telegram`;
+            console.log("DEBUG AUTH: [handleTelegramLogin] Sending POST to", endpoint);
 
-            const res = await fetch(url, {
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
 
-            console.log("DEBUG AUTH: Server response status:", res.status);
+            console.log("DEBUG AUTH: [handleTelegramLogin] Server response status:", res.status);
 
             if (res.ok) {
                 const authData = await res.json();
-                console.log("DEBUG AUTH: Success! User:", authData.user.name);
+                console.log("DEBUG AUTH: [handleTelegramLogin] Success! User:", authData.user.name);
                 localStorage.setItem('monopoly_token', authData.token);
                 setProfileName(authData.user.name);
                 setUser(authData.user);
                 setMode('menu');
             } else {
                 const errorData = await res.json();
-                console.error("DEBUG AUTH: Server returned error:", errorData);
+                console.error("DEBUG AUTH: [handleTelegramLogin] Server returned error:", errorData);
                 alert(`Ошибка (${res.status}): ${typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail) || 'Сервер отклонил вход'}`);
                 setMode('auth');
             }
         } catch (err) {
-            console.error("DEBUG AUTH: Network or processing error:", err);
+            console.error("DEBUG AUTH: [handleTelegramLogin] Request error:", err);
             alert("Ошибка сети при входе: " + err.message);
         } finally {
             setIsLoading(false);
-            console.log("DEBUG AUTH: Authentication process finished");
         }
     }, [API_BASE]);
 
     // This makes the callback globally available as soon as Lobby is loaded
     useEffect(() => {
-        const authCallback = (data) => {
-            console.log("Global onTelegramAuth triggered by Widget");
+        window.onTelegramAuth = (data) => {
+            console.log("DEBUG AUTH: [Global] window.onTelegramAuth TRIGGERED!");
             handleTelegramLogin(data);
         };
-
-        window.onTelegramAuth = authCallback;
-
-        // No cleanup to null to avoid race conditions with Telegram script
-        // It will be overwritten by subsequent mounts anyway
     }, [handleTelegramLogin]);
 
     useEffect(() => {
