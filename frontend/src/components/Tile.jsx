@@ -61,6 +61,16 @@ const SPECIAL_ICONS = {
     'PRISON': '⛓️'
 };
 
+// Character data for avatars
+const CHARACTERS = {
+    Putin: { avatar: '/avatars/putin.png', color: '#C41E3A' },
+    Trump: { avatar: '/avatars/trump.png', color: '#FF6B35' },
+    Zelensky: { avatar: '/avatars/zelensky.png', color: '#0057B8' },
+    Kim: { avatar: '/avatars/kim.png', color: '#8B0000' },
+    Biden: { avatar: '/avatars/biden.png', color: '#3C3B6E' },
+    Xi: { avatar: '/avatars/xi.png', color: '#DE2910' }
+};
+
 // Determine tile orientation (which side of the board)
 const getTileOrientation = (tileId) => {
     // Rotated Layout (Free Parking at Bottom Right)
@@ -100,9 +110,10 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
     let ownerCharacter = null;
     let ownerFlag = null;
     let ownerColors = null;
+    let owner = null;
 
     if (hasOwner && allPlayers) {
-        const owner = Object.values(allPlayers).find(p => p.id === property.owner_id);
+        owner = Object.values(allPlayers).find(p => p.id === property.owner_id);
         if (owner) {
             ownerCharacter = owner.character;
             ownerFlag = CHARACTER_FLAGS[ownerCharacter];
@@ -140,11 +151,11 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                     : 'inset 0 0 20px rgba(0,0,0,0.3)',
             }}
         >
-            {/* Owner flag overlay - Top Right corner */}
-            {hasOwner && ownerFlag && !property.is_destroyed && (
-                <div className="absolute top-0.5 right-0.5 z-30 filter drop-shadow-md transform hover:scale-125 transition-transform" title={`Owned by ${ownerCharacter}`}>
-                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center bg-black/50 border border-white/20">
-                        <span className="text-sm md:text-base">{ownerFlag}</span>
+            {/* Owner Avatar Overlay - Top Right corner */}
+            {hasOwner && owner && !property.is_destroyed && (
+                <div className="absolute top-0.5 right-0.5 z-30 filter drop-shadow-md transform hover:scale-125 transition-transform" title={`Owned by ${owner.name}`}>
+                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full overflow-hidden border-2" style={{ borderColor: ownerColors?.border || '#fff' }}>
+                        <img src={CHARACTERS[owner.character]?.avatar || '/avatars/putin.png'} alt={ownerCharacter} className="w-full h-full object-cover" />
                     </div>
                 </div>
             )}

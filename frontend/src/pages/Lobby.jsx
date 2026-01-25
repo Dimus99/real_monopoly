@@ -41,23 +41,25 @@ const Lobby = () => {
     const [friendRequests, setFriendRequests] = useState([]);
     const [friendCodeInput, setFriendCodeInput] = useState('');
 
-    useEffect(() => {
-        // --- Telegram Mini App Auto-Auth ---
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.ready();
-            tg.expand();
+    const [isInitializing, setIsInitializing] = useState(true);
 
-            if (tg.initData && !localStorage.getItem('monopoly_token')) {
-                console.log("Telegram WebApp detected, attempting auto-auth...");
-                setIsLoading(true);
-                fetch(`${API_BASE}/api/auth/telegram`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ init_data: tg.initData })
-                })
-                    .then(res => res.json())
-                    .then(data => {
+    useEffect(() => {
+        const init = async () => {
+            // --- Telegram Mini App Auto-Auth ---
+            const tg = window.Telegram?.WebApp;
+            if (tg) {
+                tg.ready();
+                tg.expand();
+
+                if (tg.initData && !localStorage.getItem('monopoly_token')) {
+                    console.log("Telegram WebApp detected, attempting auto-auth...");
+                    try {
+                        const res = await fetch(`${API_BASE}/api/auth/telegram`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ init_data: tg.initData })
+                        });
+                        const data = await res.json();
                         if (data.token) {
                             localStorage.setItem('monopoly_token', data.token);
                             setUser(data.user);
@@ -65,23 +67,22 @@ const Lobby = () => {
                         } else {
                             setMode('auth');
                         }
-                    })
-                    .catch(err => {
+                    } catch (err) {
                         console.error("Telegram auth failed", err);
                         setMode('auth');
-                    })
-                    .finally(() => setIsLoading(false));
+                    }
+                    setIsInitializing(false);
+                    return;
+                }
+            }
+
+            const token = localStorage.getItem('monopoly_token');
+            if (!token) {
+                setMode('auth');
+                setIsInitializing(false);
                 return;
             }
-        }
 
-        const token = localStorage.getItem('monopoly_token');
-        if (!token) {
-            setMode('auth');
-            return;
-        }
-
-        const fetchUser = async () => {
             try {
                 const res = await fetch(`${API_BASE}/api/users/me`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -89,17 +90,25 @@ const Lobby = () => {
                 if (res.ok) {
                     const data = await res.json();
                     setUser(data);
-                    if (mode === 'auth') setMode('menu');
+                    // Force menu mode if we have a user, preventing auth screen flicker
+                    setMode('menu');
                 } else {
                     localStorage.removeItem('monopoly_token');
                     setMode('auth');
                 }
             } catch (e) {
                 setMode('auth');
+            } finally {
+                setIsInitializing(false);
             }
         };
-        fetchUser();
-    }, [navigate, mode]);
+
+        if (mode !== 'menu' && mode !== 'create' && mode !== 'join' && mode !== 'friends' && mode !== 'profile') {
+            init();
+        } else {
+            setIsInitializing(false); // If deep linking or state restoration handled elsewhere
+        }
+    }, []); // Run once on mount
 
     const authFetch = async (url, options = {}) => {
         const token = localStorage.getItem('monopoly_token');
@@ -318,6 +327,14 @@ const Lobby = () => {
             setIsLoading(false);
         }
     };
+
+    if (isInitializing) {
+        return (
+            <div className="min-h-screen animated-bg flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-yellow-500/30 border-t-yellow-500 rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     if (mode === 'auth' || !user) {
         return (

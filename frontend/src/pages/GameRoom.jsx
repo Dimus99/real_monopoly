@@ -38,7 +38,7 @@ const GameRoom = () => {
     const [showOreshnik, setShowOreshnik] = useState(false);
     const [selectedTile, setSelectedTile] = useState(null);
     const [isRolling, setIsRolling] = useState(false); // For button disable
-    const [diceValues, setDiceValues] = useState([1, 1]);
+    const [diceValues, setDiceValues] = useState([1, 2]); // Default to non-doubles to avoid initial "Double" state
     const [copied, setCopied] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -60,6 +60,29 @@ const GameRoom = () => {
     const [showDice, setShowDice] = useState(false);
     const [diceRolling, setDiceRolling] = useState(false);
     const [hasRolled, setHasRolled] = useState(false);
+    const [chanceCard, setChanceCard] = useState(null);
+
+    // Sync 'hasRolled' and 'dice' state from server to handle page reloads / reconnections
+    useEffect(() => {
+        if (gameState?.turn_state?.has_rolled !== undefined) {
+            // Only update if it's my turn, to enable "End Turn" button
+            if (isMyTurn) {
+                setHasRolled(gameState.turn_state.has_rolled);
+
+                // Also sync dice to ensure "Doubles" logic is correct on reload
+                if (gameState.dice && gameState.dice.length === 2) {
+                    setDiceValues(gameState.dice);
+                }
+            }
+        }
+    }, [gameState?.turn_state, gameState?.dice, isMyTurn]);
+
+    // Reset states on new turn
+    useEffect(() => {
+        setHasRolled(false);
+        setIsRolling(false);
+        setShowDice(false);
+    }, [gameState?.current_turn_index]);
 
     // Log management - Update immediately to keep chat fresh
     const [displayedLogs, setDisplayedLogs] = useState([]);
@@ -293,6 +316,12 @@ const GameRoom = () => {
         if (lastProcessedActionRef.current === lastAction) return;
         lastProcessedActionRef.current = lastAction;
         switch (lastAction.type) {
+            case 'GAME_STARTED':
+                // Reset everything on start
+                setHasRolled(false);
+                setIsRolling(false);
+                setShowDice(false);
+                break;
             case 'ORESHNIK': setShowOreshnik(true); break;
             case 'BUYOUT': setShowBuyout(true); break;
             case 'AID': setShowAid(true); break;
@@ -304,11 +333,10 @@ const GameRoom = () => {
                 setIsRolling(true);
 
                 // Phase 1: Rolling animation (variable speed handled in component)
-                // We keep it longer (2.5s) to allow the "slow down" effect to be appreciated
+                // Shortened duration as requested
                 setTimeout(() => {
                     setDiceRolling(false); // Show final result
 
-                    // Phase 2: Show result for a few seconds
                     // Phase 2: Show result for a few seconds
                     setTimeout(() => {
                         setShowDice(false);
@@ -339,13 +367,20 @@ const GameRoom = () => {
                             }
                         }, 300);
 
-                    }, 2000); // 2 seconds delay to read the dice
-                }, 2500); // 2.5 seconds rolling time
+                    }, 1500); // 1.5 seconds delay to read the dice
+                }, 1200); // 1.2 seconds rolling time
                 break;
 
             case 'PROPERTY_BOUGHT':
                 if (lastAction.player_id === playerId) {
                     setShowBuyModal(false);
+                }
+                break;
+
+            case 'CHAT_MESSAGE':
+                // Detect CHANCE system messages
+                if (lastAction.player_id === 'SYSTEM' && lastAction.player_name === 'Breaking News') {
+                    setChanceCard(lastAction.message);
                 }
                 break;
 
@@ -581,14 +616,7 @@ const GameRoom = () => {
                             </button>
                         )}
                         {/* Persistent Surrender Button */}
-                        <button
-                            onClick={() => { if (window.confirm('Сдаться и покинуть игру?')) sendAction('SURRENDER'); }}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg transition-colors"
-                            title="Сдаться"
-                        >
-                            <Flag size={14} />
-                            <span className="text-xs font-bold uppercase hidden sm:inline">Сдаться</span>
-                        </button>
+
                     </div>
 
                     <button onClick={() => copyToClipboard(gameId)} className={`flex flex-col ${sidebarCollapsed ? 'items-center w-full' : 'items-end'}`}>
@@ -689,18 +717,17 @@ const GameRoom = () => {
             </motion.div>
 
             {/* MAIN BOARD AREA */}
-            <div className="flex-1 relative bg-[#0c0c14] flex items-center justify-center p-2 md:p-8 overflow-auto">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0" />
+            <div className="flex-1 relative bg-[#0c0c14] overflow-auto flex flex-col items-center">
+                {/* Background */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
-                <div className="relative z-10 shadow-2xl transition-all duration-300"
+                <div className="relative z-10 shadow-2xl transition-all duration-300 my-auto py-8"
                     ref={boardRef}
                     style={{
-                        width: isMobile ? '800px' : '100%',
-                        height: isMobile ? '800px' : '100%',
-                        minWidth: isMobile ? '800px' : 'auto',
+                        width: isMobile ? '800px' : '95%',  // Slightly less than 100% to show edges
+                        maxWidth: '1200px',
+                        aspectRatio: '1/1', // Keep square aspect ratio
                         minHeight: isMobile ? '800px' : 'auto',
-                        margin: isMobile ? '0' : '0',
-                        maxHeight: '100%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
@@ -749,6 +776,7 @@ const GameRoom = () => {
 
                             gameMode={gameState.game_mode}
                             isChatOpen={false}
+                            isChanceOpen={!!chanceCard}
                             isDoubles={diceValues[0] === diceValues[1]}
                             abilityCooldown={currentPlayer?.ability_cooldown}
                             onSurrender={() => sendAction('SURRENDER')}
@@ -756,6 +784,36 @@ const GameRoom = () => {
                     </div>
                 </div>
             </div>
+
+            {/* CHANCE CARD NOTIFICATION PANEL */}
+            <AnimatePresence>
+                {chanceCard && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 50, scale: 0.9 }}
+                        className="absolute bottom-32 left-1/2 -translate-x-1/2 z-[160] w-full max-w-lg px-4"
+                    >
+                        <div className="bg-[#1e1e2f] border-2 border-yellow-500 rounded-2xl p-6 shadow-[0_0_50px_rgba(234,179,8,0.4)] flex items-center gap-6">
+                            <div className="w-16 h-16 bg-yellow-500/20 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse">
+                                <span className="text-4xl">📰</span>
+                            </div>
+                            <div className="flex-1">
+                                <div className="text-yellow-500 font-bold tracking-widest uppercase text-xs mb-1">Breaking News</div>
+                                <div className="text-white text-lg font-bold leading-tight">
+                                    {chanceCard}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setChanceCard(null)}
+                                className="px-6 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase text-sm rounded-lg shadow-lg hover:scale-105 transition-all"
+                            >
+                                OK
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Target Overlay */}
             <AnimatePresence>

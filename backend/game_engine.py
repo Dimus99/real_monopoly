@@ -880,7 +880,7 @@ class GameEngine:
         if not owner:
             return {"error": "Owner not found"}
         
-        rent = self._calculate_rent(game, prop, game.dice)
+        rent = self._calculate_rent(game, prop, game.dice, player)
         
         if player.money < rent:
             # New Rule: Do not bankrupt immediately. Force liquidation.

@@ -67,16 +67,18 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                 animate={isRolling ? {
                     x: [0, -8, 8, -8, 0],
                     y: [0, 8, -8, 8, 0],
-                    rotate: [0, 180, 360], /* Full rotation */
+                    rotateX: [0, 360, 720],
+                    rotateY: [0, 180, 0],
                     scale: [1, 0.9, 0.95, 1],
                 } : {
-                    scale: [0.8, 1.15, 1], // Impact "pop" when stopping
-                    rotate: 0,
+                    scale: [0.8, 1.15, 1],
+                    rotateX: 0,
+                    rotateY: 0,
                     x: 0,
                     y: 0
                 }}
                 transition={isRolling ? {
-                    duration: 0.4,
+                    duration: 0.6,
                     repeat: Infinity,
                     ease: "linear"
                 } : {
@@ -86,14 +88,19 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                     damping: 15
                 }}
                 className={`
-                    relative w-24 h-24 md:w-32 md:h-32 bg-white rounded-2xl md:rounded-[2rem] shadow-2xl border-b-[6px] border-gray-300
+                    relative w-24 h-24 md:w-32 md:h-32 bg-[#fff0f0] rounded-xl
                     flex items-center justify-center
-                    ${isGlow && !isRolling ? 'ring-4 ring-yellow-400 shadow-[0_0_50px_rgba(255,215,0,0.8)]' : ''}
+                    ${isGlow && !isRolling ? 'ring-4 ring-yellow-500 shadow-[0_0_50px_rgba(255,215,0,1)]' : ''}
                 `}
                 style={{
-                    background: 'radial-gradient(circle at 30% 30%, #ffffff 0%, #eeeeee 100%)'
+                    boxShadow: 'inset -5px -5px 15px rgba(0,0,0,0.2), inset 5px 5px 15px rgba(255,255,255,0.8), 10px 10px 20px rgba(0,0,0,0.5)',
+                    transformStyle: 'preserve-3d',
+                    perspective: '1000px'
                 }}
             >
+                {/* 3D Sides Imitation */}
+                <div className="absolute inset-0 rounded-xl border-4 border-black/5 pointer-events-none" />
+
                 {dots.map((pos, i) => <Dot key={i} position={pos} />)}
             </motion.div>
         );
