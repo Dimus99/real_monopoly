@@ -10,12 +10,17 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
         }
 
         const cleanBotName = botName.replace('@', '');
-        console.log('Initializing Telegram Widget for:', cleanBotName);
+        console.log('DEBUG AUTH: Initializing Telegram Widget for:', cleanBotName);
 
         // Persistent callback for the widget
         window.onTelegramAuth = (user) => {
-            console.log("Telegram Auth callback received", user);
-            if (dataOnauth) dataOnauth(user);
+            console.log("DEBUG AUTH: Telegram Widget callback received data:", user);
+            if (dataOnauth) {
+                console.log("DEBUG AUTH: Passing data to dataOnauth handler");
+                dataOnauth(user);
+            } else {
+                console.warn("DEBUG AUTH: No dataOnauth handler provided to TelegramLoginButton");
+            }
         };
 
         const script = document.createElement('script');

@@ -31,6 +31,10 @@ def set_bot_token(token: str):
     """Set the bot token for Telegram auth."""
     global BOT_TOKEN
     BOT_TOKEN = token
+    if token:
+        print(f"DEBUG AUTH: BOT_TOKEN set (length: {len(token)}, prefix: {token[:5]}...)")
+    else:
+        print("DEBUG AUTH: set_bot_token called with empty token")
 
 
 def generate_token() -> str:
@@ -60,23 +64,25 @@ def validate_telegram_init_data(init_data: str) -> Optional[dict]:
     See: https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
     """
     if not BOT_TOKEN:
-        # If no bot token configured, skip validation (dev mode)
-        # Parse the data anyway
+        print("DEBUG AUTH: No BOT_TOKEN set, skipping init_data validation (dev mode)")
         try:
             parsed = dict(parse_qsl(init_data, keep_blank_values=True))
             if "user" in parsed:
                 import json
                 return json.loads(parsed["user"])
             return None
-        except Exception:
+        except Exception as e:
+            print(f"DEBUG AUTH: Dev mode parse error: {e}")
             return None
     
     try:
+        print("DEBUG AUTH: validating init_data")
         parsed = dict(parse_qsl(init_data, keep_blank_values=True))
         
         # Get the hash
         check_hash = parsed.pop("hash", None)
         if not check_hash:
+            print("DEBUG AUTH: Missing hash in init_data")
             return None
         
         # Sort and create data-check-string
@@ -99,11 +105,15 @@ def validate_telegram_init_data(init_data: str) -> Optional[dict]:
         
         # Validate
         if not hmac.compare_digest(calculated_hash, check_hash):
+            print("DEBUG AUTH: Hash mismatch in init_data!")
+            print(f"DEBUG AUTH: Received: {check_hash}")
+            print(f"DEBUG AUTH: Calculated: {calculated_hash}")
             return None
         
         # Check auth_date (optional: reject if too old)
         auth_date = int(parsed.get("auth_date", 0))
         if auth_date == 0:
+            print("DEBUG AUTH: Missing auth_date")
             return None
         
         # Parse user
@@ -111,10 +121,11 @@ def validate_telegram_init_data(init_data: str) -> Optional[dict]:
             import json
             return json.loads(parsed["user"])
         
+        print("DEBUG AUTH: Missing user object in parsed data")
         return None
         
     except Exception as e:
-        print(f"Telegram auth validation error LOG: {e}")
+        print(f"DEBUG AUTH: Telegram init_data validation error: {e}")
         return None
 
 

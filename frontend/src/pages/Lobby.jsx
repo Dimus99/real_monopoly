@@ -56,48 +56,60 @@ const Lobby = () => {
 
     // Unified Login Handler
     const handleTelegramLogin = useCallback(async (data) => {
-        if (!data) return;
+        if (!data) {
+            console.warn("DEBUG AUTH: handleTelegramLogin called with no data");
+            return;
+        }
         setIsLoading(true);
-        console.log("AUTH: Starting Telegram authentication...", data.id || "MiniApp", data);
+        console.log("DEBUG AUTH: Starting handleTelegramLogin with payload:", data);
 
         try {
             const body = {};
             // Determine if data is from Widget/Redirect (dictionary) or Mini App (string/init_data)
             if (data.hash && data.id) {
-                console.log("AUTH: Using Widget/Redirect data");
+                console.log("DEBUG AUTH: Detected Widget data format");
                 body.widget_data = data;
-            } else {
-                console.log("AUTH: Using Mini App init_data");
+            } else if (typeof data === 'string' || data.init_data) {
+                console.log("DEBUG AUTH: Detected Mini App data format");
                 body.init_data = typeof data === 'string' ? data : data.init_data;
+            } else {
+                console.error("DEBUG AUTH: Unknown data format received:", data);
+                setIsLoading(false);
+                return;
             }
 
-            console.log("AUTH: Sending POST to", `${API_BASE}/api/auth/telegram`);
-            const res = await fetch(`${API_BASE}/api/auth/telegram`, {
+            const url = `${API_BASE}/api/auth/telegram`;
+            console.log("DEBUG AUTH: Sending POST to", url, "Body keys:", Object.keys(body));
+
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
 
+            console.log("DEBUG AUTH: Server response status:", res.status);
+
             if (res.ok) {
                 const authData = await res.json();
-                console.log("AUTH SUCCESS:", authData.user.name, authData.token.substring(0, 10) + "...");
+                console.log("DEBUG AUTH: Success! User:", authData.user.name);
                 localStorage.setItem('monopoly_token', authData.token);
                 setProfileName(authData.user.name);
                 setUser(authData.user);
                 setMode('menu');
             } else {
                 const errorData = await res.json();
-                console.error("AUTH FAILED:", res.status, errorData);
+                console.error("DEBUG AUTH: Server returned error:", errorData);
                 alert(`Ошибка (${res.status}): ${typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail) || 'Сервер отклонил вход'}`);
                 setMode('auth');
             }
         } catch (err) {
-            console.error("AUTH ERROR:", err);
-            alert("Ошибка сети при входе");
+            console.error("DEBUG AUTH: Network or processing error:", err);
+            alert("Ошибка сети при входе: " + err.message);
         } finally {
             setIsLoading(false);
+            console.log("DEBUG AUTH: Authentication process finished");
         }
-    }, []);
+    }, [API_BASE]);
 
     // This makes the callback globally available as soon as Lobby is loaded
     useEffect(() => {
