@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Plus, LogIn, Users, Play, Settings, CreditCard,
@@ -53,70 +53,69 @@ const Lobby = () => {
 
     useEffect(() => {
         const init = async () => {
-            // --- Telegram Mini App Auto-Auth ---
             const tg = window.Telegram?.WebApp;
-            console.log("TG OBJECT CHECK:", !!tg, "INIT DATA PRESENT:", !!tg?.initData);
+            console.log("Mini App Check:", {
+                isPresent: !!tg,
+                hasInitData: !!tg?.initData,
+                platform: tg?.platform
+            });
+
+            // 1. If in Mini App, ALWAYS attempt auto-auth first
             if (tg && tg.initData) {
                 tg.ready();
                 tg.expand();
 
-                const savedToken = localStorage.getItem('monopoly_token');
-                if (!savedToken) {
-                    console.log("Mini App detected, attempting auto-auth with initData...");
-                    try {
-                        const res = await fetch(`${API_BASE}/api/auth/telegram`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ init_data: tg.initData })
-                        });
+                console.log("Mini App: Authenticating user...");
+                try {
+                    const res = await fetch(`${API_BASE}/api/auth/telegram`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ init_data: tg.initData })
+                    });
 
-                        if (res.ok) {
-                            const data = await res.json();
-                            console.log("Auto-auth SUCCESS");
-                            localStorage.setItem('monopoly_token', data.token);
-                            setUser(data.user);
-                            setMode('menu');
-                            setIsInitializing(false);
-                            return;
-                        } else {
-                            console.warn("Auto-auth failed (expected if new user)", res.status);
-                        }
-                    } catch (err) {
-                        console.error("Auto-auth error", err);
+                    if (res.ok) {
+                        const data = await res.json();
+                        console.log("Mini App: Auth Success", data.user.name);
+                        localStorage.setItem('monopoly_token', data.token);
+                        setUser(data.user);
+                        setMode('menu');
+                        setIsInitializing(false);
+                        return;
+                    } else {
+                        console.error("Mini App: Auth failed with status", res.status);
                     }
+                } catch (err) {
+                    console.error("Mini App: Network error during auth", err);
                 }
             }
 
-            // --- Standard Token Check ---
+            // 2. If not in Mini App (or auto-auth failed), check localStorage
             const token = localStorage.getItem('monopoly_token');
-            if (!token) {
-                console.log("No token found, staying on auth screen");
-                setMode('auth');
-                setIsInitializing(false);
-                return;
+            if (token) {
+                try {
+                    console.log("Browser: Validating existing session...");
+                    const res = await fetch(`${API_BASE}/api/users/me`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setUser(data);
+                        setMode('menu');
+                        setIsInitializing(false);
+                        return;
+                    } else {
+                        console.log("Browser: Session expired");
+                        localStorage.removeItem('monopoly_token');
+                    }
+                } catch (e) {
+                    console.error("Browser: Auth check failed", e);
+                }
             }
 
-            try {
-                console.log("Validating existing token...");
-                const res = await fetch(`${API_BASE}/api/users/me`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    console.log("Token is valid, user loaded:", data.name);
-                    setUser(data);
-                    setMode('menu');
-                } else {
-                    console.warn("Token expired or invalid, clearing storage");
-                    localStorage.removeItem('monopoly_token');
-                    setMode('auth');
-                }
-            } catch (e) {
-                console.error("Auth check failed", e);
-                setMode('auth');
-            } finally {
-                setIsInitializing(false);
-            }
+            // 3. Fallback to auth screen if no other way to login
+            console.log("No valid authentication found, diverting to auth screen");
+            setMode('auth');
+            setIsInitializing(false);
         };
 
         init();
@@ -331,7 +330,8 @@ const Lobby = () => {
         setMode('auth');
     };
 
-    const handleTelegramLogin = async (tgUser) => {
+    const handleTelegramLogin = useCallback(async (tgUser) => {
+        if (!tgUser) return;
         setIsLoading(true);
         console.log("LOGIN START: Telegram Widget data received", tgUser);
         try {
@@ -360,9 +360,9 @@ const Lobby = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [API_BASE]);
 
-    const handleLinkTelegram = async (tgUser) => {
+    const handleLinkTelegram = useCallback(async (tgUser) => {
         setIsLoading(true);
         try {
             const res = await authFetch('/api/auth/link-telegram', {
@@ -382,7 +382,7 @@ const Lobby = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [API_BASE]);
 
     if (isInitializing) {
         return (

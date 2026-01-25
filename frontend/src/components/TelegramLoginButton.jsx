@@ -9,13 +9,13 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
             containerRef.current.innerHTML = '';
         }
 
-        // Create a stable callback
-        window.onTelegramAuth = (user) => {
+        // Create a persistent stable callback
+        const authCallback = (user) => {
             console.log("Global onTelegramAuth triggered!", user);
-            if (dataOnauth) {
-                dataOnauth(user);
-            }
+            if (dataOnauth) dataOnauth(user);
         };
+
+        window.onTelegramAuth = authCallback;
 
         // Sanitize bot name (remove @ if present)
         const cleanBotName = botName.replace('@', '');
@@ -34,14 +34,16 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
         containerRef.current.appendChild(script);
 
         return () => {
-            if (containerRef.current) {
-                containerRef.current.innerHTML = '';
-            }
-            delete window.onTelegramAuth;
+            // We don't remove the global callback immediately to avoid race conditions
+            // during component unmounting/loading state changes
         };
     }, [botName, dataOnauth, buttonSize, cornerRadius, requestAccess, usePic]);
 
-    return <div ref={containerRef} className="telegram-login-button" />;
+    return (
+        <div className="telegram-login-button-container">
+            <div ref={containerRef} className="telegram-login-button" />
+        </div>
+    );
 };
 
 export default TelegramLoginButton;
