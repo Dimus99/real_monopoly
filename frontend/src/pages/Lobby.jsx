@@ -87,13 +87,19 @@ const Lobby = () => {
             }
 
             const endpoint = `${API_BASE}/api/auth/telegram`;
-            console.log("DEBUG AUTH: [handleTelegramLogin] Sending POST to", endpoint);
+            console.log("DEBUG AUTH: [handleTelegramLogin] ATTEMPTING FETCH to:", endpoint);
 
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
+            let res;
+            try {
+                res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+            } catch (networkErr) {
+                console.error("DEBUG AUTH: [handleTelegramLogin] FETCH FAILED completely:", networkErr);
+                throw networkErr;
+            }
 
             console.log("DEBUG AUTH: [handleTelegramLogin] Server response status:", res.status);
 
