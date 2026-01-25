@@ -114,7 +114,7 @@ const getTileCoordinates = (tileId, boardRef) => {
 
 import PropertyDetailView from './PropertyModal';
 
-const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage, externalRef, onAvatarClick }) => {
+const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage, externalRef, onAvatarClick, winner }) => {
     const [hoveredTileId, setHoveredTileId] = React.useState(null);
     const internalRef = useRef(null);
     const boardRef = externalRef || internalRef;
@@ -362,30 +362,56 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                 className="board-center flex items-center justify-center p-4 relative"
             >
                 <div className={`relative z-10 text-center transition-opacity duration-300 ${hoveredTileId ? 'opacity-0' : 'opacity-100'}`}>
-                    <motion.h1
-                        initial={{ scale: 0.8 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.5, type: 'spring' }}
-                        className="font-display text-5xl md:text-7xl font-black text-white tracking-tight drop-shadow-lg"
-                    >
-                        {mapType === 'Ukraine' ? 'UKRAINE' : 'WORLD'}
-                    </motion.h1>
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.7 }}
-                        className="text-xl md:text-2xl font-display text-yellow-400 mt-2"
-                    >
-                        MONOPOLY
-                    </motion.div>
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.9 }}
-                        className="text-sm text-gray-400 mt-4"
-                    >
-                        Satire Edition
-                    </motion.div>
+                    {winner ? (
+                        <motion.div
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ type: "spring", stiffness: 200 }}
+                            className="flex flex-col items-center"
+                        >
+                            <h1 className="font-display text-5xl md:text-6xl font-black text-yellow-400 tracking-tight drop-shadow-[0_0_20px_rgba(255,215,0,0.5)] mb-4">
+                                GAME OVER
+                            </h1>
+                            <div className="text-2xl text-white font-bold mb-2">WINNER</div>
+                            <div className="relative">
+                                <img
+                                    src={CHARACTERS[winner.character]?.avatar}
+                                    className="w-32 h-32 rounded-full border-4 border-yellow-400 shadow-[0_0_50px_rgba(255,215,0,0.6)] object-cover"
+                                />
+                                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-4 py-1 rounded-full font-black uppercase text-sm whitespace-nowrap">
+                                    {winner.name}
+                                </div>
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <>
+                            <motion.h1
+                                initial={{ scale: 0.8 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: 0.5, type: 'spring' }}
+                                className="font-display text-5xl md:text-7xl font-black text-white tracking-tight drop-shadow-lg"
+                            >
+                                {mapType === 'Ukraine' ? 'UKRAINE' : 'WORLD'}
+                            </motion.h1>
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.7 }}
+                                className="text-xl md:text-2xl font-display text-yellow-400 mt-2"
+                            >
+                                MONOPOLY
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.9 }}
+                                className="text-sm text-gray-400 mt-4"
+                            >
+                                Satire Edition
+                            </motion.div>
+                        </>
+                    )}
+
 
                     {/* Animated globe or map icon */}
                     <motion.div

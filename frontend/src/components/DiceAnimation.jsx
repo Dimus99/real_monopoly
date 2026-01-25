@@ -6,20 +6,32 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
     const [displayValues, setDisplayValues] = useState([1, 1]);
 
     useEffect(() => {
-        let interval;
-        if (rolling) {
-            // Slower interval for better perception
-            interval = setInterval(() => {
+        let timeoutId;
+        let currentDelay = 50;
+
+        const animateRoll = () => {
+            if (rolling) {
                 setDisplayValues([
                     Math.floor(Math.random() * 6) + 1,
                     Math.floor(Math.random() * 6) + 1
                 ]);
-            }, 50);
+
+                // Slow down gradually
+                currentDelay = Math.min(currentDelay * 1.1, 400);
+                timeoutId = setTimeout(animateRoll, currentDelay);
+            }
+        };
+
+        if (rolling) {
+            currentDelay = 50; // Reset speed on start
+            animateRoll();
         } else if (values) {
-            // When rolling stops, set to final values immediately
+            // Stop and show final values
+            clearTimeout(timeoutId);
             setDisplayValues(values);
         }
-        return () => clearInterval(interval);
+
+        return () => clearTimeout(timeoutId);
     }, [rolling, values]);
 
     const Dot = ({ position }) => (

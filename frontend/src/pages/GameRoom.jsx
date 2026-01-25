@@ -295,55 +295,40 @@ const GameRoom = () => {
                 setShowDice(true);
                 setDiceRolling(true);
 
-                // Rolling for 1.5 seconds
+                // Phase 1: Rolling animation (variable speed handled in component)
+                // We keep it longer (2.5s) to allow the "slow down" effect to be appreciated
                 setTimeout(() => {
-                    setDiceRolling(false);
-                    // FIX: If doubles, we have NOT rolled "for the purpose of ending turn".
-                    // But we don't want to enable roll button immediately until animation is done.
-                    // Actually, if doubles, hasRolled should be false so "Roll" appears.
-                    // If not doubles, hasRolled = true so "End Turn" appears.
-                    if (lastAction.doubles) {
-                        setHasRolled(false);
-                    } else {
-                        setHasRolled(true);
-                    }
-                    setIsRolling(false);
+                    setDiceRolling(false); // Show final result
 
-                    // Sync players to move tokens
-                    if (gameState?.players) {
-                        setDelayedPlayers(gameState.players);
-                    }
-
-                    // Show result for 3 seconds then process
+                    // Phase 2: Show result for a few seconds
                     setTimeout(() => {
                         setShowDice(false);
 
-                        // Chance data should NOT be shown to EVERYONE as a modal
-                        // FIX: Only show via logs (already handled). Remove modal trigger.
-                        if (lastAction.chance_card) {
-                            console.log("Chance card drawn:", lastAction.chance_card);
-                            // setChanceData(lastAction); // Removed to prevent modal spam
+                        // Phase 3: Execute Movement and Update Interface
+                        // This ensures movement happens ONLY after dice are gone
+                        if (gameState?.players) {
+                            setDelayedPlayers(gameState.players);
                         }
 
-                        if (lastAction.player_id === playerId) {
-                            console.log("Processing my turn actions:", lastAction.action);
-
-                            // Trigger modals based on action
-                            if (lastAction.action === 'can_buy') {
-                                // Do not auto-open modal. User can use ActionPanel button.
-                            } else if (lastAction.action === 'pay_rent') {
-                                setRentDetails({
-                                    amount: lastAction.amount,
-                                    ownerId: lastAction.owner_id
-                                });
-                                setShowRentModal(true);
-                            } else if (lastAction.action === 'chance') {
-                                // Already handled above for everyone
-                            }
+                        // Update local turn state to show buttons
+                        if (lastAction.doubles) {
+                            setHasRolled(false);
+                        } else {
+                            setHasRolled(true);
                         }
-                    }, 3000);
+                        setIsRolling(false);
 
-                }, 1500);
+                        // Handle other post-roll actions (Rent, etc.)
+                        if (lastAction.action === 'pay_rent' && lastAction.player_id === playerId) {
+                            setRentDetails({
+                                amount: lastAction.amount,
+                                ownerId: lastAction.owner_id
+                            });
+                            setShowRentModal(true);
+                        }
+
+                    }, 2000); // 2 seconds delay to read the dice
+                }, 2500); // 2.5 seconds rolling time
                 break;
 
             case 'PROPERTY_BOUGHT':
@@ -368,7 +353,6 @@ const GameRoom = () => {
             case 'ERROR':
                 setIsRolling(false);
                 setHasRolled(false);
-                // The toast component already handles displaying messages if we pass them
                 break;
             case 'GAME_OVER': setShowVictory(true); break;
             case 'TRADE_OFFERED':
@@ -378,37 +362,29 @@ const GameRoom = () => {
         }
     }, [lastAction, playerId, isMyTurn, diceValues]);
 
+    // Optimized Player Sync Effect
     useEffect(() => {
         if (gameState?.players) {
-            // Check if this is a dice roll that involves movement
             const isDiceRoll = lastAction?.type === 'DICE_ROLLED';
 
-            // Helper to check position changes
-            const hasPositionChanged = (oldP, newP) => {
-                if (!oldP || !newP) return true;
-                for (const pid in newP) {
-                    if (oldP[pid]?.position !== newP[pid]?.position) return true;
-                }
-                return false;
-            };
+            // If we are in a dice sequence (dice showing or about to show), 
+            // DO NOT auto-update players. The DICE_ROLLED handler will do it manually 
+            // at the perfect moment (after animation).
+            if (showDice) return;
 
-            const positionChanged = hasPositionChanged(delayedPlayers, gameState.players);
-
-            // BLOCK update if we are about to animate dice (Pre-Animation Phase)
-            // If it's a roll, positions changed, and dice aren't showing yet -> WAIT.
-            // We rely on the dice animation completion to manually update delayedPlayers.
-            if (isDiceRoll && positionChanged && !showDice) {
+            // Also prevent update if we just received a roll action but showDice isn't true yet 
+            // (react render cycle gap).
+            if (isDiceRoll && !showDice) {
+                // If positions changed, we assume a roll animation is imminent, so we wait.
+                // If no animation triggers (e.g. reconnect), the timeout below or next update saves us?
+                // Actually, if it IS a dice roll, we trust the DICE_ROLLED effect to handle it.
+                // But if we just loaded the page and state has a past roll?
+                // For live updates: lastAction is fresh.
                 return;
             }
 
-            if (!showDice) {
-                setDelayedPlayers(gameState.players);
-            } else {
-                const timer = setTimeout(() => {
-                    setDelayedPlayers(gameState.players);
-                }, 3000);
-                return () => clearTimeout(timer);
-            }
+            // Normal updates (non-dice selection, joins, etc) or instant sync
+            setDelayedPlayers(gameState.players);
         }
     }, [gameState?.players, showDice, lastAction]);
 
@@ -466,12 +442,6 @@ const GameRoom = () => {
                             <div className="bg-white/10 px-3 py-1 rounded font-mono">ID: {gameId}</div>
                             <div className="flex items-center justify-center gap-2"><Users size={16} /> {Object.keys(gameState.players).length}/{gameState.max_players} Players</div>
                             {!isHost && <div className="text-yellow-500 animate-pulse">Waiting for host to start...</div>}
-                            <button
-                                onClick={() => navigate('/')}
-                                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg text-sm font-bold transition-colors shadow-lg flex items-center gap-2"
-                            >
-                                <X size={16} /> LEAVE LOBBY
-                            </button>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
@@ -532,9 +502,9 @@ const GameRoom = () => {
 
                             <button
                                 onClick={() => navigate('/')}
-                                className="btn-ghost py-3 px-6 flex items-center gap-2 border border-red-500/30 text-red-400 hover:bg-red-500/20 ml-auto"
+                                className="py-3 px-6 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg transition-transform hover:scale-105 ml-auto"
                             >
-                                <X size={20} /> Leave
+                                <X size={20} /> Leave Lobby
                             </button>
                         </div>
                     </div>
@@ -732,8 +702,10 @@ const GameRoom = () => {
                         currentPlayerId={playerId}
                         logs={displayedLogs}
                         onSendMessage={handleSendMessage}
+
                         externalRef={boardRef}
                         onAvatarClick={(pid) => pid !== playerId && initiateTrade(gameState.players[pid])}
+                        winner={gameState.winner}
                     />
                 </div>
 

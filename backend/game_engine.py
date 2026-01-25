@@ -317,6 +317,10 @@ class GameEngine:
         if not game or not game.player_order:
             return None
         
+        # Safety check for index out of bounds
+        if game.current_turn_index >= len(game.player_order):
+            game.current_turn_index = game.current_turn_index % len(game.player_order)
+            
         current_id = game.player_order[game.current_turn_index]
         return game.players.get(current_id)
     

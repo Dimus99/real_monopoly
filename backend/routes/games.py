@@ -225,7 +225,12 @@ async def leave_game(
     del game.players[player_id]
     if player_id in game.player_order:
         game.player_order.remove(player_id)
-    
+        # Fix turn index if it became out of bounds to maintain correct turn order
+        if game.player_order:
+            game.current_turn_index = game.current_turn_index % len(game.player_order)
+        else:
+            game.current_turn_index = 0
+            
     # If game is active, mark player as bankrupt
     if game.game_status == "active":
         # Handle mid-game leave as bankruptcy
