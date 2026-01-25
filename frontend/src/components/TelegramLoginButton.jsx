@@ -10,21 +10,15 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
         }
 
         const cleanBotName = botName.replace('@', '');
-        const currentOrigin = window.location.origin;
-        console.log('DEBUG AUTH: [Widget] Initializing for:', cleanBotName, 'on origin:', currentOrigin);
-        console.log('DEBUG AUTH: [Widget] IMPORTANT: Check if', currentOrigin, 'is allowed in @BotFather /setdomain');
+        console.log('DEBUG AUTH: [Button] Rendering widget for:', cleanBotName);
 
+        // We use the standardized name that Lobby.jsx also listens to
         const callbackName = 'onTelegramAuth';
-        window[callbackName] = (user) => {
-            console.log("DEBUG AUTH: [Widget] Global callback triggered! Data:", user);
-            if (dataOnauth) {
-                dataOnauth(user);
-            } else {
-                console.error("DEBUG AUTH: [Widget] No auth handler provided to component");
-            }
-        };
 
-        console.log(`DEBUG AUTH: [Widget] Global callback window.${callbackName} is ready:`, typeof window[callbackName]);
+        // Ensure the container is truly empty
+        if (containerRef.current) {
+            containerRef.current.innerHTML = '';
+        }
 
         const script = document.createElement('script');
         script.src = 'https://telegram.org/js/telegram-widget.js?22';
@@ -36,14 +30,13 @@ const TelegramLoginButton = ({ botName, dataOnauth, buttonSize = 'large', corner
         if (!usePic) script.setAttribute('data-userpic', 'false');
         script.async = true;
 
-        script.onload = () => console.log("DEBUG AUTH: [Widget] Script loaded successfully");
-        script.onerror = (e) => console.error("DEBUG AUTH: [Widget] Script failed to load", e);
+        script.onload = () => console.log("DEBUG AUTH: [Button] Widget script injected and loaded");
+        script.onerror = (e) => console.error("DEBUG AUTH: [Button] Widget script failed", e);
 
         if (containerRef.current) {
-            containerRef.current.innerHTML = '';
-            console.log("DEBUG AUTH: [Widget] Appending script to container");
             containerRef.current.appendChild(script);
         }
+
 
         return () => {
             // Cleanup on unmount - but carefully

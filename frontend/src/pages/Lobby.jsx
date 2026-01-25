@@ -24,7 +24,7 @@ const LOBBY_CHARACTERS = [
 ];
 
 const getApiBase = () => {
-    let base = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
+    let base = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : window.location.origin);
     if (base && !base.startsWith('http')) {
         base = `https://${base}`;
     }
@@ -32,7 +32,7 @@ const getApiBase = () => {
 };
 
 const API_BASE = getApiBase();
-console.log("DEBUG AUTH: [Global] API_BASE configured as:", API_BASE);
+console.log("DEBUG AUTH: [Global] API_BASE confirmed as:", API_BASE);
 
 const Lobby = () => {
     const navigate = useNavigate();

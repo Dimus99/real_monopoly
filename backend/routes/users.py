@@ -44,6 +44,10 @@ async def telegram_auth(
     Authenticate via Telegram WebApp initData or Widget data.
     Creates user if first time, otherwise returns existing user.
     """
+    print(f"DEBUG AUTH: Received auth request. Has init_data: {bool(request.init_data)}, Has widget_data: {bool(request.widget_data)}")
+    if request.widget_data:
+        print(f"DEBUG AUTH: Widget data keys: {list(request.widget_data.keys())}")
+        
     user, token = await authenticate_telegram_user(
         session, 
         init_data=request.init_data,
