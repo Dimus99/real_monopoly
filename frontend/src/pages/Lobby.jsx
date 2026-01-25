@@ -44,6 +44,7 @@ const Lobby = () => {
     const [gameIdInput, setGameIdInput] = useState('');
     const [character, setCharacter] = useState('Putin');
     const [activeGames, setActiveGames] = useState([]);
+    const [profileName, setProfileName] = useState('');
 
     // Friends State
     const [friends, setFriends] = useState([]);
@@ -52,45 +53,85 @@ const Lobby = () => {
 
     const [isInitializing, setIsInitializing] = useState(true);
 
-    useEffect(() => {
-        const init = async () => {
-            const tg = window.Telegram?.WebApp;
-            console.log("Mini App Check:", {
-                isPresent: !!tg,
-                hasInitData: !!tg?.initData,
-                platform: tg?.platform
+    // Unified Login Handler
+    const handleTelegramLogin = useCallback(async (data) => {
+        if (!data) return;
+        setIsLoading(true);
+        console.verbose && console.log("AUTH: Processing data", data);
+
+        try {
+            const body = {};
+            // Determine if data is from Widget/Redirect (dictionary) or Mini App (string/init_data)
+            if (data.hash && data.id) {
+                body.widget_data = data;
+            } else {
+                body.init_data = typeof data === 'string' ? data : data.init_data;
+            }
+
+            const res = await fetch(`${API_BASE}/api/auth/telegram`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
 
-            // 1. If in Mini App, ALWAYS attempt auto-auth first
+            if (res.ok) {
+                const authData = await res.json();
+                console.log("AUTH SUCCESS:", authData.user.name);
+                localStorage.setItem('monopoly_token', authData.token);
+                setProfileName(authData.user.name);
+                setUser(authData.user);
+                setMode('menu');
+            } else {
+                const errorData = await res.json();
+                console.error("AUTH FAILED:", errorData);
+                alert(`Ошибка: ${errorData.detail || 'Сервер отклонил вход'}`);
+                setMode('auth');
+            }
+        } catch (err) {
+            console.error("AUTH ERROR:", err);
+            alert("Ошибка сети при входе");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [API_BASE]);
+
+    // This makes the callback globally available as soon as Lobby is loaded
+    useEffect(() => {
+        window.onTelegramAuth = (data) => {
+            console.log("Global onTelegramAuth called by Widget");
+            handleTelegramLogin(data);
+        };
+        return () => { window.onTelegramAuth = null; };
+    }, [handleTelegramLogin]);
+
+    useEffect(() => {
+        const init = async () => {
+            // --- 0. CHECK URL SCAN FOR REDIRECT AUTH ---
+            const urlParams = new URLSearchParams(window.location.search);
+            const tgId = urlParams.get('id');
+            const tgHash = urlParams.get('hash');
+
+            if (tgId && tgHash) {
+                console.log("DETECTED: Telegram Auth data in URL. Processing redirect...");
+                const tgData = {};
+                urlParams.forEach((value, key) => { tgData[key] = value; });
+                window.history.replaceState({}, document.title, window.location.pathname);
+                handleTelegramLogin(tgData);
+                return;
+            }
+
+            const tg = window.Telegram?.WebApp;
+            // 1. Mini App Auto-Auth
             if (tg && tg.initData) {
                 tg.ready();
                 tg.expand();
-
-                console.log("Mini App: Authenticating user...");
-                try {
-                    const res = await fetch(`${API_BASE}/api/auth/telegram`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ init_data: tg.initData })
-                    });
-
-                    if (res.ok) {
-                        const data = await res.json();
-                        console.log("Mini App: Auth Success", data.user.name);
-                        localStorage.setItem('monopoly_token', data.token);
-                        setUser(data.user);
-                        setMode('menu');
-                        setIsInitializing(false);
-                        return;
-                    } else {
-                        console.error("Mini App: Auth failed with status", res.status);
-                    }
-                } catch (err) {
-                    console.error("Mini App: Network error during auth", err);
-                }
+                console.log("Mini App: Attempting auth...");
+                handleTelegramLogin(tg.initData);
+                setIsInitializing(false);
+                return;
             }
 
-            // 2. If not in Mini App (or auto-auth failed), check localStorage
+            // 2. Token Validation
             const token = localStorage.getItem('monopoly_token');
             if (token) {
                 try {
@@ -101,26 +142,22 @@ const Lobby = () => {
                     if (res.ok) {
                         const data = await res.json();
                         setUser(data);
+                        setProfileName(data.name);
                         setMode('menu');
                         setIsInitializing(false);
                         return;
                     } else {
-                        console.log("Browser: Session expired");
                         localStorage.removeItem('monopoly_token');
                     }
-                } catch (e) {
-                    console.error("Browser: Auth check failed", e);
-                }
+                } catch (e) { console.error(e); }
             }
 
-            // 3. Fallback to auth screen if no other way to login
-            console.log("No valid authentication found, diverting to auth screen");
             setMode('auth');
             setIsInitializing(false);
         };
 
         init();
-    }, []); // Run once on mount
+    }, [handleTelegramLogin]); // Run once on mount
 
     const authFetch = async (url, options = {}) => {
         const token = localStorage.getItem('monopoly_token');
@@ -252,19 +289,23 @@ const Lobby = () => {
         } catch (e) { alert('Error sending request'); }
     };
 
-    const handleUpdateProfile = async (newName) => {
-        if (!newName || newName.trim().length < 2) return;
+    const handleUpdateName = async (newName) => {
+        const nameToSubmit = newName || profileName;
+        if (!nameToSubmit || nameToSubmit.trim().length < 2) return;
         setIsLoading(true);
         try {
             const res = await authFetch('/api/users/me', {
                 method: 'PUT',
-                body: JSON.stringify({ name: newName.trim() })
+                body: JSON.stringify({ name: nameToSubmit.trim() })
             });
             if (res.ok) {
                 const updatedUser = await res.json();
                 setUser(updatedUser);
-                setMode('menu');
-                alert('Профиль обновлен!');
+                setProfileName(updatedUser.name);
+                alert('Имя обновлено!');
+            } else {
+                const err = await res.json();
+                alert(err.detail || 'Ошибка при обновлении');
             }
         } catch (e) {
             alert('Ошибка при обновлении профиля');
@@ -273,38 +314,7 @@ const Lobby = () => {
         }
     };
 
-    const handleAvatarUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
 
-        const formData = new FormData();
-        formData.append('file', file);
-
-        setIsLoading(true);
-        try {
-            const token = localStorage.getItem('monopoly_token');
-            const res = await fetch(`${API_BASE}/api/users/me/avatar`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
-
-            if (res.ok) {
-                const updatedUser = await res.json();
-                setUser(updatedUser);
-                alert('Фото профиля обновлено!');
-            } else {
-                const err = await res.json();
-                alert(err.detail || 'Ошибка при загрузке фото');
-            }
-        } catch (e) {
-            alert('Ошибка при загрузке фото');
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleEmojiSelect = async (emoji) => {
         setIsLoading(true);
@@ -331,38 +341,8 @@ const Lobby = () => {
         setMode('auth');
     };
 
-    const handleTelegramLogin = useCallback(async (tgUser) => {
-        if (!tgUser) return;
-        setIsLoading(true);
-        console.log("LOGIN ATTEMPT:", tgUser);
-        try {
-            const res = await fetch(`${API_BASE}/api/auth/telegram`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ widget_data: tgUser })
-            });
 
-            if (res.ok) {
-                const data = await res.json();
-                localStorage.setItem('monopoly_token', data.token);
-                setUser(data.user);
-                setMode('menu');
-            } else {
-                const errData = await res.json();
-                alert('Ошибка: ' + (errData.detail || 'Не удалось войти'));
-            }
-        } catch (e) {
-            alert('Ошибка сервера');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [API_BASE]);
 
-    // Make it available globally for the widget
-    useEffect(() => {
-        window.onTelegramAuth = handleTelegramLogin;
-        return () => { delete window.onTelegramAuth; };
-    }, [handleTelegramLogin]);
 
     const handleLinkTelegram = useCallback(async (tgUser) => {
         setIsLoading(true);
@@ -405,27 +385,17 @@ const Lobby = () => {
                         <p className="text-gray-400 font-medium tracking-widest uppercase text-xs">Satire Edition</p>
                     </div>
 
-                    {isLoading ? (
-                        <div className="flex flex-col items-center gap-4 py-8">
-                            <div className="w-12 h-12 border-4 border-yellow-500/30 border-t-yellow-500 rounded-full animate-spin" />
-                            <p className="text-yellow-500 font-mono text-sm animate-pulse">AUTHENTICATING...</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
-                                <TelegramLoginButton
-                                    botName={import.meta.env.VITE_BOT_USERNAME || "monopoly_haha_bot"}
-                                    dataOnauth={handleTelegramLogin}
-                                />
-                                <div className="mt-4 text-[11px] text-gray-500 font-mono tracking-widest uppercase">
-                                    Secure Authentication via Telegram
-                                </div>
-                                <div className="mt-2 text-[9px] text-gray-600 font-mono">
-                                    Bot: {import.meta.env.VITE_BOT_USERNAME || "monopoly_haha_bot"}
-                                </div>
+                    <div className="space-y-6">
+                        <div className={`flex flex-col items-center animate-in fade-in zoom-in duration-300 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}>
+                            <TelegramLoginButton
+                                botName={import.meta.env.VITE_BOT_USERNAME || "monopoly_haha_bot"}
+                                dataOnauth={handleTelegramLogin}
+                            />
+                            <div className="mt-4 text-[11px] text-gray-500 font-mono tracking-widest uppercase">
+                                {isLoading ? 'Authenticating...' : 'Secure Authentication via Telegram'}
                             </div>
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
         );
@@ -756,10 +726,6 @@ const Lobby = () => {
                                         <span>{user.avatar_url || '👤'}</span>
                                     )}
                                 </div>
-                                <label className="absolute bottom-4 right-0 bg-purple-600 p-2 rounded-full cursor-pointer hover:bg-purple-500 transition-colors shadow-lg">
-                                    <Camera size={16} />
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
-                                </label>
                             </div>
                             <h3 className="text-xl font-bold">{user.name}</h3>
                             <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">#{user.friend_code}</p>
@@ -784,12 +750,13 @@ const Lobby = () => {
                                 <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Display Name</label>
                                 <input
                                     type="text"
-                                    defaultValue={user.name}
+                                    value={profileName}
+                                    onChange={(e) => setProfileName(e.target.value)}
                                     className="input-field"
                                     placeholder="Enter new name..."
                                     onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && e.target.value.trim()) {
-                                            handleUpdateProfile(e.target.value.trim());
+                                        if (e.key === 'Enter') {
+                                            handleUpdateName();
                                         }
                                     }}
                                 />
@@ -807,11 +774,7 @@ const Lobby = () => {
                             </div>
 
                             <button
-                                onClick={(e) => {
-                                    const card = e.target.closest('.glass-card');
-                                    const input = card?.querySelector('input');
-                                    if (input) handleUpdateProfile(input.value);
-                                }}
+                                onClick={() => handleUpdateName()}
                                 className="btn-primary w-full py-4 font-bold"
                                 disabled={isLoading}
                             >
