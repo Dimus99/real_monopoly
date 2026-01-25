@@ -909,19 +909,7 @@ const GameRoom = () => {
                 )}
             </AnimatePresence>
 
-            {/* Chance Modal */}
-            <AnimatePresence>
-                {(showChanceModal || !!chanceData) && (
-                    <ChanceModal
-                        show={!!chanceData}
-                        data={chanceData}
-                        onClose={() => {
-                            setChanceData(null);
-                            setShowChanceModal(false);
-                        }}
-                    />
-                )}
-            </AnimatePresence>
+
             {/* Also show trade modal (only needed if trading in waiting room enabled? Probably not, but safe to keep) */}
             <TradeModal isOpen={showTradeModal} onClose={() => setShowTradeModal(false)} fromPlayer={currentPlayer} toPlayer={tradeTarget} gameState={gameState} onSendOffer={handleSendOffer} />
             <TradeNotification trade={incomingTrade} fromPlayer={gameState?.players?.[incomingTrade?.from_player_id]} onRespond={handleRespondTrade} board={gameState?.board} />
