@@ -151,7 +151,7 @@ def validate_telegram_init_data(init_data: str) -> Optional[dict]:
         return None
         
     except Exception as e:
-        print(f"Telegram auth validation error: {e}")
+        print(f"Telegram auth validation error LOG: {e}")
         return None
 
 
@@ -193,7 +193,7 @@ def validate_telegram_widget_data(widget_data: dict) -> Optional[dict]:
             
         return widget_data
     except Exception as e:
-        print(f"Telegram widget validation error: {e}")
+        print(f"Telegram widget validation error LOG: {e}")
         return None
 
 

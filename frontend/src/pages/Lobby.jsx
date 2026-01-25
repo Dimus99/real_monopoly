@@ -13,6 +13,7 @@ const Lobby = () => {
     const [user, setUser] = useState(null);
     const [mode, setMode] = useState('menu'); // menu, create, join, friends, settings
     const [isLoading, setIsLoading] = useState(false);
+    const [showTelegramLogin, setShowTelegramLogin] = useState(false);
     const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
 
     // Create Game State
@@ -384,11 +385,23 @@ const Lobby = () => {
                                 <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#1a1a2e] px-2 text-gray-500">Or</span></div>
                             </div>
 
-                            <div className="flex justify-center">
-                                <TelegramLoginButton
-                                    botName={import.meta.env.VITE_BOT_USERNAME || "PoliticalMonopolyBot"}
-                                    dataOnauth={handleTelegramLogin}
-                                />
+                            <div className="flex flex-col items-center">
+                                {!showTelegramLogin ? (
+                                    <button
+                                        onClick={() => setShowTelegramLogin(true)}
+                                        className="btn-purple px-8 py-3 rounded-full flex items-center gap-2 font-bold shadow-lg shadow-blue-900/20 hover:scale-105 transition-transform"
+                                    >
+                                        <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center">
+                                            <svg viewBox="0 0 24 24" fill="#229ED9" className="w-3 h-3"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82.1.23-.972-.327-1.477.966-2.33 2.073-1.356 1.764-.78 2.744.156 3.012 2.07-.384 3.084.776 2.502 3.128-.84 1.118-4.47 1.155-4.856.035-.347-.768-.53-2.196-.917-1.042-.28 4.218 1.379 2.19 2.071 1.096.377 4.187 2.716 5.562 8.161z" /></svg>
+                                        </div>
+                                        Войти через Telegram
+                                    </button>
+                                ) : (
+                                    <TelegramLoginButton
+                                        botName={import.meta.env.VITE_BOT_USERNAME || "PoliticalMonopolyBot"}
+                                        dataOnauth={handleTelegramLogin}
+                                    />
+                                )}
                             </div>
                         </div>
                     )}
