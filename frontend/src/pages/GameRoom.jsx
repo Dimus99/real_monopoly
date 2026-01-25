@@ -19,7 +19,7 @@ import ChanceModal from '../components/ChanceModal';
 import * as AbilityAnimations from '../components/AbilityAnimations';
 
 // Character data
-const CHARACTERS = {
+const ROOM_CHARACTERS = {
     Putin: { avatar: '/avatars/putin.png', color: '#C41E3A', ability: 'ORESHNIK' },
     Trump: { avatar: '/avatars/trump.png', color: '#FF6B35', ability: 'BUYOUT' },
     Zelensky: { avatar: '/avatars/zelensky.png', color: '#0057B8', ability: 'AID' },
@@ -115,7 +115,7 @@ const GameRoom = () => {
     const currentTurnPlayer = gameState?.players?.[gameState?.player_order?.[gameState?.current_turn_index]];
 
     // Character data mapping check - Moved here to avoid initialization error
-    const char = CHARACTERS[currentPlayer?.character] || CHARACTERS.Putin;
+    const char = ROOM_CHARACTERS[currentPlayer?.character] || ROOM_CHARACTERS.Putin;
 
     const currentTile = gameState?.board?.[currentPlayer?.position];
     // Can buy only if on the tile (UI Logic)
@@ -496,7 +496,7 @@ const GameRoom = () => {
                                 <div key={p.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
                                         <div className="relative">
-                                            <img src={CHARACTERS[p.character]?.avatar} className="w-12 h-12 rounded-lg bg-black/30 object-cover" />
+                                            <img src={ROOM_CHARACTERS[p.character]?.avatar} className="w-12 h-12 rounded-lg bg-black/30 object-cover" />
                                             {p.is_bot && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-[10px] px-1 rounded">BOT</div>}
                                         </div>
                                         <div>

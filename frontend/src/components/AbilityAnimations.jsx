@@ -423,11 +423,4 @@ export const BeltRoadAnimation = ({ isVisible, onComplete, bonus = 0 }) => {
     );
 };
 
-export default {
-    BuyoutAnimation,
-    AidAnimation,
-    NukeThreatAnimation,
-    SanctionsAnimation,
-    BeltRoadAnimation,
-    VictoryAnimation
-};
+

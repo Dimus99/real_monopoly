@@ -410,11 +410,11 @@ const Lobby = () => {
                                 ) : (
                                     <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
                                         <TelegramLoginButton
-                                            botName={import.meta.env.VITE_BOT_USERNAME || "PoliticalMonopolyBot"}
+                                            botName={import.meta.env.VITE_BOT_USERNAME || "monopoly_haha_bot"}
                                             dataOnauth={handleTelegramLogin}
                                         />
                                         <div className="mt-2 text-[10px] text-gray-500 font-mono">
-                                            Bot: {import.meta.env.VITE_BOT_USERNAME || "PoliticalMonopolyBot (Default)"}
+                                            Bot: {import.meta.env.VITE_BOT_USERNAME || "monopoly_haha_bot"}
                                         </div>
                                     </div>
                                 )}
@@ -772,7 +772,7 @@ const Lobby = () => {
                                     <p className="text-xs text-gray-400 mb-6">Привяжите аккаунт, чтобы сохранять прогресс и играть через Telegram Mini App.</p>
                                     <div className="flex justify-center">
                                         <TelegramLoginButton
-                                            botName={import.meta.env.VITE_BOT_USERNAME || "PoliticalMonopolyBot"}
+                                            botName={import.meta.env.VITE_BOT_USERNAME || "monopoly_haha_bot"}
                                             dataOnauth={handleLinkTelegram}
                                         />
                                     </div>

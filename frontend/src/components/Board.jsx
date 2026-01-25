@@ -54,7 +54,7 @@ const PLAYER_COLORS = {
 };
 
 // Character data for avatars
-const CHARACTERS = {
+const BOARD_CHARACTERS = {
     Putin: { avatar: '/avatars/putin.png', color: '#C41E3A' },
     Trump: { avatar: '/avatars/trump.png', color: '#FF6B35' },
     Zelensky: { avatar: '/avatars/zelensky.png', color: '#0057B8' },
@@ -238,7 +238,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                     return null;
                 }
 
-                const char = CHARACTERS[player.character] || {};
+                const char = BOARD_CHARACTERS[player.character] || {};
                 const prevPos = prevPositionsRef.current[playerId];
                 const isMoving = prevPos && prevPos.position !== undefined && (prevPos.position !== pos.position);
 
@@ -376,7 +376,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                             <div className="text-2xl text-white font-bold mb-2">WINNER</div>
                             <div className="relative">
                                 <img
-                                    src={CHARACTERS[winner.character]?.avatar}
+                                    src={BOARD_CHARACTERS[winner.character]?.avatar}
                                     className="w-32 h-32 rounded-full border-4 border-yellow-400 shadow-[0_0_50px_rgba(255,215,0,0.6)] object-cover"
                                 />
                                 <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-4 py-1 rounded-full font-black uppercase text-sm whitespace-nowrap">
