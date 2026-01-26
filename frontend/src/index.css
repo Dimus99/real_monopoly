@@ -315,8 +315,8 @@ body {
 .board-grid {
   display: grid;
   /* 11x11 grid: Corners (1st, 11th) are wider/taller (1.4fr), middle are 1fr */
-  grid-template-columns: 1.2fr repeat(9, 1fr) 1.2fr;
-  grid-template-rows: 1.2fr repeat(9, 1fr) 1.2fr;
+  grid-template-columns: 1.8fr repeat(9, 1fr) 1.8fr;
+  grid-template-rows: 1.8fr repeat(9, 1fr) 1.8fr;
   aspect-ratio: 1/1;
   width: 100%;
   border: 2px solid rgba(255, 215, 0, 0.3);

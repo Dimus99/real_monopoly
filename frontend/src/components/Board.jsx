@@ -56,8 +56,8 @@ const getTileCoordinates = (tileId, boardRef) => {
     const gridStyle = getTileStyle(tileId);
     const GRID_GAP = 2; // Must match CSS
 
-    // Grid configuration must match CSS: 1.5fr - 1fr * 9 - 1.5fr
-    const totalUnits = 1.5 + 9 + 1.5; // 12.0
+    // Grid configuration must match CSS: 1.8fr - 1fr * 9 - 1.8fr
+    const totalUnits = 1.8 + 9 + 1.8; // 12.6
 
     // Calculate unit size (subtracting gaps)
     // 11 columns means 10 gaps
@@ -73,7 +73,7 @@ const getTileCoordinates = (tileId, boardRef) => {
 
         // Add width of preceding columns/rows + gaps
         for (let i = 1; i < index; i++) {
-            if (i === 1 || i === 11) pos += 1.5 * unitSize;
+            if (i === 1 || i === 11) pos += 1.8 * unitSize;
             else pos += 1 * unitSize;
 
             // Add gap after every column/row
@@ -81,7 +81,7 @@ const getTileCoordinates = (tileId, boardRef) => {
         }
 
         // Add half of current column/row
-        const currentSize = (index === 1 || index === 11) ? 1.5 : 1;
+        const currentSize = (index === 1 || index === 11) ? 1.8 : 1;
         pos += (currentSize * unitSize) / 2;
 
         return pos;
@@ -429,11 +429,11 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                                     let left = coords.x;
 
                                     if (id <= 10) { // Top
-                                        top += 80;
+                                        top += 100;
                                     } else if (id < 20) { // Right
                                         left -= 120;
                                     } else if (id <= 30) { // Bottom
-                                        top -= 80;
+                                        top -= 100;
                                     } else { // Left
                                         left += 120;
                                     }
@@ -463,36 +463,20 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                 <AnimatePresence>
                     {selectedTileId !== null && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.5, y: 20 }}
-                            animate={{ opacity: 1, scale: 0.85, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.5, y: 20 }}
-                            className="absolute z-[100] pointer-events-auto origin-center"
+                            initial={{ opacity: 0, scale: 0.8, y: 30 }}
+                            animate={{ opacity: 1, scale: 0.9, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, y: 30 }}
+                            className="absolute z-[100] pointer-events-auto"
                             style={{
-                                ...(() => {
-                                    const coords = getTileCoordinates(selectedTileId, boardRef);
-                                    const id = selectedTileId;
-                                    let top = coords.y;
-                                    let left = coords.x;
-
-                                    // Heavy contextual positioning for the large card
-                                    if (id <= 10) { // Top
-                                        top += 280;
-                                    } else if (id < 20) { // Right
-                                        left -= 300;
-                                    } else if (id <= 30) { // Bottom
-                                        top -= 280;
-                                    } else { // Left
-                                        left += 300;
-                                    }
-
-                                    return { top, left, transform: 'translate(-50%, -50%)' };
-                                })()
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)'
                             }}
                         >
                             <PropertyModal
                                 property={tiles.find(t => t.id === selectedTileId)}
                                 players={players}
-                                canBuy={isMyTurn && currentPlayerId === players?.[Object.keys(players).find(k => players[k].user_id === players[currentPlayerId]?.user_id)]?.id} // Simplified for demo, handle correctly in GameRoom
+                                canBuy={isMyTurn && players[currentPlayerId]?.position === selectedTileId && !tiles.find(t => t.id === selectedTileId)?.owner_id}
                                 onBuy={onBuy}
                                 onClose={() => onTileClick(null)}
                                 onBuild={onBuild}

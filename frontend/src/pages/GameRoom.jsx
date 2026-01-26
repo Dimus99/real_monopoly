@@ -723,8 +723,8 @@ const GameRoom = () => {
                 <div className="relative z-10 shadow-2xl transition-all duration-300 my-auto py-8"
                     ref={boardRef}
                     style={{
-                        width: isMobile ? '800px' : '95%',  // Slightly less than 100% to show edges
-                        maxWidth: '1200px',
+                        width: isMobile ? '800px' : '90%',
+                        maxWidth: '1000px',
                         aspectRatio: '1/1', // Keep square aspect ratio
                         minHeight: isMobile ? '800px' : 'auto',
                         display: 'flex',

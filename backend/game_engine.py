@@ -49,7 +49,7 @@ WORLD_MAP_DATA = [
     {"name": "Вашингтон", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
     {"name": "Аэропорт Хитроу", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
-    {"name": "Гренландия", "group": "DarkBlue", "price": 350, "rent": [35, 175, 500, 1100, 1300, 1500]},
+    {"name": "Гренландия", "group": "DarkBlue", "price": 706, "rent": [35, 175, 500, 1100, 1300, 1500]},
     {"name": "Налог на Роскошь", "group": "Tax", "price": 0, "rent": [100]},
     {"name": "Антарктида", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},
 ]
