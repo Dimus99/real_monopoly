@@ -337,43 +337,35 @@ const GameRoom = () => {
                 setIsRolling(true);
 
                 // Phase 1: Rolling animation (variable speed handled in component)
-                // Shortened duration as requested
+                // Phase 1: Rolling animation
                 setTimeout(() => {
                     setDiceRolling(false); // Show final result
 
-                    // Phase 2: Show result for a few seconds
+                    // Phase 2: Show result briefly
                     setTimeout(() => {
                         setShowDice(false);
 
-                        // Small buffer to let the dice modal fade out before movement starts
+                        // Phase 3: Update positions faster
                         setTimeout(() => {
-                            // Phase 3: Execute Movement and Update Interface
-                            // This ensures movement happens ONLY after dice are gone
                             if (gameState?.players) {
                                 setDelayedPlayers(gameState.players);
                             }
-
-                            // NOTE: We no longer manually set setHasRolled(true) here
-                            // The source of truth is the sync effect from gameState.turn_state
                             setIsRolling(false);
 
-                            // Handle other post-roll actions (Rent, etc.)
                             if (lastAction.action === 'pay_rent' && lastAction.player_id === playerId) {
                                 setRentDetails({
                                     amount: lastAction.amount,
                                     ownerId: lastAction.owner_id
                                 });
-                                // Modal removed, handled in ActionPanel
                             }
 
-                            // Show chance modal only for ME
                             if (lastAction.chance_card && lastAction.player_id === playerId) {
                                 setChanceCard(lastAction.chance_card);
                             }
-                        }, 300);
+                        }, 200);
 
-                    }, 1500); // 1.5 seconds delay to read the dice
-                }, 1200); // 1.2 seconds rolling time
+                    }, 1000); // Reduced from 1.5s
+                }, 800); // Reduced from 1.2s
                 break;
 
             case 'PROPERTY_BOUGHT':
@@ -744,7 +736,6 @@ const GameRoom = () => {
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
                 <div className="relative z-10 shadow-2xl transition-all duration-300 my-auto py-8"
-                    ref={boardRef}
                     style={{
                         width: isMobile ? '800px' : '90%',
                         maxWidth: '1000px',

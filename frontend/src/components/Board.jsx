@@ -59,31 +59,34 @@ const getTileCoordinates = (tileId, boardRef) => {
     const innerWidth = boardRect.width - (CONTAINER_BORDER * 2);
     const innerHeight = boardRect.height - (CONTAINER_BORDER * 2);
 
-    // Grid configuration: 1.5fr - 1fr * 9 - 1.5fr (Total 11 columns/rows)
-    const totalUnits = 1.5 + 9 + 1.5; // 12.0
+    // Grid configuration: Corners 1.5fr, specialized 0.7fr, others 1fr
+    // X: Column 5 is 0.7fr
+    // Y: Row 3 is 0.7fr
+    const totalUnits = 1.5 + 8 + 0.7 + 1.5; // 11.7 (Same for both axes in this layout)
 
     // Calculate unit size (subtracting gaps and borders)
-    // 11 columns means 10 gaps
     const availableWidth = innerWidth - (10 * GRID_GAP);
     const availableHeight = innerHeight - (10 * GRID_GAP);
 
     const unitX = availableWidth / totalUnits;
     const unitY = availableHeight / totalUnits;
 
-    const getCoordinate = (index, unitSize) => {
+    const getCoordinate = (index, unitSize, isX) => {
         let pos = CONTAINER_BORDER;
+        const narrowIdx = isX ? 5 : 3; // Column 5 or Row 3
         for (let i = 1; i < index; i++) {
             if (i === 1 || i === 11) pos += 1.5 * unitSize;
+            else if (i === narrowIdx) pos += 0.7 * unitSize;
             else pos += 1 * unitSize;
             pos += GRID_GAP;
         }
-        const currentSize = (index === 1 || index === 11) ? 1.5 : 1;
+        const currentSize = (index === 1 || index === 11) ? 1.5 : (index === narrowIdx ? 0.7 : 1);
         pos += (currentSize * unitSize) / 2;
         return pos;
     };
 
-    const x = getCoordinate(gridStyle.gridColumnStart, unitX);
-    const y = getCoordinate(gridStyle.gridRowStart, unitY);
+    const x = getCoordinate(gridStyle.gridColumnStart, unitX, true);
+    const y = getCoordinate(gridStyle.gridRowStart, unitY, false);
 
     return { x, y };
 };
@@ -107,6 +110,14 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
     // Calculate full path for animation along board edges
     const calculatePath = (start, end) => {
         if (start === end) return [start];
+
+        // Detect teleport (e.g. sent to Jail)
+        // If it's more than 12 steps or specifically to tile 10 (Jail) from non-9 position
+        const dist = (end - start + tiles.length) % tiles.length;
+        if (end === 10 || dist > 12) {
+            return [start, end]; // Instant teleport
+        }
+
         const path = [start];
         let current = start;
         const totalTiles = tiles.length;
@@ -163,13 +174,13 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
             });
 
             prevPositionsRef.current = { ...lastPositionsRef.current };
-            lastPositionsRef.current = newPositions;
+            lastPositionsRef.current = { ...newPositions };
             setPlayerPositions(newPositions);
             setAnimatedPaths(newPaths);
         };
 
-        // Wait for next frame to ensure board is rendered
-        const timeoutId = setTimeout(updatePositions, 100);
+        // Faster update
+        const timeoutId = setTimeout(updatePositions, 30);
 
         return () => clearTimeout(timeoutId);
     }, [players]);

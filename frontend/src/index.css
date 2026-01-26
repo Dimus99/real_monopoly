@@ -313,9 +313,9 @@ body {
 
 /* ===== Game Board ===== */
 .board-grid {
-  /* 11x11 grid: Corners (1st, 11th) are 1.5fr, middle are 1fr for More uniform look */
-  grid-template-columns: 1.5fr repeat(9, 1fr) 1.5fr;
-  grid-template-rows: 1.5fr repeat(9, 1fr) 1.5fr;
+  /* Custom grid: Corners 1.5fr, middle 1fr, but 5th col and 3rd row are 0.7fr (Tax/Utility tiles) */
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 0.7fr 1fr 1fr 1fr 1fr 1fr 1.5fr;
+  grid-template-rows: 1.5fr 1fr 0.7fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1.5fr;
   aspect-ratio: 1/1;
   width: 100%;
   height: 100%;
