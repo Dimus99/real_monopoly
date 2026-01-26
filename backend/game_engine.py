@@ -954,17 +954,29 @@ class GameEngine:
         rent = self._calculate_rent(game, prop, game.dice, player)
         
         if player.money < rent:
-            # New Rule: Do not bankrupt immediately. Force liquidation.
-            # Only bankrupt if total assets < rent (this is a complex check, for now just deny movement/end turn)
-            # Actually, standard flow: UI keeps asking to pay.
-            return {
-                "success": False,
-                "error": "Insufficient funds. Mortgage properties or trade to raise money!",
-                "required_amount": rent,
-                "current_money": player.money,
-                "rent_paid": 0,
-                "game_state": game.dict()
-            }
+            # Check if they can raise money
+            assets_value = player.money
+            # Add mortgageable value
+            for pid in player.properties:
+                p = game.board[pid]
+                if not p.is_mortgaged:
+                    # Sell houses first
+                    assets_value += (p.houses * ((p.price // 2) + 50) * 0.7) # Approx house sell value
+                    assets_value += (p.price * 0.7) # Mortgage value
+            
+            if assets_value < rent:
+                 # BANKRUPTCY
+                 return self._handle_bankruptcy(game, player, owner, rent)
+            else:
+                 # Force liquidation
+                 return {
+                    "success": False,
+                    "error": "Insufficient funds! You must sell houses or mortgage properties to pay rent.",
+                    "required_amount": rent,
+                    "current_money": player.money,
+                    "rent_paid": 0,
+                    "game_state": game.dict()
+                }
         
         player.money -= rent
         owner.money += rent
@@ -1616,6 +1628,48 @@ class GameEngine:
             **roll_result
         }
     
+    def bot_resolve_debt(self, game_id: str, player: Player, amount: int) -> bool:
+        """Bot logic to raise funds for debt."""
+        game = self.games.get(game_id)
+        if not game: return False
+        
+        # 1. Sell Houses
+        owned_props = [game.board[pid] for pid in player.properties]
+        # Sort by most developed
+        owned_props.sort(key=lambda p: p.houses, reverse=True)
+        
+        timeout = 0
+        while player.money < amount and timeout < 50:
+            timeout += 1
+            sold_something = False
+            
+            # Try sell house
+            for p in owned_props:
+                if p.houses > 0:
+                    res = self.sell_house(game_id, player.id, p.id)
+                    if res.get("success"):
+                        sold_something = True
+                        break # Re-evaluate loop
+            
+            if sold_something: continue
+            
+            # Try mortgage
+            # Sort by least value to keep expensive ones? Or most value to get quick cash?
+            # Usually mortgage utilities/stations first, then cheap props
+            unmortgaged = [p for p in owned_props if not p.is_mortgaged and p.houses == 0]
+            # Sort by price ascending (keep expensive ones active)
+            unmortgaged.sort(key=lambda p: p.price)
+            
+            if unmortgaged:
+                p = unmortgaged[0]
+                self.mortgage_property(game_id, player.id, p.id)
+                sold_something = True
+                
+            if not sold_something:
+                break
+                
+        return player.money >= amount
+
     def run_bot_post_roll(self, game_id: str, player_id: str) -> Optional[Dict[str, Any]]:
         """Execute bot actions AFTER dice roll with Decision Tree Logic."""
         game = self.games.get(game_id)
@@ -1626,9 +1680,28 @@ class GameEngine:
         if not player or not player.is_bot:
             return None
         
-        actions = []
         tile = game.board[player.position]
         
+        # RENT CHECK
+        if tile.owner_id and tile.owner_id != player.id and not tile.is_mortgaged:
+             rent = self._calculate_rent(game, tile, game.dice, player)
+             if player.money < rent:
+                 # Try to pay
+                 resolved = self.bot_resolve_debt(game_id, player, rent)
+                 if not resolved:
+                     # Bankruptcy
+                     # _handle_bankruptcy is called inside pay_rent if we call pay_rent now? 
+                     # No, pay_rent calls _handle_bankruptcy only if we added the logic there.
+                     # We added the logic to pay_rent above. So just calling pay_rent will trigger it.
+                     pass
+             
+             # Pay Rent
+             self.pay_rent(game_id, player.id, tile.id)
+             # If bankrupt, return immediately
+             if player.is_bankrupt:
+                 return None
+
+        actions = []
         reserve_cash = 300
         
         # 1. PROPERTY (Free) - Logic

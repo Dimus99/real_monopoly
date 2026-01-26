@@ -261,59 +261,71 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
                     </motion.button>
                 )}
 
-                {canBuild && isPropertyType && owner && property.houses < 5 && !['Utility', 'Station'].includes(property.group) && !property.is_mortgaged && (
-                    <motion.button
-                        whileHover={{ scale: 1.02, y: -5 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => onBuild(property.id)}
-                        className="btn btn-primary w-full h-16 text-xl tracking-tight flex items-center justify-center gap-2"
-                    >
-                        <Home size={24} className="animate-pulse" />
-                        ПОСТРОИТЬ {property.houses < 4 ? 'ДОМ' : 'ОТЕЛЬ'} (${housePrice})
-                    </motion.button>
-                )}
-
-                {/* Sell House Button */}
-                {owner && owner.id === currentPlayerId && isPropertyType && property.houses > 0 && (
-                    <motion.button
-                        whileHover={{ scale: 1.02, y: -5 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => onSellHouse && onSellHouse(property.id)}
-                        className="btn btn-error w-full h-16 text-xl tracking-tight flex items-center justify-center gap-2 mb-3"
-                    >
-                        <Home size={24} className="animate-pulse text-white" />
-                        ПРОДАТЬ {property.houses === 5 ? 'ОТЕЛЬ' : 'ДОМ'} (+${Math.floor(((property.price / 2) + 50) * 0.7)})
-                    </motion.button>
-                )}
-
-                {/* Mortgage / Unmortgage Buttons */}
+                {/* Development Management */}
                 {owner && owner.id === currentPlayerId && isPropertyType && (
-                    <div className="flex gap-2">
-                        {!property.is_mortgaged ? (
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => onMortgage(property.id)}
-                                disabled={property.houses > 0}
-                                className={`flex-1 h-12 border rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${property.houses > 0
-                                    ? 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'
-                                    : 'bg-orange-600/20 hover:bg-orange-600/40 text-orange-400 border-orange-600/30'
-                                    }`}
-                                title={property.houses > 0 ? "Сначала продайте здания" : ""}
-                            >
-                                Заложить (+${Math.floor(property.price * 0.7)})
-                            </motion.button>
-                        ) : (
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => onUnmortgage(property.id)}
-                                className="flex-1 h-12 bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-600/30 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
-                            >
-                                Выкупить (-${Math.floor(property.price * 0.8)})
-                            </motion.button>
-                        )}
-                    </div>
+                    <>
+                        <div className="grid grid-cols-2 gap-3">
+                            {/* Build Button */}
+                            {canBuild && property.houses < 5 && !['Utility', 'Station'].includes(property.group) && !property.is_mortgaged ? (
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => onBuild(property.id)}
+                                    className="h-14 bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl flex items-center justify-center gap-2 text-white font-bold shadow-lg shadow-blue-900/40 border border-blue-400/20"
+                                >
+                                    <div className="flex flex-col items-start leading-none">
+                                        <span className="text-[10px] opacity-70 uppercase tracking-wider">Построить</span>
+                                        <span className="text-sm">{property.houses < 4 ? 'ДОМ' : 'ОТЕЛЬ'} ${housePrice}</span>
+                                    </div>
+                                    <Home size={18} className="text-blue-200" />
+                                </motion.button>
+                            ) : <div />}
+
+                            {/* Sell House Button */}
+                            {property.houses > 0 ? (
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => onSellHouse && onSellHouse(property.id)}
+                                    className="h-14 bg-gradient-to-r from-red-600 to-red-500 rounded-xl flex items-center justify-center gap-2 text-white font-bold shadow-lg shadow-red-900/40 border border-red-400/20"
+                                >
+                                    <div className="flex flex-col items-start leading-none">
+                                        <span className="text-[10px] opacity-70 uppercase tracking-wider">Продать</span>
+                                        <span className="text-sm">{property.houses === 5 ? 'ОТЕЛЬ' : 'ДОМ'} +${Math.floor(((property.price / 2) + 50) * 0.7)}</span>
+                                    </div>
+                                    <Home size={18} className="text-red-200" />
+                                </motion.button>
+                            ) : <div />}
+                        </div>
+
+                        {/* Mortgage / Unmortgage Buttons */}
+                        <div className="flex gap-2">
+                            {!property.is_mortgaged ? (
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => onMortgage(property.id)}
+                                    disabled={property.houses > 0}
+                                    className={`flex-1 h-12 border rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${property.houses > 0
+                                        ? 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'
+                                        : 'bg-orange-600/20 hover:bg-orange-600/40 text-orange-400 border-orange-600/30'
+                                        }`}
+                                    title={property.houses > 0 ? "Сначала продайте здания" : ""}
+                                >
+                                    Заложить (+${Math.floor(property.price * 0.7)})
+                                </motion.button>
+                            ) : (
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => onUnmortgage(property.id)}
+                                    className="flex-1 h-12 bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-600/30 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+                                >
+                                    Выкупить (-${Math.floor(property.price * 0.8)})
+                                </motion.button>
+                            )}
+                        </div>
+                    </>
                 )}
             </div>
         </motion.div >
