@@ -13,13 +13,13 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
 
     const getRotation = (val) => {
         switch (val) {
-            case 1: return 'rotateY(0deg) rotateX(0deg)';
-            case 2: return 'rotateY(-90deg) rotateX(0deg)';
-            case 3: return 'rotateY(0deg) rotateX(-90deg)';
-            case 4: return 'rotateY(0deg) rotateX(90deg)';
-            case 5: return 'rotateY(90deg) rotateX(0deg)';
-            case 6: return 'rotateY(180deg) rotateX(0deg)';
-            default: return 'rotateY(0deg)';
+            case 1: return { rotateY: 0, rotateX: 0 };
+            case 2: return { rotateY: -90, rotateX: 0 };
+            case 3: return { rotateY: 0, rotateX: -90 };
+            case 4: return { rotateY: 0, rotateX: 90 };
+            case 5: return { rotateY: 90, rotateX: 0 };
+            case 6: return { rotateY: 180, rotateX: 0 };
+            default: return { rotateY: 0, rotateX: 0 };
         }
     };
 
@@ -48,9 +48,24 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
 
         return (
             <div className="dice-container">
-                <div
-                    className={`cube ${isRolling ? 'cube-rolling' : ''}`}
-                    style={!isRolling ? { transform: getRotation(value) } : {}}
+                <motion.div
+                    className="cube"
+                    animate={isRolling ? {
+                        rotateX: [0, 360, 720, 1080],
+                        rotateY: [0, 720, 360, 1440],
+                        rotateZ: [0, 180, 0, 360],
+                    } : {
+                        ...getRotation(value)
+                    }}
+                    transition={isRolling ? {
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "linear"
+                    } : {
+                        type: "spring",
+                        stiffness: 100,
+                        damping: 10
+                    }}
                 >
                     <Face n={1} />
                     <Face n={2} />
@@ -58,7 +73,7 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                     <Face n={4} />
                     <Face n={5} />
                     <Face n={6} />
-                </div>
+                </motion.div>
                 {isGlow && !isRolling && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}

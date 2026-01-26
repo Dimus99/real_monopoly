@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Tile from './Tile';
 import ToastNotification from './ToastNotification';
 import { CHARACTERS as BOARD_CHARACTERS } from '../constants/characters';
+import PropertyModal from './PropertyModal';
 
 const getTileStyle = (index) => {
     // LAYOUT V3.1: 0(TL), 10(TR), 20(BR), 30(BL)
@@ -94,7 +95,7 @@ const getTileCoordinates = (tileId, boardRef) => {
 
 
 
-const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage, externalRef, onAvatarClick, winner }) => {
+const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, canBuild, isMyTurn }) => {
     // Character colors for player tokens (derived from BOARD_CHARACTERS)
     const PLAYER_COLORS = React.useMemo(() => Object.fromEntries(
         Object.entries(BOARD_CHARACTERS).map(([k, v]) => [k, v.color])
@@ -348,7 +349,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                 style={{ gridRow: '2 / 11', gridColumn: '2 / 11' }}
                 className="board-center flex items-center justify-center p-4 relative"
             >
-                <div className={`relative z-10 text-center transition-opacity duration-300 ${hoveredTileId ? 'opacity-0' : 'opacity-100'}`}>
+                <div className={`relative z-10 text-center transition-opacity duration-300`}>
                     {winner ? (
                         <motion.div
                             initial={{ scale: 0.5, opacity: 0 }}
@@ -411,24 +412,102 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                 </div>
 
                 {/* Center Content: Either Property Details or Chat/Logs */}
-                <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
-                    {/* Hover info moved to a simpler tooltip or handled by GameRoom */}
-                    {hoveredTileId && (
-                        <div className="bg-black/80 backdrop-blur-md p-4 rounded-xl border border-white/20 text-white shadow-2xl animate-in fade-in zoom-in duration-200">
-                            <div className="font-bold text-lg">{tiles.find(t => t.id === hoveredTileId)?.name}</div>
-                            <div className="text-yellow-400 font-mono">${tiles.find(t => t.id === hoveredTileId)?.price}</div>
-                        </div>
+                {/* Contextual Hover Info */}
+                <AnimatePresence>
+                    {hoveredTileId !== null && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                            className="absolute z-50 pointer-events-none"
+                            style={{
+                                ...(() => {
+                                    const coords = getTileCoordinates(hoveredTileId, boardRef);
+                                    const id = hoveredTileId;
+                                    // Offset the tooltip based on which side of the board we're on
+                                    let top = coords.y;
+                                    let left = coords.x;
+
+                                    if (id <= 10) { // Top
+                                        top += 80;
+                                    } else if (id < 20) { // Right
+                                        left -= 120;
+                                    } else if (id <= 30) { // Bottom
+                                        top -= 80;
+                                    } else { // Left
+                                        left += 120;
+                                    }
+
+                                    return { top, left, transform: 'translate(-50%, -50%)' };
+                                })()
+                            }}
+                        >
+                            <div className="bg-[#1a1b26]/95 backdrop-blur-xl p-3 px-5 rounded-2xl border border-white/20 text-white shadow-[0_10px_40px_rgba(0,0,0,0.6)] flex flex-col items-center gap-1 min-w-[140px]">
+                                <div className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                                    {tiles.find(t => t.id === hoveredTileId)?.group}
+                                </div>
+                                <div className="font-black text-sm uppercase tracking-tight">
+                                    {tiles.find(t => t.id === hoveredTileId)?.name}
+                                </div>
+                                {tiles.find(t => t.id === hoveredTileId)?.price > 0 && (
+                                    <div className="text-yellow-400 font-mono font-black text-lg">
+                                        ${tiles.find(t => t.id === hoveredTileId)?.price}
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
                     )}
-                </div>
+                </AnimatePresence>
+
+                {/* Detailed Property Card (Contextual) */}
+                <AnimatePresence>
+                    {selectedTileId !== null && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.5, y: 20 }}
+                            animate={{ opacity: 1, scale: 0.85, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.5, y: 20 }}
+                            className="absolute z-[100] pointer-events-auto origin-center"
+                            style={{
+                                ...(() => {
+                                    const coords = getTileCoordinates(selectedTileId, boardRef);
+                                    const id = selectedTileId;
+                                    let top = coords.y;
+                                    let left = coords.x;
+
+                                    // Heavy contextual positioning for the large card
+                                    if (id <= 10) { // Top
+                                        top += 280;
+                                    } else if (id < 20) { // Right
+                                        left -= 300;
+                                    } else if (id <= 30) { // Bottom
+                                        top -= 280;
+                                    } else { // Left
+                                        left += 300;
+                                    }
+
+                                    return { top, left, transform: 'translate(-50%, -50%)' };
+                                })()
+                            }}
+                        >
+                            <PropertyModal
+                                property={tiles.find(t => t.id === selectedTileId)}
+                                players={players}
+                                canBuy={isMyTurn && currentPlayerId === players?.[Object.keys(players).find(k => players[k].user_id === players[currentPlayerId]?.user_id)]?.id} // Simplified for demo, handle correctly in GameRoom
+                                onBuy={onBuy}
+                                onClose={() => onTileClick(null)}
+                                onBuild={onBuild}
+                                canBuild={canBuild}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Log Panel / Chat - Positioned at the very bottom edge of inner area */}
-                {!hoveredTileId && (
-                    <div className="absolute bottom-0 left-0 right-0 z-30 w-full flex flex-col justify-end pointer-events-none p-2">
-                        <div className="pointer-events-auto w-full max-w-[800px] mx-auto">
-                            <ToastNotification logs={logs} onSendMessage={onSendMessage} />
-                        </div>
+                <div className="absolute bottom-0 left-0 right-0 z-30 w-full flex flex-col justify-end pointer-events-none p-2">
+                    <div className="pointer-events-auto w-full max-w-[800px] mx-auto">
+                        <ToastNotification logs={logs} onSendMessage={onSendMessage} />
                     </div>
-                )}
+                </div>
             </motion.div>
 
             {/* Render all tiles */}

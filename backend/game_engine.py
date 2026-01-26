@@ -421,11 +421,12 @@ class GameEngine:
         player.position = new_position
         
         # Check if passed GO
-        if new_position < old_position and old_position != 0:
+        # Standard: if crossed 0. Also handles landing exactly on 0.
+        if (new_position < old_position) or (new_position == 0 and old_position != 0):
             go_money = 2000 if game.map_type == "Monopoly1" else 200
             player.money += go_money
             result["passed_go"] = True
-            game.logs.append(f"{player.name} passed GO and collected ${go_money}")
+            game.logs.append(f"🏧 {player.name} passed START and collected ${go_money}")
         
         # Handle landing
         tile = game.board[new_position]

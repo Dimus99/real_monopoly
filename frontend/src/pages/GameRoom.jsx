@@ -74,18 +74,18 @@ const GameRoom = () => {
 
     // Sync 'hasRolled' and 'dice' state from server to handle page reloads / reconnections
     useEffect(() => {
-        if (gameState?.turn_state?.has_rolled !== undefined) {
-            // Only update if it's my turn, to enable "End Turn" button
-            if (isMyTurn) {
-                setHasRolled(gameState.turn_state.has_rolled);
+        // Only update if it's my turn, to enable "End Turn" button
+        if (isMyTurn) {
+            // Use !! to ensure that undefined/null/missing becomes false
+            const serverHasRolled = !!gameState?.turn_state?.has_rolled;
+            setHasRolled(serverHasRolled);
 
-                // Also sync dice to ensure "Doubles" logic is correct on reload
-                if (gameState.dice && gameState.dice.length === 2) {
-                    setDiceValues(gameState.dice);
-                }
+            // Also sync dice to ensure "Doubles" logic is correct on reload
+            if (gameState?.dice && gameState?.dice.length === 2) {
+                setDiceValues(gameState.dice);
             }
         }
-    }, [gameState?.turn_state, gameState?.dice, isMyTurn]);
+    }, [gameState?.turn_state?.has_rolled, gameState?.dice, isMyTurn]);
 
     // Reset states on new turn
     useEffect(() => {
@@ -734,7 +734,7 @@ const GameRoom = () => {
                 >
                     <Board
                         tiles={gameState.board}
-                        players={delayedPlayers}
+                        players={gameState.players}
                         onTileClick={handleTileClick}
                         mapType={gameState.map_type}
                         currentPlayerId={playerId}
@@ -744,6 +744,16 @@ const GameRoom = () => {
                         externalRef={boardRef}
                         onAvatarClick={(pid) => pid !== playerId && initiateTrade(gameState.players[pid])}
                         winner={gameState.winner}
+
+                        selectedTileId={selectedTile?.id}
+                        onBuy={() => {
+                            handleBuyProperty();
+                            setShowBuyModal(false);
+                            setSelectedTile(null);
+                        }}
+                        onBuild={handleBuildHouse}
+                        canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && checkMonopolyByPlayer(selectedTile || currentTile)}
+                        isMyTurn={isMyTurn}
                     />
                 </div>
 
@@ -854,29 +864,6 @@ const GameRoom = () => {
                 <AidAnimation isVisible={showAid} onComplete={handleCloseAid} />
                 <NukeThreatAnimation isVisible={showNuke} onComplete={handleCloseNuke} />
             </div>
-
-            {/* Buy Modal */}
-            <AnimatePresence>
-                {(selectedTile || showBuyModal) && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0" onClick={() => { setSelectedTile(null); setShowBuyModal(false); }} />
-                        <div className="relative z-10 pointer-events-auto">
-                            <PropertyModal
-                                property={selectedTile || currentTile}
-                                players={gameState.players}
-                                canBuy={showBuyModal || (canBuy && currentPlayer?.position === (selectedTile || currentTile)?.id)}
-                                onBuy={() => {
-                                    handleBuyProperty();
-                                    setShowBuyModal(false);
-                                }}
-                                onClose={() => { setSelectedTile(null); setShowBuyModal(false); }}
-                                onBuild={handleBuildHouse}
-                                canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && checkMonopolyByPlayer(selectedTile || currentTile)}
-                            />
-                        </div>
-                    </div>
-                )}
-            </AnimatePresence>
 
 
 
