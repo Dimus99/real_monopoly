@@ -450,6 +450,11 @@ const GameRoom = () => {
 
     // Handle tile click
     const handleTileClick = (tileId) => {
+        if (tileId === null) {
+            setSelectedTile(null);
+            return;
+        }
+
         if (targetingAbility) {
             // For property-targeting abilities (ORESHNIK, BUYOUT, ISOLATION)
             if (['ORESHNIK', 'BUYOUT', 'ISOLATION'].includes(targetingAbility)) {

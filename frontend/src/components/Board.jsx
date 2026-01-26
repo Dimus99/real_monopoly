@@ -441,14 +441,16 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                                     let left = coords.x;
 
                                     // Force tooltip to always point towards center
-                                    if (id <= 10) { // Top Row -> Push DOWN
-                                        top += 80;
+                                    // Tooltip is ~150px wide, ~100px high
+                                    // Coordinates are center of tile.
+                                    if (id <= 10) { // Top Row -> Push DOWN significantly
+                                        top += 120; // Move below the tile row
                                     } else if (id < 20) { // Right Col -> Push LEFT
-                                        left -= 140;
+                                        left -= 160; // Move left of the tile column
                                     } else if (id <= 30) { // Bottom Row -> Push UP
-                                        top -= 100;
+                                        top -= 140; // Move above the tile row
                                     } else { // Left Col -> Push RIGHT
-                                        left += 140;
+                                        left += 160; // Move right of the tile column
                                     }
 
                                     return { top, left, transform: 'translate(-50%, -50%)' };

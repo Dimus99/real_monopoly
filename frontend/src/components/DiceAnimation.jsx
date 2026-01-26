@@ -51,11 +51,11 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                 <motion.div
                     className="cube"
                     animate={isRolling ? {
-                        rotateX: [0, 800, 1200], // Irregular rotation
-                        rotateY: [0, 600, 950],
-                        rotateZ: [0, 360, 720],
-                        y: [0, -150, 0], // Toss up and down
-                        scale: [1, 1.2, 1] // Slight scale during air time
+                        rotateX: [0, 1800],
+                        rotateY: [0, 1800],
+                        rotateZ: [0, 720],
+                        y: [0, -200, 0, -50, 0], // Double bounce
+                        scale: [1, 1.5, 1]
                     } : {
                         ...getRotation(value),
                         y: 0,
@@ -63,10 +63,9 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                         rotateZ: 0
                     }}
                     transition={isRolling ? {
-                        duration: 0.8,
-                        ease: "easeInOut",
-                        repeat: Infinity,
-                        repeatType: "loop"
+                        duration: 2.0, // Matches the wait time
+                        ease: "circOut", // Slows down naturally
+                        repeat: 0
                     } : {
                         type: "spring",
                         stiffness: 100,
