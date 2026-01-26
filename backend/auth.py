@@ -232,38 +232,25 @@ async def authenticate_telegram_user(
     existing = await db_service.get_user_by_telegram_id(session, telegram_id)
     
     if existing:
-        # Update user info
-        name = user_data.get("first_name", "")
-        if user_data.get("last_name"):
-            name += f" {user_data['last_name']}"
-        
-        avatar_url = user_data.get("photo_url")
-        
-        await db_service.update_user(session, existing.id, {
-            "name": name or existing.name,
-            "avatar_url": avatar_url or existing.avatar_url
-        })
-        
+        # User exists, just log them in without updating profile
         token = f"tg_{generate_token()}"
         await db_service.create_session(session, token, existing.id)
         
-        updated = await db_service.get_user(session, existing.id)
-        user = User(
-            id=updated.id,
-            name=updated.name,
-            telegram_id=updated.telegram_id,
-            avatar_url=updated.avatar_url,
-            friend_code=updated.friend_code,
-            created_at=updated.created_at,
+        return User(
+            id=existing.id,
+            name=existing.name,
+            telegram_id=existing.telegram_id,
+            avatar_url=existing.avatar_url,
+            friend_code=existing.friend_code,
+            created_at=existing.created_at,
             stats=UserStats(
-                games_played=updated.games_played,
-                wins=updated.wins,
-                losses=updated.losses,
-                total_earnings=updated.total_earnings,
-                highest_net_worth=updated.highest_net_worth
+                games_played=existing.games_played,
+                wins=existing.wins,
+                losses=existing.losses,
+                total_earnings=existing.total_earnings,
+                highest_net_worth=existing.highest_net_worth
             )
-        )
-        return user, token
+        ), token
     
     # Create new user
     user_id = str(uuid.uuid4())
