@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import useGameSocket from '../hooks/useGameSocket';
 import Board from '../components/Board';
-import OreshnikAnimation from '../components/OreshnikAnimation';
+// Lazy load to avoid circular dependency/initialization issues
+const OreshnikAnimation = React.lazy(() => import('../components/OreshnikAnimation'));
 import PropertyModal from '../components/PropertyModal';
 import DiceAnimation from '../components/DiceAnimation';
 import ToastNotification from '../components/ToastNotification';
@@ -863,12 +864,14 @@ const GameRoom = () => {
             </AnimatePresence>
 
             <div className="pointer-events-none fixed inset-0 z-[100]">
-                <OreshnikAnimation
-                    isVisible={showOreshnik}
-                    onComplete={() => setShowOreshnik(false)}
-                    targetTileId={lastAction?.target_id}
-                    boardRef={boardRef}
-                />
+                <React.Suspense fallback={null}>
+                    <OreshnikAnimation
+                        isVisible={showOreshnik}
+                        onComplete={() => setShowOreshnik(false)}
+                        targetTileId={lastAction?.target_id}
+                        boardRef={boardRef}
+                    />
+                </React.Suspense>
                 <AbilityAnimations.BuyoutAnimation isVisible={showBuyout} onComplete={() => setShowBuyout(false)} />
                 <AbilityAnimations.AidAnimation isVisible={showAid} onComplete={() => setShowAid(false)} />
                 <AbilityAnimations.NukeThreatAnimation isVisible={showNuke} onComplete={() => setShowNuke(false)} />
