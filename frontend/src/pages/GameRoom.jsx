@@ -364,7 +364,7 @@ const GameRoom = () => {
                             }
                         }, 200);
 
-                    }, 1000); // Reduced from 1.5s
+                    }, 2000); // Increased to 2s per user request
                 }, 800); // Reduced from 1.2s
                 break;
 

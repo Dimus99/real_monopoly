@@ -137,10 +137,13 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
         if (orientation === 'right-col') contentPaddingClass = 'pl-3 pr-1 py-1';
     }
 
+    // User requested NO TEXT ROTATION. All text must be upright.
+    // We keep the logic mostly simple now.
     let contentRotation = '';
-    if (orientation === 'left-col') contentRotation = 'rotate-90';
-    else if (orientation === 'right-col') contentRotation = '-rotate-90';
-    else if (orientation === 'top-row') contentRotation = 'rotate-180';
+    // PREVIOUSLY:
+    // if (orientation === 'left-col') contentRotation = 'rotate-90';
+    // else if (orientation === 'right-col') contentRotation = '-rotate-90';
+    // else if (orientation === 'top-row') contentRotation = 'rotate-180';
 
     return (
         <div
@@ -209,65 +212,72 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                         {property.name}
                     </div>
 
-                    {/* Price */}
-                    {property.price > 0 && !hasOwner && (
-                        <div
-                            className="font-black mt-0.5 text-yellow-400"
-                            style={{ fontSize: (isCorner ? '12px' : '11px'), textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
-                        >
-                            ${property.price}
-                        </div>
-                    )}
+                    {/* Check if name is long, force line break for icons if needed */}
                 </div>
-                {/* Houses indicator */}
-                {property.houses > 0 && (
-                    <div className="absolute bottom-1 right-1 flex gap-0.5">
-                        {property.houses < 5 && Array(property.houses).fill(0).map((_, i) => (
-                            <div key={i} className="w-2 h-2.5 bg-green-500 rounded-sm border border-white/50 shadow-md" />
-                        ))}
-                        {property.houses === 5 && (
-                            <div className="text-sm">🏨</div>
-                        )}
+
+                {/* Price */}
+                {property.price > 0 && !hasOwner && (
+                    <div
+                        className="font-black mt-0.5 text-yellow-400"
+                        style={{ fontSize: (isCorner ? '12px' : '11px'), textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                    >
+                        ${property.price}
                     </div>
                 )}
             </div>
+            {/* Houses indicator */}
+            {property.houses > 0 && (
+                <div className="absolute bottom-1 right-1 flex gap-0.5">
+                    {property.houses < 5 && Array(property.houses).fill(0).map((_, i) => (
+                        <div key={i} className="w-2 h-2.5 bg-green-500 rounded-sm border border-white/50 shadow-md" />
+                    ))}
+                    {property.houses === 5 && (
+                        <div className="text-sm">🏨</div>
+                    )}
+                </div>
+            )}
+
 
             {/* Destroyed overlay */}
-            {property.is_destroyed && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-[25] backdrop-blur-[2px]"
-                >
+            {
+                property.is_destroyed && (
                     <motion.div
-                        animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                        className="text-3xl mb-1 filter drop-shadow-[0_0_10px_rgba(255,0,0,0.5)]"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-[25] backdrop-blur-[2px]"
                     >
-                        💥
+                        <motion.div
+                            animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            className="text-3xl mb-1 filter drop-shadow-[0_0_10px_rgba(255,0,0,0.5)]"
+                        >
+                            💥
+                        </motion.div>
+                        <span className="text-[8px] font-black text-red-500 tracking-wider uppercase">DESTROYED</span>
                     </motion.div>
-                    <span className="text-[8px] font-black text-red-500 tracking-wider uppercase">DESTROYED</span>
-                </motion.div>
-            )}
+                )
+            }
 
             {/* Mortgaged overlay */}
-            {property.is_mortgaged && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center z-[25] backdrop-blur-[1px]"
-                >
-                    <div className="bg-orange-500/80 text-white text-[7px] font-black px-1 py-0.5 rounded shadow-lg uppercase tracking-widest border border-white/20">
-                        ЗАЛОЖЕНО
-                    </div>
-                </motion.div>
-            )}
+            {
+                property.is_mortgaged && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center z-[25] backdrop-blur-[1px]"
+                    >
+                        <div className="bg-orange-500/80 text-white text-[7px] font-black px-1 py-0.5 rounded shadow-lg uppercase tracking-widest border border-white/20">
+                            ЗАЛОЖЕНО
+                        </div>
+                    </motion.div>
+                )
+            }
 
             {/* Hover glow effect */}
             <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none">
                 <div className="absolute inset-0 bg-gradient-to-t from-yellow-400/20 to-transparent" />
             </div>
-        </div>
+        </div >
     );
 };
 

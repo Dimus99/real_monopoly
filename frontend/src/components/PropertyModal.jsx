@@ -127,6 +127,29 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
                             </div>
                         </div>
 
+                        {/* Special Rents Info (Utilities / Stations) */}
+                        {property.group === 'Utility' && (
+                            <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-[20px] text-center backdrop-blur-md">
+                                <div className="text-[10px] text-blue-300 uppercase font-black tracking-widest mb-1">Особые условия</div>
+                                <div className="text-xs text-blue-100 leading-relaxed font-bold">
+                                    Владение 1 компанией: <span className="text-white">10% от наличных</span>
+                                    <br />
+                                    Владение 2 компаниями: <span className="text-yellow-400">20% от наличных (x2)</span>
+                                </div>
+                            </div>
+                        )}
+                        {property.group === 'Station' && (
+                            <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-[20px] text-center backdrop-blur-md">
+                                <div className="text-[10px] text-blue-300 uppercase font-black tracking-widest mb-1">Тарифная сетка</div>
+                                <div className="text-xs text-blue-100 leading-relaxed font-bold grid grid-cols-4 gap-1 mt-1">
+                                    <div>1: $25</div>
+                                    <div>2: <span className="text-white">$50</span></div>
+                                    <div>3: <span className="text-white">$75</span></div>
+                                    <div>4: <span className="text-yellow-400">$100</span></div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Ownership Badge */}
                         <div className="flex items-center justify-between p-5 bg-white/[0.02] rounded-[24px] border border-white/5 shadow-inner">
                             <div className="flex flex-col">
@@ -264,7 +287,7 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
                     </div>
                 )}
             </div>
-        </motion.div>
+        </motion.div >
     );
 };
 
