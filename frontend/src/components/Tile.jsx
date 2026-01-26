@@ -193,11 +193,11 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                         className="tile-name leading-tight text-center px-0.5"
                         style={{
                             color: hasOwner ? '#fff' : (isCorner ? groupStyle.textColor : '#e0e0e0'),
-                            fontSize: isCorner ? '16px' : (property.name.length > 12 ? '10px' : '13px'),
-                            lineHeight: '1.1',
+                            fontSize: isCorner ? '14px' : (property.name.length > 12 ? '9px' : '11px'),
+                            lineHeight: '1.0',
                             fontWeight: '900',
                             textShadow: hasOwner ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(0,0,0,0.5)',
-                            maxWidth: isPropertyTile ? '100%' : '100px',
+                            maxWidth: '100%',
                             textTransform: 'uppercase'
                         }}
                     >

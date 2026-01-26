@@ -7,6 +7,9 @@ import PropertyModal from './PropertyModal';
 
 const getTileStyle = (index) => {
     // 40 tiles total (11x11 grid)
+    // Corners: 0, 10, 20, 30
+    // Sides: 1-9, 11-19, 21-29, 31-39
+
     // Top Row (0 to 10): Row 1, Col 1 -> 11
     if (index >= 0 && index <= 10) {
         return { gridRowStart: 1, gridColumnStart: 1 + index };
@@ -50,27 +53,31 @@ const getTileCoordinates = (tileId, boardRef) => {
     if (boardRect.width === 0 || boardRect.height === 0) return { x: 0, y: 0 };
 
     const gridStyle = getTileStyle(tileId);
-    const GRID_GAP = 2; // Must match CSS
+    const GRID_GAP = 2; // Matches index.css
+    const CONTAINER_BORDER = 4; // Matches index.css border-width
 
-    // Grid configuration: 2.2fr - 1fr * 9 - 2.2fr (Total 11 columns/rows)
-    const totalUnits = 2.2 + 9 + 2.2; // 13.4
+    const innerWidth = boardRect.width - (CONTAINER_BORDER * 2);
+    const innerHeight = boardRect.height - (CONTAINER_BORDER * 2);
 
-    // Calculate unit size (subtracting gaps)
+    // Grid configuration: 1.5fr - 1fr * 9 - 1.5fr (Total 11 columns/rows)
+    const totalUnits = 1.5 + 9 + 1.5; // 12.0
+
+    // Calculate unit size (subtracting gaps and borders)
     // 11 columns means 10 gaps
-    const availableWidth = boardRect.width - (10 * GRID_GAP);
-    const availableHeight = boardRect.height - (10 * GRID_GAP);
+    const availableWidth = innerWidth - (10 * GRID_GAP);
+    const availableHeight = innerHeight - (10 * GRID_GAP);
 
     const unitX = availableWidth / totalUnits;
     const unitY = availableHeight / totalUnits;
 
     const getCoordinate = (index, unitSize) => {
-        let pos = 0;
+        let pos = CONTAINER_BORDER;
         for (let i = 1; i < index; i++) {
-            if (i === 1 || i === 11) pos += 2.2 * unitSize;
+            if (i === 1 || i === 11) pos += 1.5 * unitSize;
             else pos += 1 * unitSize;
             pos += GRID_GAP;
         }
-        const currentSize = (index === 1 || index === 11) ? 2.2 : 1;
+        const currentSize = (index === 1 || index === 11) ? 1.5 : 1;
         pos += (currentSize * unitSize) / 2;
         return pos;
     };
