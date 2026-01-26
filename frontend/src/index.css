@@ -313,25 +313,22 @@ body {
 
 /* ===== Game Board ===== */
 .board-grid {
-  display: grid;
-  /* 11x11 grid: Corners (1st, 11th) are wider/taller (1.4fr), middle are 1fr */
-  grid-template-columns: 2.2fr repeat(13, 1fr) 2.2fr;
-  grid-template-rows: 2.2fr repeat(13, 1fr) 2.2fr;
+  /* 11x11 grid: Corners (1st, 11th) are wider/taller (2.2fr), middle are 1fr */
+  grid-template-columns: 2.2fr repeat(9, 1fr) 2.2fr;
+  grid-template-rows: 2.2fr repeat(9, 1fr) 2.2fr;
   aspect-ratio: 1/1;
-  width: 100%;
-  height: 100%;
+  width: 1000px;
+  /* Allow scrolling */
+  min-width: 1000px;
+  height: 1000px;
+  min-height: 1000px;
   border: 2px solid rgba(255, 215, 0, 0.3);
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.9);
   background: #08080f;
   border-radius: 16px;
-  overflow: visible;
-  /* Changed to visible since we handle scroll outside */
+  overflow: auto;
+  /* Enable scrolling */
   position: relative;
-  cursor: grab;
-}
-
-.board-grid:active {
-  cursor: grabbing;
 }
 
 @media (max-width: 768px) {

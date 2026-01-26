@@ -6,38 +6,25 @@ import { CHARACTERS as BOARD_CHARACTERS } from '../constants/characters';
 import PropertyModal from './PropertyModal';
 
 const getTileStyle = (index) => {
-    // 56 tiles total (14 per side + 4 corners? No, 56 total tiles implies 14 per side if corners included or excluded variously)
-    // Actually WORLD_MAP_DATA in backend has 56 entries? Let's check backend.
-    // Assuming 56 tiles: 0 (start), 14 (corner), 28 (corner), 42 (corner) ?
-    // 56 / 4 = 14 tiles per side including corners? 
-    // Wait, Standard is 40 tiles (10 per side).
-    // Our map has 56 tiles. 56 / 4 = 14 per side.
-    // Top: 0..14 (15 tiles?) 
-    // Right: 15..27 (13 tiles)
-    // Bottom: 28..42 (15 tiles)
-    // Left: 43..55 (13 tiles)
-
-    // grid-column: 1 to 15 (15 columns)
-    // grid-row: 1 to 15 (15 rows)
-
-    // Top Row (0 to 14): Row 1, Col 1 -> 15
-    if (index >= 0 && index <= 14) {
+    // 40 tiles total (11x11 grid)
+    // Top Row (0 to 10): Row 1, Col 1 -> 11
+    if (index >= 0 && index <= 10) {
         return { gridRowStart: 1, gridColumnStart: 1 + index };
     }
 
-    // Right Column (15 to 27): Col 15, Row 2 -> 14
-    if (index >= 15 && index <= 27) {
-        return { gridRowStart: 1 + (index - 14), gridColumnStart: 15 };
+    // Right Column (11 to 20): Col 11, Row 2 -> 11
+    if (index >= 11 && index <= 20) {
+        return { gridRowStart: 1 + (index - 10), gridColumnStart: 11 };
     }
 
-    // Bottom Row (28 to 42): Row 15, Col 15 -> 1
-    if (index >= 28 && index <= 42) {
-        return { gridRowStart: 15, gridColumnStart: 15 - (index - 28) };
+    // Bottom Row (21 to 30): Row 11, Col 10 -> 1
+    if (index >= 21 && index <= 30) {
+        return { gridRowStart: 11, gridColumnStart: 11 - (index - 20) };
     }
 
-    // Left Column (43 to 55): Col 1, Row 14 -> 2
-    if (index >= 43 && index <= 55) {
-        return { gridRowStart: 15 - (index - 42), gridColumnStart: 1 };
+    // Left Column (31 to 39): Col 1, Row 10 -> 2
+    if (index >= 31 && index <= 39) {
+        return { gridRowStart: 11 - (index - 30), gridColumnStart: 1 };
     }
 
     return { gridRowStart: 1, gridColumnStart: 1 };
@@ -65,13 +52,13 @@ const getTileCoordinates = (tileId, boardRef) => {
     const gridStyle = getTileStyle(tileId);
     const GRID_GAP = 2; // Must match CSS
 
-    // Grid configuration must match CSS: 2.2fr - 1fr * 13 - 2.2fr
-    const totalUnits = 2.2 + 13 + 2.2; // 17.4
+    // Grid configuration: 2.2fr - 1fr * 9 - 2.2fr (Total 11 columns/rows)
+    const totalUnits = 2.2 + 9 + 2.2; // 13.4
 
     // Calculate unit size (subtracting gaps)
-    // 15 columns means 14 gaps
-    const availableWidth = boardRect.width - (14 * GRID_GAP);
-    const availableHeight = boardRect.height - (14 * GRID_GAP);
+    // 11 columns means 10 gaps
+    const availableWidth = boardRect.width - (10 * GRID_GAP);
+    const availableHeight = boardRect.height - (10 * GRID_GAP);
 
     const unitX = availableWidth / totalUnits;
     const unitY = availableHeight / totalUnits;
@@ -79,11 +66,11 @@ const getTileCoordinates = (tileId, boardRef) => {
     const getCoordinate = (index, unitSize) => {
         let pos = 0;
         for (let i = 1; i < index; i++) {
-            if (i === 1 || i === 15) pos += 2.2 * unitSize;
+            if (i === 1 || i === 11) pos += 2.2 * unitSize;
             else pos += 1 * unitSize;
             pos += GRID_GAP;
         }
-        const currentSize = (index === 1 || index === 15) ? 2.2 : 1;
+        const currentSize = (index === 1 || index === 11) ? 2.2 : 1;
         pos += (currentSize * unitSize) / 2;
         return pos;
     };
