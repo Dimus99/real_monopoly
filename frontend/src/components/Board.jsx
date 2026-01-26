@@ -99,7 +99,7 @@ const getTileCoordinates = (tileId, boardRef) => {
 
 
 
-const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, isMyTurn }) => {
+const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, isMyTurn }) => {
     // Character colors for player tokens (derived from BOARD_CHARACTERS)
     const PLAYER_COLORS = React.useMemo(() => Object.fromEntries(
         Object.entries(BOARD_CHARACTERS).map(([k, v]) => [k, v.color])
@@ -441,16 +441,20 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                                     let left = coords.x;
 
                                     // Force tooltip to always point towards center
-                                    // Tooltip is ~150px wide, ~100px high
+                                    // Tooltip is ~140px wide, ~100px high
                                     // Coordinates are center of tile.
-                                    if (id <= 10) { // Top Row -> Push DOWN significantly
-                                        top += 120; // Move below the tile row
+                                    // Reduced offsets to keep it closer and within bounds
+                                    const OFFSET_Y = 80; // Changed from 120/140
+                                    const OFFSET_X = 100; // Changed from 160
+
+                                    if (id <= 10) { // Top Row -> Push DOWN
+                                        top += OFFSET_Y;
                                     } else if (id < 20) { // Right Col -> Push LEFT
-                                        left -= 160; // Move left of the tile column
+                                        left -= OFFSET_X;
                                     } else if (id <= 30) { // Bottom Row -> Push UP
-                                        top -= 140; // Move above the tile row
+                                        top -= OFFSET_Y;
                                     } else { // Left Col -> Push RIGHT
-                                        left += 160; // Move right of the tile column
+                                        left += OFFSET_X;
                                     }
 
                                     return { top, left, transform: 'translate(-50%, -50%)' };
@@ -514,12 +518,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                     </AnimatePresence>
                 </div>
 
-                {/* Log Panel / Chat - Positioned at the very bottom edge of inner area */}
-                <div className="absolute bottom-0 left-0 right-0 z-30 w-full flex flex-col justify-end pointer-events-none p-2">
-                    <div className="pointer-events-auto w-full max-w-[800px] mx-auto">
-                        <ToastNotification logs={logs} onSendMessage={onSendMessage} />
-                    </div>
-                </div>
+
             </motion.div>
 
             {/* Render all tiles */}

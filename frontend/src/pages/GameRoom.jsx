@@ -747,7 +747,7 @@ const GameRoom = () => {
 
                 <div className="relative z-10 shadow-2xl transition-all duration-300 my-auto py-8"
                     style={{
-                        width: isMobile ? '800px' : '90%',
+                        width: isMobile ? '800px' : '85%', // Reduced by 5%
                         maxWidth: '1000px',
                         aspectRatio: '1/1', // Keep square aspect ratio
                         minHeight: isMobile ? '800px' : 'auto',
@@ -762,8 +762,7 @@ const GameRoom = () => {
                         onTileClick={handleTileClick}
                         mapType={gameState.map_type}
                         currentPlayerId={playerId}
-                        logs={displayedLogs}
-                        onSendMessage={handleSendMessage}
+                        // logs and onSendMessage removed from here as we moved the component up
 
                         externalRef={boardRef}
                         onAvatarClick={handleAvatarClick}
@@ -819,6 +818,13 @@ const GameRoom = () => {
                             rentDetails={rentDetails}
                             onPayRent={handlePayRent}
                         />
+                    </div>
+                </div>
+
+                {/* Chat / Toast Notification - Moved to main view for proper layering */}
+                <div className="absolute bottom-0 left-0 right-0 z-[150] w-full flex flex-col justify-end pointer-events-none p-4">
+                    <div className="pointer-events-auto w-full max-w-[600px] mx-auto">
+                        <ToastNotification logs={displayedLogs} onSendMessage={handleSendMessage} />
                     </div>
                 </div>
             </div>
