@@ -21,13 +21,28 @@ import { BuyoutAnimation, AidAnimation, NukeThreatAnimation } from '../component
 // Lazy load to avoid circular dependency/initialization issues
 const OreshnikAnimation = lazy(() => import('../components/OreshnikAnimation'));
 
-
+const getApiBase = () => import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
 
 const GameRoom = () => {
-    const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
+    const API_BASE = React.useMemo(() => getApiBase(), []);
     const { gameId, playerId } = useParams();
     const navigate = useNavigate();
     const { gameState, sendAction, lastAction } = useGameSocket(gameId, playerId);
+
+    // Derived State Variables (Moved up to avoid TDZ errors in useEffect)
+    const currentPlayer = gameState?.players?.[playerId];
+    const isMyTurn = gameState?.player_order?.[gameState?.current_turn_index] === playerId;
+    const currentTurnPlayer = gameState?.players?.[gameState?.player_order?.[gameState?.current_turn_index]];
+    const playerChar = CHARACTERS[currentPlayer?.character] || CHARACTERS.Putin;
+    const currentTile = gameState?.board?.[currentPlayer?.position];
+
+    // Can buy only if on the tile (UI Logic)
+    const canBuy = isMyTurn &&
+        currentTile &&
+        !currentTile.owner_id &&
+        currentTile.price > 0 &&
+        !['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax'].includes(currentTile.group) &&
+        !currentTile.is_destroyed;
 
     // UI States
     const [showOreshnik, setShowOreshnik] = useState(false);
@@ -104,22 +119,6 @@ const GameRoom = () => {
 
     // Targeting State
     const [targetingAbility, setTargetingAbility] = useState(null);
-
-    const currentPlayer = gameState?.players?.[playerId];
-    const isMyTurn = gameState?.player_order?.[gameState?.current_turn_index] === playerId;
-    const currentTurnPlayer = gameState?.players?.[gameState?.player_order?.[gameState?.current_turn_index]];
-
-    // Character data mapping check
-    const playerChar = CHARACTERS[currentPlayer?.character] || CHARACTERS.Putin;
-
-    const currentTile = gameState?.board?.[currentPlayer?.position];
-    // Can buy only if on the tile (UI Logic)
-    const canBuy = isMyTurn &&
-        currentTile &&
-        !currentTile.owner_id &&
-        currentTile.price > 0 &&
-        !['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax'].includes(currentTile.group) &&
-        !currentTile.is_destroyed;
 
     const handleBuyProperty = () => {
         if (!isMyTurn || !currentPlayer) {
