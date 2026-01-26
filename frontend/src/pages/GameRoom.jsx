@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -6,6 +6,7 @@ import {
     ArrowLeft, MessageSquare, Settings, Bell,
     Menu, UserPlus, X, MapPin, ChevronLeft, ChevronRight, Crosshair, Flag
 } from 'lucide-react';
+import { CHARACTERS } from '../constants/characters';
 import useGameSocket from '../hooks/useGameSocket';
 import Board from '../components/Board';
 import PropertyModal from '../components/PropertyModal';
@@ -16,10 +17,9 @@ import TradeModal from '../components/TradeModal';
 import TradeNotification from '../components/TradeNotification';
 import ChanceModal from '../components/ChanceModal';
 import { BuyoutAnimation, AidAnimation, NukeThreatAnimation } from '../components/AbilityAnimations';
-import { CHARACTERS } from '../constants/characters';
 
 // Lazy load to avoid circular dependency/initialization issues
-const OreshnikAnimation = React.lazy(() => import('../components/OreshnikAnimation'));
+const OreshnikAnimation = lazy(() => import('../components/OreshnikAnimation'));
 
 
 
@@ -120,20 +120,6 @@ const GameRoom = () => {
         currentTile.price > 0 &&
         !['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax'].includes(currentTile.group) &&
         !currentTile.is_destroyed;
-
-    useEffect(() => {
-        if (isMyTurn && currentTile) {
-            console.log("canBuy Check:", {
-                isMyTurn,
-                currentTileName: currentTile.name,
-                owner: currentTile.owner_id,
-                price: currentTile.price,
-                group: currentTile.group,
-                destroyed: currentTile.is_destroyed,
-                result: canBuy
-            });
-        }
-    }, [isMyTurn, currentTile, canBuy]);
 
     const handleBuyProperty = () => {
         if (!isMyTurn || !currentPlayer) {
@@ -858,14 +844,14 @@ const GameRoom = () => {
             </AnimatePresence>
 
             <div className="pointer-events-none fixed inset-0 z-[100]">
-                <React.Suspense fallback={null}>
+                <Suspense fallback={null}>
                     <OreshnikAnimation
                         isVisible={showOreshnik}
                         onComplete={() => setShowOreshnik(false)}
                         targetTileId={lastAction?.target_id}
                         boardRef={boardRef}
                     />
-                </React.Suspense>
+                </Suspense>
                 <BuyoutAnimation isVisible={showBuyout} onComplete={() => setShowBuyout(false)} />
                 <AidAnimation isVisible={showAid} onComplete={() => setShowAid(false)} />
                 <NukeThreatAnimation isVisible={showNuke} onComplete={() => setShowNuke(false)} />

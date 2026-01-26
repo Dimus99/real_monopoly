@@ -7,7 +7,6 @@ import { CHARACTERS as BOARD_CHARACTERS } from '../constants/characters';
 const getTileStyle = (index) => {
     // LAYOUT V3.1: 0(TL), 10(TR), 20(BR), 30(BL)
     // Antarctica (39) is adjacent below Start (0)
-    console.log(`Mapping Tile ${index}`);
 
     // Corners
     if (index === 0) return { gridRowStart: 1, gridColumnStart: 1 };
@@ -42,11 +41,6 @@ const TILE_IMAGES = {
     'Beijing': '/tiles/beijing.png',
     'Greenland': '/tiles/greenland.png'
 };
-
-// Character colors for player tokens (derived from BOARD_CHARACTERS)
-const PLAYER_COLORS = Object.fromEntries(
-    Object.entries(BOARD_CHARACTERS).map(([k, v]) => [k, v.color])
-);
 
 // Get absolute pixel coordinates for a tile position
 const getTileCoordinates = (tileId, boardRef) => {
@@ -101,6 +95,11 @@ const getTileCoordinates = (tileId, boardRef) => {
 
 
 const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage, externalRef, onAvatarClick, winner }) => {
+    // Character colors for player tokens (derived from BOARD_CHARACTERS)
+    const PLAYER_COLORS = React.useMemo(() => Object.fromEntries(
+        Object.entries(BOARD_CHARACTERS).map(([k, v]) => [k, v.color])
+    ), []);
+
     const [hoveredTileId, setHoveredTileId] = useState(null);
     const internalRef = useRef(null);
     const boardRef = externalRef || internalRef;

@@ -31,10 +31,8 @@ const getApiBase = () => {
     return base.replace(/\/$/, '');
 };
 
-const API_BASE = getApiBase();
-console.log("DEBUG AUTH: [Global] API_BASE confirmed as:", API_BASE);
-
 const Lobby = () => {
+    const API_BASE = React.useMemo(() => getApiBase(), []);
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [mode, setMode] = useState('auth'); // Default to auth to force initialization
