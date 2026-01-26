@@ -504,6 +504,11 @@ class GameEngine:
             # Special tiles like START
             game.logs.append(f"🏢 {player.name} is at {tile.name}.")
             
+            # Additional bonus for landing on START as requested
+            if tile.id == 0:
+                player.money += 200
+                game.logs.append(f"🎁 {player.name} landed on START and received a bonus $200!")
+            
             if tile.owner_id and tile.owner_id != player.id and not tile.is_mortgaged:
                 rent = self._calculate_rent(game, tile, game.dice, player)
                 result["action"] = "pay_rent"
@@ -595,7 +600,7 @@ class GameEngine:
         
         if card["type"] == "money":
             player.money += card["amount"]
-            return {"chance_card": card["text"], "amount": card["amount"]}
+            return {"chance_card": log_text, "amount": card["amount"]}
             
         elif card["type"] == "move_random":
             steps = random.randint(card["min"], card["max"])
@@ -607,7 +612,7 @@ class GameEngine:
             if new_pos < old_pos and old_pos != 0:
                  player.money += 200
                  
-            return {"chance_card": card["text"] + f" (на {steps} шагов)", "new_position": new_pos}
+            return {"chance_card": f"{log_text} (на {steps} шагов)", "new_position": new_pos}
 
         elif card["type"] == "move_to":
             player.position = card["position"]
@@ -617,7 +622,6 @@ class GameEngine:
             return {"chance_card": log_text, "new_position": card["position"]}
             
         elif card["type"] == "repair":
-            # (Keeping old logic if it was ever used, but adding to cards above is better)
             total = 0
             for prop in game.board:
                 if prop.owner_id == player.id:

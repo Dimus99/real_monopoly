@@ -335,13 +335,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                                 repeatType: "reverse"
                             }}
                         >
-                            {player.avatar_url && (player.avatar_url.startsWith('http') || player.avatar_url.startsWith('/')) ? (
-                                <img src={player.avatar_url} alt={player.name} className="w-full h-full object-cover" />
-                            ) : player.avatar_url ? (
-                                <span className="text-xl">{player.avatar_url}</span>
-                            ) : (
-                                <img src={char.avatar} alt={player.name} className="w-full h-full object-cover" />
-                            )}
+                            <img src={char.avatar} alt={player.name} className="w-full h-full object-cover" />
                         </motion.div>
                     </motion.div>
                 );

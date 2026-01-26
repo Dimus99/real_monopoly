@@ -459,6 +459,16 @@ async def _check_and_run_bot_turn(game_id: str):
         if dice_result:
             await manager.broadcast(game_id, dice_result)
             
+            # If chance card drawn by bot, also send as a system chat message
+            if dice_result.get("chance_card"):
+                await manager.broadcast(game_id, {
+                    "type": "CHAT_MESSAGE",
+                    "player_id": "SYSTEM",
+                    "player_name": "Breaking News",
+                    "message": dice_result["chance_card"],
+                    "game_state": game.dict()
+                })
+            
             # Wait for dice animation to complete - increased pause
             await asyncio.sleep(3.0)
             
@@ -520,6 +530,17 @@ async def roll_dice(
     # Broadcast via WebSocket
     if not result.get("error"):
         await manager.broadcast(game_id, {"type": "DICE_ROLLED", **result})
+        
+        # If chance card drawn, also send as a system chat message
+        if result.get("chance_card"):
+            await manager.broadcast(game_id, {
+                "type": "CHAT_MESSAGE",
+                "player_id": "SYSTEM",
+                "player_name": "Breaking News",
+                "message": result["chance_card"],
+                "game_state": game.dict() # Re-verify 'game' exists here. Yes it does from line 512 context.
+            })
+            
         await _check_and_run_bot_turn(game_id)
     
     return result

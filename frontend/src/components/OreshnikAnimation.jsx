@@ -22,11 +22,11 @@ const OreshnikAnimation = ({ isVisible, onComplete, targetTileId = null, boardRe
     useEffect(() => {
         if (isVisible) {
             setAnimationPhase('launching');
-            const flyTimeout = setTimeout(() => setAnimationPhase('flying'), 500);
-            const explodeTimeout = setTimeout(() => setAnimationPhase('exploding'), 2000);
+            const flyTimeout = setTimeout(() => setAnimationPhase('flying'), 400);
+            const explodeTimeout = setTimeout(() => setAnimationPhase('exploding'), 1600);
             const completeTimeout = setTimeout(() => {
                 if (onComplete) onComplete();
-            }, 3500);
+            }, 2800);
 
             return () => {
                 clearTimeout(flyTimeout);

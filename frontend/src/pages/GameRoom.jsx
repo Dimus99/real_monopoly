@@ -120,6 +120,11 @@ const GameRoom = () => {
     // Targeting State
     const [targetingAbility, setTargetingAbility] = useState(null);
 
+    const handleCloseOreshnik = React.useCallback(() => setShowOreshnik(false), []);
+    const handleCloseBuyout = React.useCallback(() => setShowBuyout(false), []);
+    const handleCloseAid = React.useCallback(() => setShowAid(false), []);
+    const handleCloseNuke = React.useCallback(() => setShowNuke(false), []);
+
     const handleBuyProperty = () => {
         if (!isMyTurn || !currentPlayer) {
             console.warn("Cannot buy: not my turn or no player", { isMyTurn, currentPlayer });
@@ -133,6 +138,12 @@ const GameRoom = () => {
         if (!isMyTurn) return;
         sendAction('BUILD', { property_id: propertyId });
     };
+
+    const handlePayRent = React.useCallback(() => {
+        if (!isMyTurn || !rentDetails) return;
+        sendAction('PAY_RENT', { property_id: currentPlayer?.position });
+        setRentDetails(null);
+    }, [isMyTurn, rentDetails, currentPlayer?.position, sendAction]);
 
     const checkMonopolyByPlayer = (tile) => {
         if (!tile || !tile.group || !gameState?.board) return false;
@@ -343,7 +354,12 @@ const GameRoom = () => {
                                     amount: lastAction.amount,
                                     ownerId: lastAction.owner_id
                                 });
-                                setShowRentModal(true);
+                                // Modal removed, handled in ActionPanel
+                            }
+
+                            // Show chance modal only for ME
+                            if (lastAction.chance_card && lastAction.player_id === playerId) {
+                                setChanceCard(lastAction.chance_card);
                             }
                         }, 300);
 
@@ -358,10 +374,7 @@ const GameRoom = () => {
                 break;
 
             case 'CHAT_MESSAGE':
-                // Detect CHANCE system messages
-                if (lastAction.player_id === 'SYSTEM' && lastAction.player_name === 'Breaking News') {
-                    setChanceCard(lastAction.message);
-                }
+                // Removed setChanceCard from here to avoid blocking popups for other players' turns
                 break;
 
             case 'RENT_PAID':
@@ -477,13 +490,7 @@ const GameRoom = () => {
                                     <div className="flex items-center gap-4">
                                         <div className="relative">
                                             <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-black/40 flex items-center justify-center text-2xl">
-                                                {CHARACTERS[p.character] && p.avatar_url && (p.avatar_url.startsWith('http') || p.avatar_url.startsWith('/')) ? (
-                                                    <img src={p.avatar_url} className="w-full h-full object-cover" />
-                                                ) : p.avatar_url ? (
-                                                    <span>{p.avatar_url}</span>
-                                                ) : (
-                                                    <img src={CHARACTERS[p.character]?.avatar} className="w-full h-full object-cover" />
-                                                )}
+                                                <img src={CHARACTERS[p.character]?.avatar} className="w-full h-full object-cover" />
                                             </div>
                                             {p.is_bot && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-[10px] px-1 rounded">БОТ</div>}
                                         </div>
@@ -660,13 +667,7 @@ const GameRoom = () => {
                                 {sidebarCollapsed ? (
                                     <div className="relative group">
                                         <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-black/40 flex items-center justify-center text-xl">
-                                            {p.avatar_url && (p.avatar_url.startsWith('http') || p.avatar_url.startsWith('/')) ? (
-                                                <img src={p.avatar_url} className="w-full h-full object-cover" />
-                                            ) : p.avatar_url ? (
-                                                <span>{p.avatar_url}</span>
-                                            ) : (
-                                                <img src={pChar.avatar} className="w-full h-full object-cover" />
-                                            )}
+                                            <img src={CHARACTERS[p.character]?.avatar} className="w-full h-full object-cover" />
                                         </div>
                                         {isTurn && <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border border-black" />}
                                         {/* Tooltip */}
@@ -677,13 +678,7 @@ const GameRoom = () => {
                                 ) : (
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-black/40 flex items-center justify-center text-xl">
-                                            {p.avatar_url && (p.avatar_url.startsWith('http') || p.avatar_url.startsWith('/')) ? (
-                                                <img src={p.avatar_url} className="w-full h-full object-cover" />
-                                            ) : p.avatar_url ? (
-                                                <span>{p.avatar_url}</span>
-                                            ) : (
-                                                <img src={pChar.avatar} className="w-full h-full object-cover" />
-                                            )}
+                                            <img src={CHARACTERS[p.character]?.avatar} className="w-full h-full object-cover" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-0.5">
@@ -782,6 +777,8 @@ const GameRoom = () => {
                             isDoubles={diceValues[0] === diceValues[1]}
                             abilityCooldown={currentPlayer?.ability_cooldown}
                             onSurrender={() => sendAction('SURRENDER')}
+                            rentDetails={rentDetails}
+                            onPayRent={handlePayRent}
                         />
                     </div>
                 </div>
@@ -846,14 +843,14 @@ const GameRoom = () => {
                 <Suspense fallback={null}>
                     <OreshnikAnimation
                         isVisible={showOreshnik}
-                        onComplete={() => setShowOreshnik(false)}
+                        onComplete={handleCloseOreshnik}
                         targetTileId={lastAction?.target_id}
                         boardRef={boardRef}
                     />
                 </Suspense>
-                <BuyoutAnimation isVisible={showBuyout} onComplete={() => setShowBuyout(false)} />
-                <AidAnimation isVisible={showAid} onComplete={() => setShowAid(false)} />
-                <NukeThreatAnimation isVisible={showNuke} onComplete={() => setShowNuke(false)} />
+                <BuyoutAnimation isVisible={showBuyout} onComplete={handleCloseBuyout} />
+                <AidAnimation isVisible={showAid} onComplete={handleCloseAid} />
+                <NukeThreatAnimation isVisible={showNuke} onComplete={handleCloseNuke} />
             </div>
 
             {/* Buy Modal */}
@@ -879,39 +876,7 @@ const GameRoom = () => {
                 )}
             </AnimatePresence>
 
-            {/* Rent Modal */}
-            <AnimatePresence>
-                {showRentModal && rentDetails && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-                    >
-                        <div className="bg-gradient-to-br from-gray-900 to-black p-8 rounded-3xl border border-red-500/30 shadow-2xl max-w-md w-full text-center space-y-6">
-                            <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto animate-pulse">
-                                <div className="text-4xl">💸</div>
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold text-white mb-2">Оплата аренды</h3>
-                                <p className="text-gray-400">Вы попали на территорию <span className="text-white font-bold">{gameState?.players?.[rentDetails.ownerId]?.name}</span>.</p>
-                            </div>
-                            <div className="py-4 border-y border-white/10">
-                                <span className="text-4xl font-mono font-bold text-red-400">-${rentDetails.amount}</span>
-                            </div>
-                            <button
-                                onClick={() => {
-                                    sendAction('PAY_RENT', { property_id: currentPlayer.position });
-                                    setShowRentModal(false);
-                                }}
-                                className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-lg shadow-lg transition-all"
-                            >
-                                Оплатить и продолжить
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
 
 
             {/* Also show trade modal (only needed if trading in waiting room enabled? Probably not, but safe to keep) */}

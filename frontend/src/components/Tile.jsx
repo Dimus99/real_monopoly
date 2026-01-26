@@ -46,7 +46,7 @@ const CHARACTER_COLORS = {
 
 // Special tile icons
 const SPECIAL_ICONS = {
-    'СТАРТ': '🚀',
+    'START': '🚀',
     'ТЮРЬМА': '🏝️',
     'В ТЮРЬМУ': '✈️',
     'БЕСПЛАТНАЯ ПАРКОВКА': '🏛️',
@@ -58,7 +58,8 @@ const SPECIAL_ICONS = {
     'JACKPOT': '💰',
     'SUPER JACKPOT': '🏆',
     'POLICE': '👮',
-    'PRISON': '⛓️'
+    'PRISON': '⛓️',
+    'SafeIsland': '🏝️'
 };
 
 // Character data for avatars
@@ -177,38 +178,41 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
             )}
 
             {/* Tile Content */}
-            <div className={`flex-1 flex flex-col items-center justify-center relative h-full ${contentPaddingClass}`}>
+            <div className={`flex-1 flex ${(!isPropertyTile && !isCorner) ? 'flex-row' : 'flex-col'} items-center justify-center gap-1.5 relative h-full ${contentPaddingClass}`}>
                 {/* Special tile icon */}
                 {(specialIcon || groupStyle.icon) && (
-                    <div className="text-xl md:text-2xl mb-0.5 drop-shadow-md">
+                    <div className={`${isCorner ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} drop-shadow-md`}>
                         {specialIcon || groupStyle.icon}
                     </div>
                 )}
 
-                {/* Tile Name */}
-                <div
-                    className="tile-name leading-tight text-center px-0.5"
-                    style={{
-                        color: hasOwner ? '#fff' : (isCorner ? groupStyle.textColor : '#e0e0e0'),
-                        fontSize: isCorner ? '12px' : '10px',
-                        lineHeight: '1.1',
-                        fontWeight: isCorner ? '700' : '600',
-                        textShadow: hasOwner ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(0,0,0,0.5)'
-                    }}
-                >
-                    {property.name}
-                </div>
-
-                {/* Price */}
-                {property.price > 0 && !hasOwner && (
+                {/* Container for name and price to handle horizontal/vertical layout */}
+                <div className="flex flex-col items-center justify-center">
+                    {/* Tile Name */}
                     <div
-                        className="font-bold mt-0.5 text-yellow-400"
-                        style={{ fontSize: '10px', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                        className="tile-name leading-tight text-center px-0.5"
+                        style={{
+                            color: hasOwner ? '#fff' : (isCorner ? groupStyle.textColor : '#e0e0e0'),
+                            fontSize: isCorner ? '14px' : '11px',
+                            lineHeight: '1.0',
+                            fontWeight: '800',
+                            textShadow: hasOwner ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(0,0,0,0.5)',
+                            maxWidth: isPropertyTile ? '100%' : '80px'
+                        }}
                     >
-                        ${property.price}
+                        {property.name}
                     </div>
-                )}
 
+                    {/* Price */}
+                    {property.price > 0 && !hasOwner && (
+                        <div
+                            className="font-black mt-0.5 text-yellow-400"
+                            style={{ fontSize: (isCorner ? '12px' : '11px'), textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                        >
+                            ${property.price}
+                        </div>
+                    )}
+                </div>
                 {/* Houses indicator */}
                 {property.houses > 0 && (
                     <div className="absolute bottom-1 right-1 flex gap-0.5">

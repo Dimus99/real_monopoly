@@ -21,7 +21,9 @@ const ActionPanel = ({
     isDoubles = false,
     abilityCooldown = 0,
     onSurrender,
-    isChanceOpen = false
+    isChanceOpen = false,
+    rentDetails = null,
+    onPayRent = null
 }) => {
 
     let ability = null;
@@ -36,10 +38,11 @@ const ActionPanel = ({
 
     // Logic: ROLL button is always shown, but disabled if rolled && !doubles
     // BUY button is shown if canBuy
-    // END button is shown if hasRolled && !doubles
+    // END button is shown if hasRolled && !doubles && !rentDetails
 
     const showRoll = true; // Always show roll button in dashboard
     const disableRoll = isRolling || (hasRolled && !isDoubles);
+    const showEndTurn = hasRolled && !isDoubles && !rentDetails;
 
     // For doubles: The "Roll" button stays active. The "End" button is hidden.
     // For normal end: The "Roll" button is disabled. The "End" button appears.
@@ -111,7 +114,32 @@ const ActionPanel = ({
                     )}
                 </motion.button>
 
-                {/* 3. Buy Button (Center-Right) */}
+                {/* 3. Rent Button (Wait for Pay) */}
+                <AnimatePresence>
+                    {rentDetails && (
+                        <motion.button
+                            initial={{ width: 0, opacity: 0, padding: 0 }}
+                            animate={{ width: 'auto', opacity: 1, padding: '0 16px' }}
+                            exit={{ width: 0, opacity: 0, padding: 0 }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={onPayRent}
+                            className="h-[64px] bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-2xl font-black flex items-center gap-3 overflow-hidden shadow-[0_0_20px_rgba(239,68,68,0.4)] border border-red-400/50"
+                        >
+                            <div className="p-1.5 bg-white/20 rounded-lg shrink-0">
+                                <Zap size={20} className="text-white fill-current" />
+                            </div>
+                            <div className="flex flex-col items-start leading-tight whitespace-nowrap">
+                                <span className="text-[9px] font-bold uppercase tracking-wider opacity-90">ОПЛАТИТЬ АРЕНДУ</span>
+                                <div className="text-lg font-mono font-black">
+                                    ${rentDetails.amount}
+                                </div>
+                            </div>
+                        </motion.button>
+                    )}
+                </AnimatePresence>
+
+                {/* 4. Buy Button (Center-Right) */}
                 <AnimatePresence>
                     {canBuy && (
                         <motion.button
@@ -137,9 +165,9 @@ const ActionPanel = ({
                     )}
                 </AnimatePresence>
 
-                {/* 4. End Turn Button (Right) */}
+                {/* 5. End Turn Button (Right) */}
                 <AnimatePresence>
-                    {hasRolled && !isDoubles && (
+                    {showEndTurn && (
                         <motion.button
                             initial={{ width: 0, opacity: 0, padding: 0, scale: 0.5 }}
                             animate={{ width: 'auto', opacity: 1, padding: '0 20px', scale: 1 }}
@@ -154,8 +182,6 @@ const ActionPanel = ({
                         </motion.button>
                     )}
                 </AnimatePresence>
-
-
 
             </motion.div>
         </div>
