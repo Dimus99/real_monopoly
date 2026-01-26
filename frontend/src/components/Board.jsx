@@ -46,47 +46,44 @@ const TILE_IMAGES = {
 const getTileCoordinates = (tileId, boardRef) => {
     if (!boardRef?.current) return { x: 0, y: 0 };
 
-    const boardElement = boardRef.current;
-    if (!boardElement.getBoundingClientRect) return { x: 0, y: 0 };
+    const board = boardRef.current;
+    // clientWidth/Height are in local coordinate space, which matches Framer Motion's x/y transforms
+    const w = board.clientWidth;
+    const h = board.clientHeight;
 
-    const boardRect = boardElement.getBoundingClientRect();
-    if (boardRect.width === 0 || boardRect.height === 0) return { x: 0, y: 0 };
+    if (w === 0 || h === 0) return { x: 0, y: 0 };
 
     const gridStyle = getTileStyle(tileId);
-    const GRID_GAP = 2; // Matches index.css
-    const CONTAINER_BORDER = 4; // Matches index.css border-width
+    const GRID_GAP = 2; // Matches index.css gap
 
-    const innerWidth = boardRect.width - (CONTAINER_BORDER * 2);
-    const innerHeight = boardRect.height - (CONTAINER_BORDER * 2);
+    // Grid configuration: Corners 1.5fr, others 1fr
+    // 1st col (index 1) and 11th col (index 11) are 1.5fr
+    // Cols 2-10 are 1fr
+    // Total units = 1.5 + 9 + 1.5 = 12
+    const totalUnits = 12;
 
-    // Grid configuration: Corners 1.5fr, specialized 0.7fr, others 1fr
-    // X: Column 5 is 0.7fr
-    // Y: Row 3 is 0.7fr
-    const totalUnits = 1.5 + 8 + 0.7 + 1.5; // 11.7 (Same for both axes in this layout)
-
-    // Calculate unit size (subtracting gaps and borders)
-    const availableWidth = innerWidth - (10 * GRID_GAP);
-    const availableHeight = innerHeight - (10 * GRID_GAP);
+    // Calculate unit size after subtracting gaps
+    // 11 cells have 10 gaps (10 * 2px = 20px)
+    const availableWidth = w - (10 * GRID_GAP);
+    const availableHeight = h - (10 * GRID_GAP);
 
     const unitX = availableWidth / totalUnits;
     const unitY = availableHeight / totalUnits;
 
-    const getCoordinate = (index, unitSize, isX) => {
-        let pos = CONTAINER_BORDER;
-        const narrowIdx = isX ? 5 : 3; // Column 5 or Row 3
+    const getCoordinate = (index, unitSize) => {
+        let pos = 0;
         for (let i = 1; i < index; i++) {
             if (i === 1 || i === 11) pos += 1.5 * unitSize;
-            else if (i === narrowIdx) pos += 0.7 * unitSize;
             else pos += 1 * unitSize;
             pos += GRID_GAP;
         }
-        const currentSize = (index === 1 || index === 11) ? 1.5 : (index === narrowIdx ? 0.7 : 1);
+        const currentSize = (index === 1 || index === 11) ? 1.5 : 1;
         pos += (currentSize * unitSize) / 2;
         return pos;
     };
 
-    const x = getCoordinate(gridStyle.gridColumnStart, unitX, true);
-    const y = getCoordinate(gridStyle.gridRowStart, unitY, false);
+    const x = getCoordinate(gridStyle.gridColumnStart, unitX);
+    const y = getCoordinate(gridStyle.gridRowStart, unitY);
 
     return { x, y };
 };
@@ -277,7 +274,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                             stiffness: 120,
                             damping: 15
                         }}
-                        className="absolute pointer-events-auto cursor-pointer flex items-center justify-center hover:scale-110 transition-transform"
+                        className="absolute pointer-events-auto cursor-pointer flex items-center justify-center z-50 hover:scale-110"
                         onClick={(e) => {
                             e.stopPropagation();
                             if (onAvatarClick) onAvatarClick(playerId);
@@ -353,7 +350,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
                 style={{ gridRow: '2 / 11', gridColumn: '2 / 11' }}
-                className="board-center flex items-center justify-center p-4 relative"
+                className="board-center flex items-center justify-center p-4 relative z-0"
             >
                 <div className={`relative z-10 text-center transition-opacity duration-300`}>
                     {winner ? (

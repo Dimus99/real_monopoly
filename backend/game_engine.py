@@ -49,7 +49,7 @@ WORLD_MAP_DATA = [
     {"name": "Вашингтон", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
     {"name": "Аэропорт Хитроу", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
-    {"name": "Гренландия", "group": "DarkBlue", "price": 706, "rent": [35, 175, 500, 1100, 1300, 1500]},
+    {"name": "Гренландия", "group": "DarkBlue", "price": 400, "rent": [35, 175, 500, 1100, 1300, 1500]},
     {"name": "Налог на Роскошь", "group": "Tax", "price": 0, "rent": [100]},
     {"name": "Антарктида", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},
 ]
@@ -615,6 +615,13 @@ class GameEngine:
             {"type": "move_to", "position": 0, "text": "Срочный вызов в Штаб! Возвращайся на СТАРТ."},
             {"type": "move_to", "position": 25, "text": "Следственный комитет ждет тебя на Острове Эпштейна!"},
             {"type": "money", "amount": 500, "text": "Нашел секретный офшор! (+500)"},
+            {"type": "money", "amount": 100, "text": "Выиграл тендер на поставку плитки! (+100)"},
+            {"type": "money", "amount": 150, "text": "Продал NFT с изображением лидера! (+150)"},
+            {"type": "money", "amount": -150, "text": "Оштрафован за дискредитацию валюты! (-150)"},
+            {"type": "money", "amount": -50, "text": "Купил "синюю галочку" в соцсети! (-50)"},
+            {"type": "move_back", "steps": 3, "text": "Забыл выключить утюг. Вернись на 3 шага назад."},
+            {"type": "pay_all", "amount": 50, "text": "День рождения Лидера! Скиньтесь по 50 каждому игроку."},
+            {"type": "collect_all", "amount": 50, "text": "Вы - председатель колхоза. Соберите по 50 с каждого!"},
         ]
         
         card = random.choice(cards)
@@ -656,6 +663,42 @@ class GameEngine:
                     total += prop.houses * 25
             player.money -= total
             return {"chance_card": log_text, "amount": -total}
+        
+        elif card["type"] == "move_back":
+            steps = card["steps"]
+            player.position = (player.position - steps + len(game.board)) % len(game.board)
+            # Handle new tile landing
+            new_tile = game.board[player.position]
+            landing_res = self._handle_landing(game, player, new_tile)
+            result = {"chance_card": f"{log_text} (на {steps} назад)", "new_position": player.position}
+            result.update({k: v for k, v in landing_res.items() if k != "chance_card"})
+            return result
+
+        elif card["type"] == "pay_all":
+            amount = card["amount"]
+            count = 0
+            for pid, p in game.players.items():
+                if pid != player.id and not p.is_bankrupt:
+                    player.money -= amount
+                    p.money += amount
+                    count += 1
+            game.logs.append(f"💸 {player.name} paid ${amount} to everyone.")
+            return {"chance_card": log_text, "amount": -amount * count}
+
+        elif card["type"] == "collect_all":
+            amount = card["amount"]
+            count = 0
+            for pid, p in game.players.items():
+                if pid != player.id and not p.is_bankrupt:
+                    if p.money >= amount:
+                        p.money -= amount
+                        player.money += amount
+                    else:
+                        player.money += p.money
+                        p.money = 0
+                    count += 1
+            game.logs.append(f"💰 {player.name} collected ${amount} from everyone.")
+            return {"chance_card": log_text, "amount": amount * count}
         
         return {"chance_card": log_text}
     
