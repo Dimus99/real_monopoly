@@ -78,11 +78,11 @@ const AVATAR_MAP = {
 
 // Determine tile orientation (which side of the board)
 const getTileOrientation = (tileId) => {
-    // Rotated Layout (Free Parking at Bottom Right)
-    if (tileId >= 1 && tileId <= 9) return 'top-row';
-    if (tileId >= 11 && tileId <= 19) return 'right-col';
-    if (tileId >= 21 && tileId <= 29) return 'bottom-row';
-    if (tileId >= 31 && tileId <= 39) return 'left-col';
+    // 56 tiles total (14 per side + 4 corners)
+    if (tileId >= 1 && tileId <= 13) return 'top-row';
+    if (tileId >= 15 && tileId <= 27) return 'right-col';
+    if (tileId >= 29 && tileId <= 41) return 'bottom-row';
+    if (tileId >= 43 && tileId <= 55) return 'left-col';
     return 'special';
 };
 
