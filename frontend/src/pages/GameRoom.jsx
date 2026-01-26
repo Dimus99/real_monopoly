@@ -139,6 +139,10 @@ const GameRoom = () => {
         sendAction('BUILD', { property_id: propertyId });
     };
 
+    // Rent State
+    const [showRentModal, setShowRentModal] = useState(false);
+    const [rentDetails, setRentDetails] = useState(null);
+
     const handlePayRent = React.useCallback(() => {
         if (!isMyTurn || !rentDetails) return;
         sendAction('PAY_RENT', { property_id: currentPlayer?.position });
@@ -291,8 +295,6 @@ const GameRoom = () => {
 
     // Modals state
     const [showBuyModal, setShowBuyModal] = useState(false);
-    const [showRentModal, setShowRentModal] = useState(false);
-    const [rentDetails, setRentDetails] = useState(null);
     const [showChanceModal, setShowChanceModal] = useState(false);
     const [chanceData, setChanceData] = useState(null);
 
