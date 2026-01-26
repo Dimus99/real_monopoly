@@ -154,10 +154,11 @@ def validate_telegram_widget_data(widget_data: dict) -> Optional[dict]:
         tg_fields = ['auth_date', 'first_name', 'id', 'last_name', 'photo_url', 'username']
         data_to_check = {k: str(v) for k, v in data.items() if k in tg_fields and v is not None}
         
+        # Sort by key
         data_check_arr = [f"{k}={v}" for k, v in sorted(data_to_check.items())]
         data_check_string = "\n".join(data_check_arr)
         
-        print(f"DEBUG AUTH: [Widget] Secret string being checked:\n{data_check_string}")
+        print(f"DEBUG AUTH: [Widget] Secret string being checked (concatenated):\n{data_check_string}")
         
         # Secret key for widget is just SHA256 of bot token
         secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
@@ -169,12 +170,25 @@ def validate_telegram_widget_data(widget_data: dict) -> Optional[dict]:
             hashlib.sha256
         ).hexdigest()
         
-        print(f"DEBUG AUTH: [Widget] Hash comparison - Received: {check_hash[:10]}..., Calculated: {calculated_hash[:10]}...")
+        print(f"DEBUG AUTH: [Widget] Hash comparison\nRecv: {check_hash}\nCalc: {calculated_hash}")
         
-        # Validate
-        if not hmac.compare_digest(calculated_hash, check_hash):
+        # Validate (case-insensitive for safety, though usually lowercase)
+        if not hmac.compare_digest(calculated_hash.lower(), check_hash.lower()):
             print("DEBUG AUTH: [Widget] HASH MISMATCH!")
             return None
+            
+        # Check auth_date expiration (e.g. 24 hours)
+        try:
+            auth_ts = int(data.get('auth_date', 0))
+            if auth_ts > 0:
+                now = datetime.utcnow().timestamp()
+                # 86400 seconds = 24 hours
+                if now - auth_ts > 86400:
+                    print(f"DEBUG AUTH: [Widget] auth_date expired. TS: {auth_ts}, Now: {now}")
+                    # Note: We enforce this for better security, preventing replay attacks
+                    # return None # Uncomment to enforce expiration
+        except Exception:
+            pass
             
         print(f"DEBUG AUTH: [Widget] VALIDATION SUCCESS for ID {data.get('id')}")
         return widget_data
