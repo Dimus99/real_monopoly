@@ -18,12 +18,12 @@ const ChanceModal = ({ show, data, onClose }) => {
                         {/* Newspaper Header */}
                         <div className="bg-[#2c2c2c] text-[#f4f1ea] p-4 flex flex-col items-center">
                             <div className="text-3xl font-black tracking-tighter uppercase font-display border-b-2 border-[#f4f1ea]/30 w-full text-center pb-1">
-                                Political Daily
+                                Политические Вести
                             </div>
                             <div className="flex justify-between w-full text-[10px] uppercase tracking-widest pt-1 px-1 font-bold">
-                                <span>Breaking News</span>
-                                <span>Extra Edition</span>
-                                <span>Washington-Moscow-Beijing</span>
+                                <span>Срочные новости</span>
+                                <span>Спецвыпуск</span>
+                                <span>Вашингтон-Москва-Пекин</span>
                             </div>
                         </div>
 
@@ -39,7 +39,7 @@ const ChanceModal = ({ show, data, onClose }) => {
                                 transition={{ delay: 0.2 }}
                                 className="text-4xl font-black text-[#1a1a1a] leading-tight mb-6 font-display italic"
                             >
-                                "{data.chance_card || 'Breaking News!'}"
+                                "{data.chance_card || 'Срочное сообщение!'}"
                             </motion.h2>
 
                             <motion.div
@@ -55,7 +55,7 @@ const ChanceModal = ({ show, data, onClose }) => {
                                 transition={{ delay: 0.6 }}
                                 className="text-[#444] font-medium leading-relaxed mb-8"
                             >
-                                Sources close to the administration confirm this sudden shift in geopolitical landscape. Citizens are advised to react accordingly.
+                                Источники сообщают о внезапных изменениях на геополитической арене. Гражданам рекомендуется принять соответствующие меры.
                             </motion.p>
 
                             <motion.button
@@ -65,7 +65,7 @@ const ChanceModal = ({ show, data, onClose }) => {
                                 onClick={onClose}
                                 className="w-full py-4 bg-[#2c2c2c] hover:bg-[#1a1a1a] text-[#f4f1ea] rounded-lg font-black uppercase tracking-widest transition-all active:scale-95 shadow-xl"
                             >
-                                Accept Fate
+                                Принять судьбу
                             </motion.button>
                         </div>
 

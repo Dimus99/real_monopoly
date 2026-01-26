@@ -203,12 +203,12 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
                             {displayName}
                         </h3>
                         <p className="text-gray-400 text-sm leading-relaxed max-w-[240px] opacity-80">
-                            {displayName === 'GO' && 'Secure your position and collect your corporate bonus fund.'}
-                            {property.group === 'Jail' && 'Diplomatic detention center. Enjoy the view while you wait.'}
-                            {property.group === 'GoToJail' && 'Your assets have been flagged. Proceed immediately to custody.'}
-                            {property.group === 'FreeParking' && 'A rare moment of neutrality in the global power struggle.'}
-                            {property.group === 'Chance' && 'A confidential memo has arrived. Will it make or break you?'}
-                            {property.group === 'Tax' && 'Mandatory redistribution of wealth to the shadow government.'}
+                            {displayName === 'GO' && 'Заберите свой корпоративный бонус за проход круга.'}
+                            {property.group === 'Jail' && 'Дипломатический изолятор. Отдыхайте, пока другие работают.'}
+                            {property.group === 'GoToJail' && 'Ваши активы под арестом. Проследуйте в изолятор.'}
+                            {property.group === 'FreeParking' && 'Зона оффшоров. Ваши деньги здесь в безопасности.'}
+                            {property.group === 'Chance' && 'Секретная депеша. Пан или пропал?'}
+                            {property.group === 'Tax' && 'Налог на роскошь в пользу неизвестных лиц.'}
                         </p>
                     </div>
                 )}

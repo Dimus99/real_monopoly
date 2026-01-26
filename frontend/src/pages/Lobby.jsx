@@ -15,12 +15,12 @@ const Globe = ({ size, className }) => (
 
 // Character data constant
 const LOBBY_CHARACTERS = [
-    { id: 'Putin', name: 'Putin', avatar: '/avatars/putin.png', color: '#C41E3A', ability: 'ORESHNIK', country: 'RU', abilityDesc: 'Launch a rocket that destroys a tile.' },
-    { id: 'Trump', name: 'Trump', avatar: '/avatars/trump.png', color: '#FF6B35', ability: 'BUYOUT', country: 'USA', abilityDesc: 'Buy any property even if owned.' },
-    { id: 'Zelensky', name: 'Zelensky', avatar: '/avatars/zelensky.png', color: '#0057B8', ability: 'AID', country: 'UA', abilityDesc: 'Collect aid from all players.' },
-    { id: 'Kim', name: 'Kim', avatar: '/avatars/kim.png', color: '#8B0000', ability: 'NUKE', country: 'NK', abilityDesc: 'Nuke threat to block rent.' },
-    { id: 'Biden', name: 'Biden', avatar: '/avatars/biden.png', color: '#3C3B6E', ability: 'SANCTIONS', country: 'USA', abilityDesc: 'Freeze enemy property profits.' },
-    { id: 'Xi', name: 'Xi', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT', country: 'CN', abilityDesc: 'Ensnare opponent in debt trap.' }
+    { id: 'Putin', name: 'Путин', avatar: '/avatars/putin.png', color: '#C41E3A', ability: 'ORESHNIK', abilityName: 'Орешник', country: 'RU', abilityDesc: 'Запустить ракету, уничтожающую клетку.' },
+    { id: 'Trump', name: 'Трамп', avatar: '/avatars/trump.png', color: '#FF6B35', ability: 'BUYOUT', abilityName: 'Рейдерский Захват', country: 'USA', abilityDesc: 'Купить любую недвижимость, даже чужую.' },
+    { id: 'Zelensky', name: 'Зеленский', avatar: '/avatars/zelensky.png', color: '#0057B8', ability: 'AID', abilityName: 'Помощь Запада', country: 'UA', abilityDesc: 'Собрать помощь со всех игроков.' },
+    { id: 'Kim', name: 'Ким', avatar: '/avatars/kim.png', color: '#8B0000', ability: 'NUKE', abilityName: 'Ядерная Угроза', country: 'NK', abilityDesc: 'Ядерная угроза блокирует аренду.' },
+    { id: 'Biden', name: 'Байден', avatar: '/avatars/biden.png', color: '#3C3B6E', ability: 'SANCTIONS', abilityName: 'Санкции', country: 'USA', abilityDesc: 'Заморозить доходы с собственности врага.' },
+    { id: 'Xi', name: 'Си', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT', abilityName: 'Пояс и Путь', country: 'CN', abilityDesc: 'Загнать оппонента в долговую ловушку.' }
 ];
 
 const getApiBase = () => {
@@ -140,10 +140,10 @@ const Lobby = () => {
                 setUser(data.user);
                 setMode('menu');
             } else {
-                alert("Guest login not allowed or failed.");
+                alert("Вход гостем запрещен или не удался.");
             }
         } catch (e) {
-            alert("Network error " + e.message);
+            alert("Ошибка сети " + e.message);
         } finally {
             setIsLoading(false);
         }
@@ -334,7 +334,7 @@ const Lobby = () => {
                 })
             });
 
-            if (!createRes.ok) throw new Error('Failed to create game');
+            if (!createRes.ok) throw new Error('Не удалось создать игру');
             const data = await createRes.json();
 
             // 2. Join as Host
@@ -356,7 +356,7 @@ const Lobby = () => {
 
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.detail || "Failed to join");
+                throw new Error(err.detail || "Не удалось войти");
             }
 
             const data = await res.json();
@@ -375,13 +375,13 @@ const Lobby = () => {
                 body: JSON.stringify({ friend_code: friendCodeInput })
             });
             if (res.ok) {
-                alert('Friend request sent!');
+                alert('Запрос отправлен!');
                 setFriendCodeInput('');
             } else {
                 const err = await res.json();
                 alert(err.detail);
             }
-        } catch (e) { alert('Error sending request'); }
+        } catch (e) { alert('Ошибка отправки запроса'); }
     };
 
     const handleUpdateName = async (newName) => {
@@ -455,7 +455,7 @@ const Lobby = () => {
                 alert(data.detail || 'Ошибка при привязке Telegram');
             }
         } catch (e) {
-            alert('Server error');
+            alert('Ошибка сервера');
         } finally {
             setIsLoading(false);
         }
@@ -477,7 +477,7 @@ const Lobby = () => {
                         <h1 className="text-5xl font-display font-black tracking-tighter italic">
                             MONOPOLY <span className="text-yellow-400">X</span>
                         </h1>
-                        <p className="text-gray-400 font-medium tracking-widest uppercase text-xs">Satire Edition</p>
+                        <p className="text-gray-400 font-medium tracking-widest uppercase text-xs">Сатирическое Издание</p>
                     </div>
 
                     <div className="space-y-6">
@@ -489,7 +489,7 @@ const Lobby = () => {
 
                             <div className="mt-6 flex flex-col items-center gap-3">
                                 <div className="text-[11px] text-gray-500 font-mono tracking-widest uppercase text-center">
-                                    {isLoading ? 'Authenticating...' : 'Secure Authentication via Telegram'}
+                                    {isLoading ? 'Авторизация...' : 'Безопасная авторизация через Telegram'}
                                 </div>
 
                                 {import.meta.env.DEV && (
@@ -497,7 +497,7 @@ const Lobby = () => {
                                         onClick={handleGuestLogin}
                                         className="text-xs text-yellow-500/50 hover:text-yellow-500 underline underline-offset-4 transition-colors font-mono uppercase"
                                     >
-                                        [Debug] Guest Login
+                                        [Отладка] Вход Гостем
                                     </button>
                                 )}
                             </div>
@@ -537,13 +537,13 @@ const Lobby = () => {
                             </button>
                         </h2>
                         <div className="text-xs text-purple-400 font-mono tracking-wider flex items-center gap-2">
-                            CODE: <span className="text-white font-bold select-all">{user.friend_code}</span>
+                            КОД: <span className="text-white font-bold select-all">{user.friend_code}</span>
                         </div>
                     </div>
                 </div>
                 <div className="flex gap-4">
                     <div className="text-right hidden sm:block">
-                        <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">Total Earnings</div>
+                        <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">Заработано всего</div>
                         <div className="text-xl font-mono font-bold text-green-400">${user.stats?.total_earnings?.toLocaleString()}</div>
                     </div>
                 </div>
@@ -559,8 +559,8 @@ const Lobby = () => {
                                 <Plus size={40} className="text-purple-400" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold mb-2">Create Game</h3>
-                                <p className="text-sm text-gray-400">Host a new match active diplomacy</p>
+                                <h3 className="text-2xl font-bold mb-2">Создать игру</h3>
+                                <p className="text-sm text-gray-400">Начать новую партию</p>
                             </div>
                         </button>
 
@@ -570,8 +570,8 @@ const Lobby = () => {
                                 <LogIn size={40} className="text-blue-400" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold mb-2">Join Game</h3>
-                                <p className="text-sm text-gray-400">Enter code to join lobby</p>
+                                <h3 className="text-2xl font-bold mb-2">Присоединиться</h3>
+                                <p className="text-sm text-gray-400">Войти по коду лобби</p>
                             </div>
                         </button>
 
@@ -586,8 +586,8 @@ const Lobby = () => {
                                 <Users size={40} className="text-green-400" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold mb-2">Friends</h3>
-                                <p className="text-sm text-gray-400">Manage friends & invites</p>
+                                <h3 className="text-2xl font-bold mb-2">Друзья</h3>
+                                <p className="text-sm text-gray-400">Управление друзьями</p>
                             </div>
                         </button>
 
@@ -597,20 +597,20 @@ const Lobby = () => {
                             {myGames.length > 0 && (
                                 <div className="mb-8 p-4 bg-purple-500/10 rounded-xl border border-purple-500/30">
                                     <h3 className="text-xl font-bold flex items-center gap-2 mb-4 text-purple-300">
-                                        <Play size={20} /> Your Active Matches
+                                        <Play size={20} /> Ваши активные игры
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {myGames.map(game => (
                                             <div key={game.game_id} className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/50 p-4 rounded-xl flex justify-between items-center">
                                                 <div>
                                                     <div className="font-mono font-bold text-lg text-white">#{game.game_id.substring(0, 6)}</div>
-                                                    <div className="text-xs text-purple-200 mt-1">Turn: {game.turn} • {game.status}</div>
+                                                    <div className="text-xs text-purple-200 mt-1">Ход: {game.turn} • {game.status}</div>
                                                 </div>
                                                 <button
                                                     onClick={() => navigate(`/game/${game.game_id}/${game.player_id}`)}
                                                     className="btn-sm btn-primary"
                                                 >
-                                                    Resume
+                                                    Продолжить
                                                 </button>
                                             </div>
                                         ))}
@@ -619,25 +619,25 @@ const Lobby = () => {
                             )}
 
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-bold flex items-center gap-2"><Globe size={20} className="text-blue-400" /> Open Public Lobbies</h3>
+                                <h3 className="text-xl font-bold flex items-center gap-2"><Globe size={20} className="text-blue-400" /> Открытые лобби</h3>
                                 <button onClick={fetchActiveGames} className="p-2 hover:bg-white/10 rounded-full"><RefreshCw size={16} /></button>
                             </div>
 
                             {activeGames.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">No active public games found. Create one!</div>
+                                <div className="text-center py-8 text-gray-500">Нет активных публичных игр. Создайте свою!</div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {activeGames.map(game => (
                                         <div key={game.game_id} className="bg-white/5 border border-white/10 p-4 rounded-xl hover:bg-white/10 transition-all flex justify-between items-center group">
                                             <div>
                                                 <div className="font-mono font-bold text-lg text-purple-400">#{game.game_id.substring(0, 6)}</div>
-                                                <div className="text-xs text-gray-400 mt-1">{game.map_type} • {game.player_count}/{game.max_players} Players</div>
+                                                <div className="text-xs text-gray-400 mt-1">{game.map_type} • {game.player_count}/{game.max_players} Игроков</div>
                                             </div>
                                             <button
                                                 onClick={() => { setMode('join'); setGameIdInput(game.game_id); }}
                                                 className="btn-sm btn-primary opacity-0 group-hover:opacity-100 transition-opacity"
                                             >
-                                                Join
+                                                Войти
                                             </button>
                                         </div>
                                     ))}
@@ -651,7 +651,7 @@ const Lobby = () => {
                 {mode === 'create' && (
                     <div className="glass-card max-w-2xl w-full p-8 animate-in fade-in zoom-in duration-300">
                         <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-3xl font-bold font-display">Create Match</h2>
+                            <h2 className="text-3xl font-bold font-display">Создание игры</h2>
                             <button onClick={() => setMode('menu')} className="btn-ghost p-2 rounded-full hover:bg-white/10"><X /></button>
                         </div>
 
@@ -672,22 +672,22 @@ const Lobby = () => {
                             </div>
 
                             <div>
-                                <label className="label">Game Mode</label>
+                                <label className="label">Режим игры</label>
                                 <div className="flex gap-4">
-                                    <button onClick={() => setGameMode('abilities')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${gameMode === 'abilities' ? 'bg-blue-600/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-white/5 border-white/10 text-gray-400'}`}>Abilities</button>
-                                    <button onClick={() => setGameMode('oreshnik_all')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${gameMode === 'oreshnik_all' ? 'bg-red-600/20 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)] text-red-400' : 'bg-white/5 border-white/10 text-gray-400'}`}>Oreshnik All</button>
-                                    <button onClick={() => setGameMode('classic')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${gameMode === 'classic' ? 'bg-blue-600/20 border-blue-500 text-white' : 'bg-white/5 border-white/10 text-gray-400'}`}>Classic</button>
+                                    <button onClick={() => setGameMode('abilities')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${gameMode === 'abilities' ? 'bg-blue-600/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-white/5 border-white/10 text-gray-400'}`}>Способности</button>
+                                    <button onClick={() => setGameMode('oreshnik_all')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${gameMode === 'oreshnik_all' ? 'bg-red-600/20 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)] text-red-400' : 'bg-white/5 border-white/10 text-gray-400'}`}>Все с Орешником</button>
+                                    <button onClick={() => setGameMode('classic')} className={`flex-1 p-3 rounded-lg border text-xs font-bold transition-all ${gameMode === 'classic' ? 'bg-blue-600/20 border-blue-500 text-white' : 'bg-white/5 border-white/10 text-gray-400'}`}>Классика</button>
                                 </div>
                             </div>
                         </div>
 
                         <div>
-                            <label className="label">Turn Timer</label>
+                            <label className="label">Таймер хода</label>
                             <div className="flex gap-4">
                                 {[
-                                    { val: 60, label: '60s' },
-                                    { val: 90, label: '90s' },
-                                    { val: 0, label: 'No Limit' }
+                                    { val: 60, label: '60с' },
+                                    { val: 90, label: '90с' },
+                                    { val: 0, label: 'Без лимита' }
                                 ].map(opt => (
                                     <button
                                         key={opt.val}
@@ -701,12 +701,12 @@ const Lobby = () => {
                         </div>
 
                         <div>
-                            <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Choose Your Leader</label>
+                            <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Выберите лидера</label>
                             <CharacterSelection characters={LOBBY_CHARACTERS} selectedId={character} onSelect={setCharacter} />
                         </div>
 
                         <button onClick={createGame} disabled={isLoading} className="btn-primary w-full py-4 text-xl font-bold shadow-lg shadow-purple-900/20">
-                            {isLoading ? 'Creating...' : 'Launch Game'}
+                            {isLoading ? 'Создание...' : 'Запустить игру'}
                         </button>
                     </div>
                 )}
@@ -715,13 +715,13 @@ const Lobby = () => {
                 {mode === 'join' && (
                     <div className="glass-card max-w-md w-full p-8 animate-in fade-in zoom-in duration-300">
                         <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-3xl font-bold font-display">Join Game</h2>
+                            <h2 className="text-3xl font-bold font-display">Войти в игру</h2>
                             <button onClick={() => setMode('menu')} className="btn-ghost"><X /></button>
                         </div>
 
                         <div className="space-y-6">
                             <div>
-                                <label className="label">Game ID</label>
+                                <label className="label">ID Игры</label>
                                 <input
                                     value={gameIdInput}
                                     onChange={e => setGameIdInput(e.target.value.toUpperCase())}
@@ -732,12 +732,12 @@ const Lobby = () => {
                             </div>
 
                             <div>
-                                <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Select Leader</label>
+                                <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Выберите лидера</label>
                                 <CharacterSelection characters={LOBBY_CHARACTERS} selectedId={character} onSelect={setCharacter} />
                             </div>
 
                             <button onClick={() => joinGame(gameIdInput)} disabled={isLoading || !gameIdInput} className="btn-primary w-full py-4 text-xl font-bold">
-                                {isLoading ? 'Joining...' : 'Enter Lobby'}
+                                {isLoading ? 'Вход...' : 'Войти в лобби'}
                             </button>
                         </div>
                     </div>
@@ -747,7 +747,7 @@ const Lobby = () => {
                 {mode === 'friends' && (
                     <div className="glass-card max-w-2xl w-full p-8 animate-in fade-in zoom-in duration-300">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-3xl font-bold font-display">Friends Center</h2>
+                            <h2 className="text-3xl font-bold font-display">Центр друзей</h2>
                             <button onClick={() => setMode('menu')} className="btn-ghost"><X /></button>
                         </div>
 
@@ -755,7 +755,7 @@ const Lobby = () => {
                             <input
                                 value={friendCodeInput}
                                 onChange={e => setFriendCodeInput(e.target.value.toUpperCase())}
-                                placeholder="Enter Friend Code (e.g. A1B2C3)"
+                                placeholder="Код друга (например A1B2C3)"
                                 className="input-field flex-1 font-mono uppercase"
                                 maxLength={6}
                             />
@@ -765,7 +765,7 @@ const Lobby = () => {
                         <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
                             {friendRequests.length > 0 && (
                                 <div className="mb-4">
-                                    <h3 className="text-sm text-gray-400 uppercase tracking-widest mb-2">Requests</h3>
+                                    <h3 className="text-sm text-gray-400 uppercase tracking-widest mb-2">Запросы</h3>
                                     {friendRequests.map(req => (
                                         <div key={req.id} className="bg-white/10 p-3 rounded-lg flex justify-between items-center border border-purple-500/30">
                                             <div className="flex items-center gap-3">
@@ -789,8 +789,8 @@ const Lobby = () => {
                                 </div>
                             )}
 
-                            <h3 className="text-sm text-gray-400 uppercase tracking-widest mb-2">My Friends</h3>
-                            {friends.length === 0 ? <div className="text-gray-500 text-center py-4">No friends yet. Add someone!</div> :
+                            <h3 className="text-sm text-gray-400 uppercase tracking-widest mb-2">Мои друзья</h3>
+                            {friends.length === 0 ? <div className="text-gray-500 text-center py-4">Нет друзей. Добавьте кого-нибудь!</div> :
                                 friends.map(f => (
                                     <div key={f.id} className="bg-white/5 p-3 rounded-lg flex justify-between items-center">
                                         <div className="flex items-center gap-3">
@@ -808,7 +808,7 @@ const Lobby = () => {
                                                 <div className="text-[10px] text-gray-500 font-mono">#{f.friend_code}</div>
                                             </div>
                                         </div>
-                                        <div className="text-xs text-green-400">Online</div>
+                                        <div className="text-xs text-green-400">Онлайн</div>
                                     </div>
                                 ))
                             }
@@ -820,7 +820,7 @@ const Lobby = () => {
                 {mode === 'profile' && (
                     <div className="glass-card max-w-md w-full p-8 animate-in fade-in zoom-in duration-300">
                         <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-3xl font-bold font-display">Profile</h2>
+                            <h2 className="text-3xl font-bold font-display">Профиль</h2>
                             <button onClick={() => setMode('menu')} className="btn-ghost"><X /></button>
                         </div>
 
@@ -840,7 +840,7 @@ const Lobby = () => {
 
                         <div className="space-y-6">
                             <div>
-                                <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-3 block">Choose Emoji</label>
+                                <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-3 block">Выберите эмодзи</label>
                                 <div className="grid grid-cols-6 gap-2 p-3 bg-white/5 rounded-xl border border-white/10 mb-4">
                                     {['😎', '🦾', '🤡', '🤑', '🦁', '👑', '🤌', '🤝', '🚀', '🎯', '🎰', '💎'].map(emoji => (
                                         <button
@@ -854,13 +854,13 @@ const Lobby = () => {
                                 </div>
                             </div>
                             <div>
-                                <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Display Name</label>
+                                <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Отображаемое имя</label>
                                 <input
                                     type="text"
                                     value={profileName}
                                     onChange={(e) => setProfileName(e.target.value)}
                                     className="input-field"
-                                    placeholder="Enter new name..."
+                                    placeholder="Введите имя..."
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             handleUpdateName();
@@ -871,11 +871,11 @@ const Lobby = () => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                    <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Wins</div>
+                                    <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Победы</div>
                                     <div className="text-2xl font-mono font-bold text-yellow-500">{user.stats?.wins}</div>
                                 </div>
                                 <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                    <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Games</div>
+                                    <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Игры</div>
                                     <div className="text-2xl font-mono font-bold text-blue-500">{user.stats?.games_played}</div>
                                 </div>
                             </div>
@@ -885,7 +885,7 @@ const Lobby = () => {
                                 className="btn-primary w-full py-4 font-bold"
                                 disabled={isLoading}
                             >
-                                {isLoading ? 'Saving...' : 'Save Changes'}
+                                {isLoading ? 'Сохранение...' : 'Сохранить изменения'}
                             </button>
 
                             {!user.telegram_id && (

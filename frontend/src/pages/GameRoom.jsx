@@ -469,7 +469,7 @@ const GameRoom = () => {
     if (!gameState) {
         return (
             <div className="min-h-screen animated-bg flex items-center justify-center">
-                <div className="text-2xl font-display text-white animate-pulse">Loading Game...</div>
+                <div className="text-2xl font-display text-white animate-pulse">Загрузка игры...</div>
             </div>
         );
     }
@@ -485,11 +485,11 @@ const GameRoom = () => {
                     <div className="absolute top-0 right-0 p-4 opacity-50"><Settings className="animate-spin-slow" size={100} /></div>
 
                     <div className="relative z-10">
-                        <h1 className="text-4xl font-display font-bold text-white mb-2">Lobby Waiting</h1>
+                        <h1 className="text-4xl font-display font-bold text-white mb-2">Ожидание в лобби</h1>
                         <div className="flex items-center gap-4 text-gray-400 mb-8">
                             <div className="bg-white/10 px-3 py-1 rounded font-mono">ID: {gameId}</div>
-                            <div className="flex items-center justify-center gap-2"><Users size={16} /> {Object.keys(gameState.players).length}/{gameState.max_players} Players</div>
-                            {!isHost && <div className="text-yellow-500 animate-pulse">Waiting for host to start...</div>}
+                            <div className="flex items-center justify-center gap-2"><Users size={16} /> {Object.keys(gameState.players).length}/{gameState.max_players} Игроков</div>
+                            {!isHost && <div className="text-yellow-500 animate-pulse">Ожидание начала игры хостом...</div>}
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
@@ -506,7 +506,7 @@ const GameRoom = () => {
                                                     <img src={ROOM_CHARACTERS[p.character]?.avatar} className="w-full h-full object-cover" />
                                                 )}
                                             </div>
-                                            {p.is_bot && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-[10px] px-1 rounded">BOT</div>}
+                                            {p.is_bot && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-[10px] px-1 rounded">БОТ</div>}
                                         </div>
                                         <div>
                                             <div className="font-bold text-white">{p.name}</div>
@@ -514,7 +514,7 @@ const GameRoom = () => {
                                         </div>
                                     </div>
                                     {isHost && p.is_bot && (
-                                        <button onClick={() => handleRemoveBot(p.id)} className="p-2 text-red-500 hover:bg-white/10 rounded-full transition-colors" title="Remove Bot">
+                                        <button onClick={() => handleRemoveBot(p.id)} className="p-2 text-red-500 hover:bg-white/10 rounded-full transition-colors" title="Удалить бота">
                                             <X size={16} />
                                         </button>
                                     )}
@@ -530,14 +530,14 @@ const GameRoom = () => {
                                         className="btn-primary py-3 px-8 text-lg flex items-center gap-2 shadow-lg hover:scale-105 transition-transform"
                                         disabled={Object.keys(gameState.players).length < 2}
                                     >
-                                        <Play size={24} /> Start Game
+                                        <Play size={24} /> Начать игру
                                     </button>
                                     <button
                                         onClick={handleAddBot}
                                         className="btn-ghost py-3 px-6 flex items-center gap-2 border border-white/20 hover:bg-white/10"
                                         disabled={Object.keys(gameState.players).length >= gameState.max_players}
                                     >
-                                        <Bot size={20} /> Add Bot
+                                        <Bot size={20} /> Добавить бота
                                     </button>
                                 </>
                             )}
@@ -546,21 +546,21 @@ const GameRoom = () => {
                                 onClick={openInviteModal}
                                 className="btn-purple py-3 px-6 flex items-center gap-2 shadow-lg"
                             >
-                                <UserPlus size={20} /> Invite Friend
+                                <UserPlus size={20} /> Пригласить
                             </button>
 
                             <button
                                 onClick={() => copyToClipboard(gameId)}
                                 className="btn-ghost py-3 px-6 flex items-center gap-2 border border-white/20 hover:bg-white/10"
                             >
-                                <Copy size={20} /> Copy ID
+                                <Copy size={20} /> Скопировать ID
                             </button>
 
                             <button
                                 onClick={() => navigate('/')}
                                 className="py-3 px-6 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg transition-transform hover:scale-105 ml-auto"
                             >
-                                <X size={20} /> Leave Lobby
+                                <X size={20} /> Выйти
                             </button>
                         </div>
                     </div>
@@ -570,10 +570,10 @@ const GameRoom = () => {
                         {showInviteModal && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowInviteModal(false)}>
                                 <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} onClick={e => e.stopPropagation()} className="glass-card p-6 max-w-md w-full">
-                                    <div className="flex items-center justify-between mb-4"><h3 className="text-xl font-bold text-white">Invite Friends</h3><button onClick={() => setShowInviteModal(false)} className="btn-ghost"><X size={20} /></button></div>
+                                    <div className="flex items-center justify-between mb-4"><h3 className="text-xl font-bold text-white">Пригласить друзей</h3><button onClick={() => setShowInviteModal(false)} className="btn-ghost"><X size={20} /></button></div>
                                     <div className="space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
                                         {friends.length === 0 ? (
-                                            <div className="text-gray-500 text-center py-4">No friends found. Add them in Lobby!</div>
+                                            <div className="text-gray-500 text-center py-4">Нет друзей. Добавьте их в лобби!</div>
                                         ) : (
                                             friends.map(friend => (
                                                 <div key={friend.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10">
@@ -583,7 +583,7 @@ const GameRoom = () => {
                                                         </div>
                                                         <div className="font-semibold text-white">{friend.name}</div>
                                                     </div>
-                                                    <button onClick={() => handleSendInvite(friend.id)} className="btn-sm btn-success flex items-center gap-1"><UserPlus size={14} /> Send</button>
+                                                    <button onClick={() => handleSendInvite(friend.id)} className="btn-sm btn-success flex items-center gap-1"><UserPlus size={14} /> Отправить</button>
                                                 </div>
                                             ))
                                         )}
@@ -631,7 +631,7 @@ const GameRoom = () => {
                     <button onClick={() => copyToClipboard(gameId)} className={`flex flex-col ${sidebarCollapsed ? 'items-center w-full' : 'items-end'}`}>
                         {sidebarCollapsed ? <Copy size={16} className="text-blue-400 mb-1" /> : (
                             <>
-                                <span className="text-[9px] text-blue-500 font-bold tracking-widest uppercase">Game ID</span>
+                                <span className="text-[9px] text-blue-500 font-bold tracking-widest uppercase">ID игры</span>
                                 <span className="text-sm font-mono font-bold text-blue-400">#{gameId.substring(0, 6)}</span>
                             </>
                         )}
@@ -655,7 +655,7 @@ const GameRoom = () => {
                             </span>
                         </div>
                         <div className={`bg-black/40 p-2 rounded-lg border border-white/5 flex flex-col items-center ${sidebarCollapsed ? 'w-full' : 'flex-1'}`}>
-                            <div className="w-3 h-3 rounded-full bg-yellow-500" title="Current Turn" />
+                            <div className="w-3 h-3 rounded-full bg-yellow-500" title="Текущий ход" />
                             {!sidebarCollapsed && <span className="text-[10px] text-gray-400 truncate w-full text-center mt-1">{currentTurnPlayer?.name}</span>}
                         </div>
                     </div>
@@ -716,17 +716,17 @@ const GameRoom = () => {
                                         </div>
                                         <div className="flex items-center gap-1">
                                             {p.id !== playerId ? (
-                                                <button onClick={(e) => { e.stopPropagation(); initiateTrade(p); }} className="p-1 hover:bg-white/10 rounded" title="Trade">
+                                                <button onClick={(e) => { e.stopPropagation(); initiateTrade(p); }} className="p-1 hover:bg-white/10 rounded" title="Предложить обмен">
                                                     <ArrowLeftRight size={14} className="text-gray-400" />
                                                 </button>
                                             ) : (
                                                 // Self actions
-                                                <button onClick={() => { if (window.confirm('Surrender?')) sendAction('SURRENDER'); }} className="p-1 hover:bg-red-500/20 rounded text-red-500" title="Surrender">
+                                                <button onClick={() => { if (window.confirm('Сдаться?')) sendAction('SURRENDER'); }} className="p-1 hover:bg-red-500/20 rounded text-red-500" title="Сдаться">
                                                     <Flag size={14} />
                                                 </button>
                                             )}
                                             {!p.is_bot && p.id !== playerId && (
-                                                <button onClick={(e) => { e.stopPropagation(); handleSendInvite(p.user_id); }} className="p-1 hover:bg-white/10 rounded" title="Add Friend">
+                                                <button onClick={(e) => { e.stopPropagation(); handleSendInvite(p.user_id); }} className="p-1 hover:bg-white/10 rounded" title="Добавить в друзья">
                                                     <UserPlus size={14} className="text-gray-400" />
                                                 </button>
                                             )}
@@ -822,7 +822,7 @@ const GameRoom = () => {
                                 <span className="text-4xl">📰</span>
                             </div>
                             <div className="flex-1">
-                                <div className="text-yellow-500 font-bold tracking-widest uppercase text-xs mb-1">Breaking News</div>
+                                <div className="text-yellow-500 font-bold tracking-widest uppercase text-xs mb-1">Срочные Новости</div>
                                 <div className="text-white text-lg font-bold leading-tight">
                                     {chanceCard}
                                 </div>
@@ -831,7 +831,7 @@ const GameRoom = () => {
                                 onClick={() => setChanceCard(null)}
                                 className="px-6 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase text-sm rounded-lg shadow-lg hover:scale-105 transition-all"
                             >
-                                OK
+                                Понятно
                             </button>
                         </div>
                     </motion.div>

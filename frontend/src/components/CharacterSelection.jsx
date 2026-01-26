@@ -68,11 +68,11 @@ const CharacterSelection = ({ characters, selectedId, onSelect }) => {
                                     className="w-8 h-8 rounded shrink-0 flex items-center justify-center text-white shadow-inner font-bold"
                                     style={{ background: selectedChar.color }}
                                 >
-                                    {selectedChar.ability[0]}
+                                    {(selectedChar.abilityName || selectedChar.ability || '?')[0]}
                                 </div>
                                 <div className="min-w-0">
                                     <div className="font-bold text-white text-xs leading-tight">
-                                        {selectedChar.ability}
+                                        {selectedChar.abilityName || selectedChar.ability}
                                     </div>
                                     <div className="text-[10px] text-gray-400 truncate">
                                         {selectedChar.abilityDesc}

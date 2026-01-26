@@ -25,12 +25,12 @@ const ActionPanel = ({
 
     // Ability configurations
     const ABILITIES = {
-        'Putin': { id: 'ORESHNIK', name: 'Ебнуть орешником', icon: '🚀', color: 'bg-red-600', desc: 'Уничтожить город' },
-        'Trump': { id: 'BUYOUT', name: 'Hostile Takeover', icon: '💰', color: 'bg-orange-500', desc: 'Захватить город' },
-        'Zelensky': { id: 'AID', name: 'Ask for Aid', icon: '🤝', color: 'bg-blue-600', desc: 'Собрать помощь' },
-        'Kim': { id: 'ISOLATION', name: 'Nuke Threat', icon: '☢️', color: 'bg-red-800', desc: 'Изоляция' },
-        'Biden': { id: 'SANCTIONS', name: 'Economic Sanctions', icon: '🚫', color: 'bg-blue-800', desc: 'Санкции' },
-        'Xi': { id: 'BELT_ROAD', name: 'Belt and Road', icon: '🧧', color: 'bg-red-500', desc: 'Инфраструктура' }
+        'Putin': { id: 'ORESHNIK', name: 'Ебнуть Орешником', icon: '🚀', color: 'bg-red-600', desc: 'Уничтожить город' },
+        'Trump': { id: 'BUYOUT', name: 'Рейдерский Захват', icon: '💰', color: 'bg-orange-500', desc: 'Захватить город' },
+        'Zelensky': { id: 'AID', name: 'Попросить Помощь', icon: '🤝', color: 'bg-blue-600', desc: 'Собрать помощь' },
+        'Kim': { id: 'ISOLATION', name: 'Ядерная Угроза', icon: '☢️', color: 'bg-red-800', desc: 'Изоляция' },
+        'Biden': { id: 'SANCTIONS', name: 'Эконом. Санкции', icon: '🚫', color: 'bg-blue-800', desc: 'Санкции' },
+        'Xi': { id: 'BELT_ROAD', name: 'Пояс и Путь', icon: '🧧', color: 'bg-red-500', desc: 'Инфраструктура' }
     };
 
     let ability = null;

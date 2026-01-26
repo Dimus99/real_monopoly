@@ -379,9 +379,9 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                             className="flex flex-col items-center"
                         >
                             <h1 className="font-display text-5xl md:text-6xl font-black text-yellow-400 tracking-tight drop-shadow-[0_0_20px_rgba(255,215,0,0.5)] mb-4">
-                                GAME OVER
+                                ИГРА ОКОНЧЕНА
                             </h1>
-                            <div className="text-2xl text-white font-bold mb-2">WINNER</div>
+                            <div className="text-2xl text-white font-bold mb-2">ПОБЕДИТЕЛЬ</div>
                             <div className="relative">
                                 <img
                                     src={BOARD_CHARACTERS[winner.character]?.avatar}
@@ -400,7 +400,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                                 transition={{ delay: 0.5, type: 'spring' }}
                                 className="font-display text-5xl md:text-7xl font-black text-white tracking-tight drop-shadow-lg"
                             >
-                                {mapType === 'Ukraine' ? 'UKRAINE' : 'WORLD'}
+                                {mapType === 'Ukraine' ? 'УКРАИНА' : 'МИР'}
                             </motion.h1>
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
@@ -408,7 +408,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                                 transition={{ delay: 0.7 }}
                                 className="text-xl md:text-2xl font-display text-yellow-400 mt-2"
                             >
-                                MONOPOLY
+                                МОНОПОЛИЯ
                             </motion.div>
                             <motion.div
                                 initial={{ opacity: 0 }}
@@ -416,7 +416,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                                 transition={{ delay: 0.9 }}
                                 className="text-sm text-gray-400 mt-4"
                             >
-                                Satire Edition
+                                Сатирическое Издание
                             </motion.div>
                         </>
                     )}

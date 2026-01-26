@@ -68,7 +68,7 @@ const ToastNotification = ({ logs, onSendMessage }) => {
                         <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10 shrink-0">
                             <h3 className="text-white font-bold text-xs flex items-center gap-2 uppercase tracking-wider">
                                 <MessageSquare size={14} className="text-yellow-400" />
-                                Live Chat
+                                Чат
                             </h3>
                             <button
                                 onClick={() => setShowChat(false)}
@@ -94,7 +94,7 @@ const ToastNotification = ({ logs, onSendMessage }) => {
                                 type="text"
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
-                                placeholder="Type a message..."
+                                placeholder="Напишите сообщение..."
                                 className="flex-1 bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-400/50 transition-colors"
                             />
                             <button
@@ -137,7 +137,7 @@ const ToastNotification = ({ logs, onSendMessage }) => {
                         className="bg-black/60 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-full shadow-lg hover:bg-black/80 transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-wide group"
                     >
                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        Open Chat
+                        Открыть Чат
                         <ChevronUp size={14} className="group-hover:-translate-y-0.5 transition-transform" />
                     </motion.button>
                 </div>

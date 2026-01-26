@@ -43,7 +43,7 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
                 <div className="bg-[#1a1b26] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
                     {/* Header */}
                     <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
-                        <h2 className="text-2xl font-bold text-white font-display tracking-wider">TRADE PROPOSAL</h2>
+                        <h2 className="text-2xl font-bold text-white font-display tracking-wider">ПРЕДЛОЖЕНИЕ ОБМЕНА</h2>
                         <button onClick={onClose} className="btn-ghost">
                             <X size={24} />
                         </button>
@@ -55,7 +55,7 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
                             <div className="flex items-center gap-3 mb-4">
                                 <img src={fromPlayer.avatar} className="w-10 h-10 rounded-full border-2 border-white/20" />
                                 <div>
-                                    <div className="text-sm text-gray-400 font-bold uppercase">You Offer</div>
+                                    <div className="text-sm text-gray-400 font-bold uppercase">Вы предлагаете</div>
                                     <div className="text-white font-bold">{fromPlayer.name}</div>
                                 </div>
                             </div>
@@ -63,7 +63,7 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
                             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                                 {/* Money */}
                                 <div className="mb-6">
-                                    <label className="text-xs text-gray-500 uppercase font-bold mb-2 block">Money ($)</label>
+                                    <label className="text-xs text-gray-500 uppercase font-bold mb-2 block">Деньги ($)</label>
                                     <div className="relative">
                                         <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                         <input
@@ -73,16 +73,16 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
                                             max={fromPlayer.money}
                                             className="w-full bg-white/5 border border-white/10 rounded-lg py-2 pl-9 pr-4 text-white focus:outline-none focus:border-yellow-500 transition-colors"
                                         />
-                                        <div className="text-xs text-gray-500 mt-1 text-right">Max: ${fromPlayer.money}</div>
+                                        <div className="text-xs text-gray-500 mt-1 text-right">Макс: ${fromPlayer.money}</div>
                                     </div>
                                 </div>
 
                                 {/* Properties */}
                                 <div>
-                                    <label className="text-xs text-gray-500 uppercase font-bold mb-2 block">Properties</label>
+                                    <label className="text-xs text-gray-500 uppercase font-bold mb-2 block">Недвижимость</label>
                                     <div className="space-y-2">
                                         {fromProps.length === 0 ? (
-                                            <div className="text-gray-600 text-sm italic">No properties to trade</div>
+                                            <div className="text-gray-600 text-sm italic">Нет недвижимости для обмена</div>
                                         ) : (
                                             fromProps.map(prop => (
                                                 <div
@@ -114,7 +114,7 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
                             <div className="flex items-center gap-3 mb-4">
                                 <img src={toPlayer.avatar} className="w-10 h-10 rounded-full border-2 border-white/20" />
                                 <div>
-                                    <div className="text-sm text-gray-400 font-bold uppercase">You Receive</div>
+                                    <div className="text-sm text-gray-400 font-bold uppercase">Вы получаете</div>
                                     <div className="text-white font-bold">{toPlayer.name}</div>
                                 </div>
                             </div>
@@ -122,7 +122,7 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
                             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                                 {/* Money */}
                                 <div className="mb-6">
-                                    <label className="text-xs text-gray-500 uppercase font-bold mb-2 block">Money ($)</label>
+                                    <label className="text-xs text-gray-500 uppercase font-bold mb-2 block">Деньги ($)</label>
                                     <div className="relative">
                                         <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                         <input
@@ -132,16 +132,16 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
                                             max={toPlayer.money}
                                             className="w-full bg-white/5 border border-white/10 rounded-lg py-2 pl-9 pr-4 text-white focus:outline-none focus:border-yellow-500 transition-colors"
                                         />
-                                        <div className="text-xs text-gray-500 mt-1 text-right">Max: ${toPlayer.money}</div>
+                                        <div className="text-xs text-gray-500 mt-1 text-right">Макс: ${toPlayer.money}</div>
                                     </div>
                                 </div>
 
                                 {/* Properties */}
                                 <div>
-                                    <label className="text-xs text-gray-500 uppercase font-bold mb-2 block">Properties</label>
+                                    <label className="text-xs text-gray-500 uppercase font-bold mb-2 block">Недвижимость</label>
                                     <div className="space-y-2">
                                         {toProps.length === 0 ? (
-                                            <div className="text-gray-600 text-sm italic">No properties available</div>
+                                            <div className="text-gray-600 text-sm italic">Нет доступной недвижимости</div>
                                         ) : (
                                             toProps.map(prop => (
                                                 <div
@@ -175,7 +175,7 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
                             onClick={onClose}
                             className="btn btn-secondary"
                         >
-                            Cancel
+                            Отмена
                         </button>
                         <button
                             onClick={handleSend}
@@ -186,7 +186,7 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
                             }
                             className="btn btn-primary px-8"
                         >
-                            Send Offer <ArrowRight size={18} />
+                            Отправить <ArrowRight size={18} />
                         </button>
                     </div>
                 </div>

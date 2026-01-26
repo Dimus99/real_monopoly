@@ -19,15 +19,15 @@ const TradeNotification = ({ trade, fromPlayer, onRespond, board }) => {
                     <ArrowLeftRight size={20} />
                 </div>
                 <div>
-                    <h3 className="text-white font-bold text-sm">INCOMING TRADE</h3>
-                    <div className="text-xs text-yellow-500">From {fromPlayer.name}</div>
+                    <h3 className="text-white font-bold text-sm">ВХОДЯЩИЙ ОБМЕН</h3>
+                    <div className="text-xs text-yellow-500">От {fromPlayer.name}</div>
                 </div>
             </div>
 
             <div className="p-4 space-y-4">
                 {/* They Offer */}
                 <div>
-                    <div className="text-xs text-gray-400 font-bold uppercase mb-2">They Offer:</div>
+                    <div className="text-xs text-gray-400 font-bold uppercase mb-2">Предлагают:</div>
                     <div className="bg-black/20 rounded-lg p-3 space-y-2">
                         {trade.offer_money > 0 && (
                             <div className="text-green-400 font-mono font-bold">+ ${trade.offer_money}</div>
@@ -42,14 +42,14 @@ const TradeNotification = ({ trade, fromPlayer, onRespond, board }) => {
                                 ))}
                             </div>
                         ) : (
-                            trade.offer_money === 0 && <span className="text-gray-600 text-xs italic">Nothing</span>
+                            trade.offer_money === 0 && <span className="text-gray-600 text-xs italic">Ничего</span>
                         )}
                     </div>
                 </div>
 
                 {/* They Want */}
                 <div>
-                    <div className="text-xs text-gray-400 font-bold uppercase mb-2">They Want:</div>
+                    <div className="text-xs text-gray-400 font-bold uppercase mb-2">Хотят получить:</div>
                     <div className="bg-black/20 rounded-lg p-3 space-y-2">
                         {trade.request_money > 0 && (
                             <div className="text-red-400 font-mono font-bold">- ${trade.request_money}</div>
@@ -64,7 +64,7 @@ const TradeNotification = ({ trade, fromPlayer, onRespond, board }) => {
                                 ))}
                             </div>
                         ) : (
-                            trade.request_money === 0 && <span className="text-gray-600 text-xs italic">Nothing</span>
+                            trade.request_money === 0 && <span className="text-gray-600 text-xs italic">Ничего</span>
                         )}
                     </div>
                 </div>
@@ -74,13 +74,13 @@ const TradeNotification = ({ trade, fromPlayer, onRespond, board }) => {
                         onClick={() => onRespond(trade.id, 'reject')}
                         className="btn btn-danger btn-sm"
                     >
-                        Reject
+                        Отклонить
                     </button>
                     <button
                         onClick={() => onRespond(trade.id, 'accept')}
                         className="btn btn-success btn-sm"
                     >
-                        Accept
+                        Принять
                     </button>
                 </div>
             </div>
