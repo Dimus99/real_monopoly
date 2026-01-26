@@ -311,6 +311,28 @@ class GameEngine:
             return True
         return False
     
+    def _update_group_monopoly(self, game: GameState, group: str):
+        """Recalculate monopoly status for a color group."""
+        special_groups = ["Special", "Utility", "Station", "Chance", "Tax", "Jail", "FreeParking", "GoToJail"]
+        if not group or group in special_groups:
+            return
+
+        props = [p for p in game.board if p.group == group]
+        if not props:
+            return
+
+        # Check ownership
+        owners = set(p.owner_id for p in props)
+        
+        # Monopoly if exactly 1 owner for ALL properties and that owner is not None
+        # And none are mortgaged? (Strict rules say monopoly exists, but bonuses might not. We stick to ownership here for is_monopoly status)
+        if len(owners) == 1 and list(owners)[0] is not None:
+             for p in props:
+                 p.is_monopoly = True
+        else:
+             for p in props:
+                 p.is_monopoly = False
+
     def get_current_player(self, game_id: str) -> Optional[Player]:
         """Get the player whose turn it is."""
         game = self.games.get(game_id)
@@ -600,7 +622,12 @@ class GameEngine:
         game.logs.append(f"Breaking News: {log_text}")
         
         if card["type"] == "money":
-            player.money += card["amount"]
+            # Apply money effect but prevent negative balance (floor at 0)
+            if card["amount"] < 0 and player.money < abs(card["amount"]):
+                 player.money = 0
+            else:
+                 player.money += card["amount"]
+            
             return {"chance_card": log_text, "amount": card["amount"]}
             
         elif card["type"] == "move_random":
@@ -653,10 +680,11 @@ class GameEngine:
         self._reset_timer(game)
         
 
-        # Decrease ability cooldowns
-        for player in game.players.values():
-            if player.ability_cooldown > 0:
-                player.ability_cooldown -= 1
+        # Decrease ability cooldown for the next player
+        current_pid = game.player_order[game.current_turn_index]
+        next_player = game.players.get(current_pid)
+        if next_player and next_player.ability_cooldown > 0:
+            next_player.ability_cooldown -= 1
         
         # Decrease Isolation counters
         for prop in game.board:
@@ -843,14 +871,9 @@ class GameEngine:
         player.properties.append(property_id)
         
         # Check for Monopoly Completion (Trigger)
-        group_props = [t for t in game.board if t.group == prop.group]
-        owned_by_player = [t for t in group_props if t.owner_id == player_id]
-        
-        if len(owned_by_player) == len(group_props):
-            # MONOPOLY ACHIEVED
-            for t in group_props:
-                t.is_monopoly = True
-            game.logs.append(f"🎉 {player.name} completed the {prop.group} MONOPOLY!")
+        self._update_group_monopoly(game, prop.group)
+        if prop.is_monopoly:
+             game.logs.append(f"🎉 {player.name} completed the {prop.group} MONOPOLY!")
         
         game.logs.append(f"{player.name} bought {prop.name} for ${prop.price}")
         self._reset_timer(game)
@@ -914,15 +937,13 @@ class GameEngine:
         }
     
     def mortgage_property(self, game_id: str, player_id: str, property_id: int) -> Dict[str, Any]:
-        """Mortgage a property for 50% value."""
+        """Mortgage a property for 70% value."""
         game = self.games.get(game_id)
         if not game: return {"error": "Game not found"}
         
         player = game.players.get(player_id)
         if not player: return {"error": "Player not found"}
         
-        # We allow mortgaging at any time? usually yes.
-        # Check ownership
         prop = game.board[property_id]
         if prop.owner_id != player_id:
             return {"error": "Not your property"}
@@ -933,7 +954,7 @@ class GameEngine:
         if prop.houses > 0:
             return {"error": "Must sell houses first"}
             
-        mortgage_value = prop.price // 2
+        mortgage_value = int(prop.price * 0.7)
         prop.is_mortgaged = True
         player.money += mortgage_value
         
@@ -942,11 +963,12 @@ class GameEngine:
         return {"success": True, "game_state": game.dict()}
 
     def unmortgage_property(self, game_id: str, player_id: str, property_id: int) -> Dict[str, Any]:
-        """Unmortgage a property (pay 50% + 10% interest)."""
+        """Unmortgage a property (pay 80% price)."""
         game = self.games.get(game_id)
         if not game: return {"error": "Game not found"}
         
         player = game.players.get(player_id)
+        if not player: return {"error": "Player not found"}
         
         prop = game.board[property_id]
         if prop.owner_id != player_id:
@@ -955,8 +977,7 @@ class GameEngine:
         if not prop.is_mortgaged:
             return {"error": "Not mortgaged"}
         
-        # 10% interest
-        cost = int((prop.price // 2) * 1.1)
+        cost = int(prop.price * 0.8)
         
         if player.money < cost:
             return {"error": f"Need ${cost} to unmortgage"}
@@ -1470,6 +1491,16 @@ class GameEngine:
             p2.properties.remove(pid)
             p1.properties.append(pid)
             game.board[pid].owner_id = p1.id
+            
+        # Update Monopoly Status for affected groups
+        affected_groups = set()
+        for pid in trade.offer_properties:
+            affected_groups.add(game.board[pid].group)
+        for pid in trade.request_properties:
+            affected_groups.add(game.board[pid].group)
+            
+        for g in affected_groups:
+            self._update_group_monopoly(game, g)
             
     def run_bot_turn(self, game_id: str) -> Optional[Dict[str, Any]]:
         """Execute a bot's dice roll. Returns dice result for animation."""

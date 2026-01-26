@@ -51,20 +51,20 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                 <motion.div
                     className="cube"
                     animate={isRolling ? {
-                        rotateX: [0, 360, 720, 1080],
-                        rotateY: [0, 720, 360, 1440],
-                        rotateZ: [0, 180, 0, 360],
+                        rotateX: [0, 360],
+                        rotateY: [0, 360],
+                        rotateZ: [0, 360],
                     } : {
                         ...getRotation(value)
                     }}
                     transition={isRolling ? {
-                        duration: 1.5,
+                        duration: 0.3,
                         repeat: Infinity,
                         ease: "linear"
                     } : {
                         type: "spring",
-                        stiffness: 100,
-                        damping: 10
+                        stiffness: 200,
+                        damping: 20
                     }}
                 >
                     <Face n={1} />

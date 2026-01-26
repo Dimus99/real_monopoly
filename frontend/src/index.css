@@ -315,10 +315,13 @@ body {
 .board-grid {
   display: grid;
   /* 11x11 grid: Corners (1st, 11th) are wider/taller (1.4fr), middle are 1fr */
-  grid-template-columns: 1.8fr repeat(9, 1fr) 1.8fr;
-  grid-template-rows: 1.8fr repeat(9, 1fr) 1.8fr;
+  grid-template-columns: 2.2fr repeat(13, 1fr) 2.2fr;
+  grid-template-rows: 2.2fr repeat(13, 1fr) 2.2fr;
   aspect-ratio: 1/1;
-  width: 100%;
+  width: auto;
+  height: min(90vh, 90vw);
+  max-width: 95vw;
+  max-height: 95vh;
   border: 2px solid rgba(255, 215, 0, 0.3);
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.9);
   background: #08080f;

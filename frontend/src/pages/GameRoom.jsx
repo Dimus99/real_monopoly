@@ -74,25 +74,28 @@ const GameRoom = () => {
 
     // Sync 'hasRolled' and 'dice' state from server to handle page reloads / reconnections
     useEffect(() => {
-        // Only update if it's my turn, to enable "End Turn" button
-        if (isMyTurn) {
-            // Use !! to ensure that undefined/null/missing becomes false
-            const serverHasRolled = !!gameState?.turn_state?.has_rolled;
-            setHasRolled(serverHasRolled);
+        // Source of truth for whether the current player has rolled
+        if (isMyTurn && gameState?.turn_state) {
+            // Only sync if we're not currently in the middle of a roll animation
+            if (!isRolling) {
+                const serverHasRolled = !!gameState.turn_state.has_rolled;
+                setHasRolled(serverHasRolled);
+            }
 
-            // Also sync dice to ensure "Doubles" logic is correct on reload
-            if (gameState?.dice && gameState?.dice.length === 2) {
+            // Sync dice values
+            if (gameState.dice && gameState.dice.length === 2) {
                 setDiceValues(gameState.dice);
             }
         }
-    }, [gameState?.turn_state?.has_rolled, gameState?.dice, isMyTurn]);
+    }, [gameState?.turn_state?.has_rolled, gameState?.dice, isMyTurn, isRolling]);
 
     // Reset states on new turn
     useEffect(() => {
         setHasRolled(false);
         setIsRolling(false);
         setShowDice(false);
-    }, [gameState?.current_turn_index]);
+        setDiceRolling(false);
+    }, [gameState?.current_turn_index, gameState?.game_status]);
 
     // Log management - Update immediately to keep chat fresh
     const [displayedLogs, setDisplayedLogs] = useState([]);
@@ -137,6 +140,14 @@ const GameRoom = () => {
     const handleBuildHouse = (propertyId) => {
         if (!isMyTurn) return;
         sendAction('BUILD', { property_id: propertyId });
+    };
+
+    const handleMortgage = (propertyId) => {
+        sendAction('MORTGAGE', { property_id: propertyId });
+    };
+
+    const handleUnmortgage = (propertyId) => {
+        sendAction('UNMORTGAGE', { property_id: propertyId });
     };
 
     // Rent State
@@ -342,12 +353,8 @@ const GameRoom = () => {
                                 setDelayedPlayers(gameState.players);
                             }
 
-                            // Update local turn state to show buttons
-                            if (lastAction.doubles) {
-                                setHasRolled(false);
-                            } else {
-                                setHasRolled(true);
-                            }
+                            // NOTE: We no longer manually set setHasRolled(true) here
+                            // The source of truth is the sync effect from gameState.turn_state
                             setIsRolling(false);
 
                             // Handle other post-roll actions (Rent, etc.)
@@ -752,6 +759,8 @@ const GameRoom = () => {
                             setSelectedTile(null);
                         }}
                         onBuild={handleBuildHouse}
+                        onMortgage={handleMortgage}
+                        onUnmortgage={handleUnmortgage}
                         canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && checkMonopolyByPlayer(selectedTile || currentTile)}
                         isMyTurn={isMyTurn}
                     />

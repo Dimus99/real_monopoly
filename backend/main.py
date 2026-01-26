@@ -400,11 +400,24 @@ async def websocket_game(
                 else:
                     await manager.broadcast(game_id, {"type": "PLAYER_SURRENDERED", **result})
                     
+                    # Update stats for the player who surrendered (LOSS)
+                    surrendered_p = game.players.get(player_id)
+                    if surrendered_p and surrendered_p.user_id:
+                        async with async_session() as session:
+                            await db_service.increment_user_stats(session, surrendered_p.user_id, is_winner=False)
+                    
                     if result.get("game_over"):
                          await manager.broadcast(game_id, {
                             "type": "GAME_OVER",
                             "game_state": result["game_state"]
                         })
+                         
+                         # Update stats for the winner
+                         winner_id = result["game_state"].get("winner_id")
+                         winner_p = game.players.get(winner_id)
+                         if winner_p and winner_p.user_id:
+                             async with async_session() as session:
+                                 await db_service.increment_user_stats(session, winner_p.user_id, is_winner=True)
                     else:
                         await _check_and_run_bot_turn(game_id)
             

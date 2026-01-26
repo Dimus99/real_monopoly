@@ -6,32 +6,13 @@ import { CHARACTERS as BOARD_CHARACTERS } from '../constants/characters';
 import PropertyModal from './PropertyModal';
 
 const getTileStyle = (index) => {
-    // LAYOUT V3.1: 0(TL), 10(TR), 20(BR), 30(BL)
-    // Antarctica (39) is adjacent below Start (0)
+    const S = 15; // 15x15 layout for 56 tiles
+    if (index >= 0 && index <= 14) return { gridRowStart: 1, gridColumnStart: 1 + index }; // Top
+    if (index >= 15 && index <= 27) return { gridRowStart: 1 + (index - 14), gridColumnStart: 15 }; // Right
+    if (index >= 28 && index <= 42) return { gridRowStart: 15, gridColumnStart: 15 - (index - 28) }; // Bottom
+    if (index >= 43 && index <= 55) return { gridRowStart: 15 - (index - 42), gridColumnStart: 1 }; // Left
 
-    // Corners
-    if (index === 0) return { gridRowStart: 1, gridColumnStart: 1 };
-    if (index === 10) return { gridRowStart: 1, gridColumnStart: 11 };
-    if (index === 20) return { gridRowStart: 11, gridColumnStart: 11 };
-    if (index === 30) return { gridRowStart: 11, gridColumnStart: 1 };
-
-    let row, col;
-    if (index > 0 && index < 10) { // Top Row (1-9)
-        row = 1; col = 1 + index;
-    } else if (index > 10 && index < 20) { // Right Col (11-19)
-        col = 11; row = 1 + (index - 10);
-    } else if (index > 20 && index < 30) { // Bottom Row (21-29)
-        row = 11; col = 11 - (index - 20);
-    } else if (index > 30 && index < 40) { // Left Col (31-39)
-        col = 1; row = 11 - (index - 30);
-    }
-
-    return {
-        gridRowStart: row,
-        gridRowEnd: row + 1,
-        gridColumnStart: col,
-        gridColumnEnd: col + 1,
-    };
+    return { gridRowStart: 1, gridColumnStart: 1 };
 };
 
 // Tile images mapping
@@ -56,34 +37,26 @@ const getTileCoordinates = (tileId, boardRef) => {
     const gridStyle = getTileStyle(tileId);
     const GRID_GAP = 2; // Must match CSS
 
-    // Grid configuration must match CSS: 1.8fr - 1fr * 9 - 1.8fr
-    const totalUnits = 1.8 + 9 + 1.8; // 12.6
+    // Grid configuration must match CSS: 2.2fr - 1fr * 13 - 2.2fr
+    const totalUnits = 2.2 + 13 + 2.2; // 17.4
 
     // Calculate unit size (subtracting gaps)
-    // 11 columns means 10 gaps
-    const availableWidth = boardRect.width - (10 * GRID_GAP);
-    const availableHeight = boardRect.height - (10 * GRID_GAP);
+    // 15 columns means 14 gaps
+    const availableWidth = boardRect.width - (14 * GRID_GAP);
+    const availableHeight = boardRect.height - (14 * GRID_GAP);
 
     const unitX = availableWidth / totalUnits;
     const unitY = availableHeight / totalUnits;
 
     const getCoordinate = (index, unitSize) => {
-        // index is 1-based grid index
         let pos = 0;
-
-        // Add width of preceding columns/rows + gaps
         for (let i = 1; i < index; i++) {
-            if (i === 1 || i === 11) pos += 1.8 * unitSize;
+            if (i === 1 || i === 15) pos += 2.2 * unitSize;
             else pos += 1 * unitSize;
-
-            // Add gap after every column/row
             pos += GRID_GAP;
         }
-
-        // Add half of current column/row
-        const currentSize = (index === 1 || index === 11) ? 1.8 : 1;
+        const currentSize = (index === 1 || index === 15) ? 2.2 : 1;
         pos += (currentSize * unitSize) / 2;
-
         return pos;
     };
 
@@ -95,7 +68,7 @@ const getTileCoordinates = (tileId, boardRef) => {
 
 
 
-const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, canBuild, isMyTurn }) => {
+const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onMortgage, onUnmortgage, canBuild, isMyTurn }) => {
     // Character colors for player tokens (derived from BOARD_CHARACTERS)
     const PLAYER_COLORS = React.useMemo(() => Object.fromEntries(
         Object.entries(BOARD_CHARACTERS).map(([k, v]) => [k, v.color])
@@ -114,10 +87,10 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
         if (start === end) return [start];
         const path = [start];
         let current = start;
-        // Max 40 steps to avoid infinite loop
+        const totalTiles = tiles.length;
         let safety = 0;
-        while (current !== end && safety < 40) {
-            current = (current + 1) % 40;
+        while (current !== end && safety < 60) {
+            current = (current + 1) % totalTiles;
             path.push(current);
             safety++;
         }
@@ -459,32 +432,31 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                     )}
                 </AnimatePresence>
 
-                {/* Detailed Property Card (Contextual) */}
-                <AnimatePresence>
-                    {selectedTileId !== null && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.8, y: 30 }}
-                            animate={{ opacity: 1, scale: 0.9, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.8, y: 30 }}
-                            className="absolute z-[100] pointer-events-auto"
-                            style={{
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)'
-                            }}
-                        >
-                            <PropertyModal
-                                property={tiles.find(t => t.id === selectedTileId)}
-                                players={players}
-                                canBuy={isMyTurn && players[currentPlayerId]?.position === selectedTileId && !tiles.find(t => t.id === selectedTileId)?.owner_id}
-                                onBuy={onBuy}
-                                onClose={() => onTileClick(null)}
-                                onBuild={onBuild}
-                                canBuild={canBuild}
-                            />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
+                    <AnimatePresence>
+                        {selectedTileId !== null && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8, y: 30 }}
+                                animate={{ opacity: 1, scale: 0.9, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, y: 30 }}
+                                className="pointer-events-auto"
+                            >
+                                <PropertyModal
+                                    property={tiles.find(t => t.id === selectedTileId)}
+                                    players={players}
+                                    canBuy={isMyTurn && players[currentPlayerId]?.position === selectedTileId && !tiles.find(t => t.id === selectedTileId)?.owner_id}
+                                    onBuy={onBuy}
+                                    onClose={() => onTileClick(null)}
+                                    onBuild={onBuild}
+                                    onMortgage={onMortgage}
+                                    onUnmortgage={onUnmortgage}
+                                    currentPlayerId={currentPlayerId}
+                                    canBuild={canBuild}
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
 
                 {/* Log Panel / Chat - Positioned at the very bottom edge of inner area */}
                 <div className="absolute bottom-0 left-0 right-0 z-30 w-full flex flex-col justify-end pointer-events-none p-2">

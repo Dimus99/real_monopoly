@@ -193,11 +193,12 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                         className="tile-name leading-tight text-center px-0.5"
                         style={{
                             color: hasOwner ? '#fff' : (isCorner ? groupStyle.textColor : '#e0e0e0'),
-                            fontSize: isCorner ? '14px' : '11px',
-                            lineHeight: '1.0',
-                            fontWeight: '800',
+                            fontSize: isCorner ? '16px' : (property.name.length > 12 ? '10px' : '13px'),
+                            lineHeight: '1.1',
+                            fontWeight: '900',
                             textShadow: hasOwner ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(0,0,0,0.5)',
-                            maxWidth: isPropertyTile ? '100%' : '80px'
+                            maxWidth: isPropertyTile ? '100%' : '100px',
+                            textTransform: 'uppercase'
                         }}
                     >
                         {property.name}
@@ -241,6 +242,19 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                         💥
                     </motion.div>
                     <span className="text-[8px] font-black text-red-500 tracking-wider uppercase">DESTROYED</span>
+                </motion.div>
+            )}
+
+            {/* Mortgaged overlay */}
+            {property.is_mortgaged && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center z-[25] backdrop-blur-[1px]"
+                >
+                    <div className="bg-orange-500/80 text-white text-[7px] font-black px-1 py-0.5 rounded shadow-lg uppercase tracking-widest border border-white/20">
+                        ЗАЛОЖЕНО
+                    </div>
                 </motion.div>
             )}
 

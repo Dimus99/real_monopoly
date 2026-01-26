@@ -51,7 +51,7 @@ const getTileImage = (property) => {
     return groupMap[property.group] || '/tiles/greenland.png';
 };
 
-const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild, canBuild }) => {
+const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild, onMortgage, onUnmortgage, canBuild, currentPlayerId }) => {
     if (!property) return null;
 
     const groupColor = GROUP_COLORS[property.group] || GROUP_COLORS.Special;
@@ -227,7 +227,7 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
                     </motion.button>
                 )}
 
-                {canBuild && isPropertyType && owner && property.houses < 5 && !['Utility', 'Station'].includes(property.group) && (
+                {canBuild && isPropertyType && owner && property.houses < 5 && !['Utility', 'Station'].includes(property.group) && !property.is_mortgaged && (
                     <motion.button
                         whileHover={{ scale: 1.02, y: -5 }}
                         whileTap={{ scale: 0.98 }}
@@ -237,6 +237,31 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
                         <Home size={24} className="animate-pulse" />
                         ПОСТРОИТЬ {property.houses < 4 ? 'ДОМ' : 'ОТЕЛЬ'} (${housePrice})
                     </motion.button>
+                )}
+
+                {/* Mortgage / Unmortgage Buttons */}
+                {owner && owner.id === currentPlayerId && isPropertyType && (
+                    <div className="flex gap-2">
+                        {!property.is_mortgaged ? (
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => onMortgage(property.id)}
+                                className="flex-1 h-12 bg-orange-600/20 hover:bg-orange-600/40 text-orange-400 border border-orange-600/30 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+                            >
+                                Заложить (+${Math.floor(property.price * 0.7)})
+                            </motion.button>
+                        ) : (
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => onUnmortgage(property.id)}
+                                className="flex-1 h-12 bg-green-600/20 hover:bg-green-600/40 text-green-400 border border-green-600/30 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+                            >
+                                Выкупить (-${Math.floor(property.price * 0.8)})
+                            </motion.button>
+                        )}
+                    </div>
                 )}
             </div>
         </motion.div>

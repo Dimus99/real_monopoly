@@ -75,6 +75,20 @@ async def get_all_users(session: AsyncSession) -> List[UserDB]:
     return list(result.scalars().all())
 
 
+async def increment_user_stats(session: AsyncSession, user_id: str, is_winner: bool = False):
+    """Increment games played and win/loss count."""
+    user = await get_user(session, user_id)
+    if user:
+        user.games_played += 1
+        if is_winner:
+            user.wins += 1
+        else:
+            user.losses += 1
+        await session.commit()
+        await session.refresh(user)
+    return user
+
+
 # ============== Friend Request Operations ==============
 
 async def create_friend_request(session: AsyncSession, request_data: dict) -> FriendRequestDB:
