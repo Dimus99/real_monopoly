@@ -82,10 +82,19 @@ const getTileCoordinates = (tileId, boardRef) => {
         return pos;
     };
 
+    const checkGroupMonopoly = (group) => {
+        if (['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Utility', 'Station'].includes(group)) return false;
+        const groupTiles = tiles.filter(t => t.group === group);
+        if (groupTiles.length === 0) return false;
+        const firstOwner = groupTiles[0].owner_id;
+        if (!firstOwner) return false;
+        return groupTiles.every(t => t.owner_id === firstOwner);
+    };
+
     const x = getCoordinate(gridStyle.gridColumnStart, unitX);
     const y = getCoordinate(gridStyle.gridRowStart, unitY);
 
-    return { x, y };
+    return { x, y, checkGroupMonopoly };
 };
 
 
@@ -431,14 +440,15 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                                     let top = coords.y;
                                     let left = coords.x;
 
-                                    if (id <= 10) { // Top
-                                        top += 100;
-                                    } else if (id < 20) { // Right
-                                        left -= 120;
-                                    } else if (id <= 30) { // Bottom
+                                    // Force tooltip to always point towards center
+                                    if (id <= 10) { // Top Row -> Push DOWN
+                                        top += 80;
+                                    } else if (id < 20) { // Right Col -> Push LEFT
+                                        left -= 140;
+                                    } else if (id <= 30) { // Bottom Row -> Push UP
                                         top -= 100;
-                                    } else { // Left
-                                        left += 120;
+                                    } else { // Left Col -> Push RIGHT
+                                        left += 140;
                                     }
 
                                     return { top, left, transform: 'translate(-50%, -50%)' };
@@ -513,6 +523,13 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                         isCorner={[0, 10, 20, 30].includes(tile.id)}
                         currentPlayerId={currentPlayerId}
                         allPlayers={players}
+                        isMonopoly={(() => {
+                            if (['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Utility', 'Station'].includes(tile.group)) return false;
+                            const groupTiles = tiles.filter(t => t.group === tile.group);
+                            if (groupTiles.length === 0) return false;
+                            const firstOwner = groupTiles[0].owner_id;
+                            return firstOwner && groupTiles.every(t => t.owner_id === firstOwner);
+                        })()}
                     />
                 </motion.div>
             ))}

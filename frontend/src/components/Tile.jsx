@@ -103,7 +103,7 @@ const getColorBarStyle = (tileId) => {
     }
 };
 
-const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentPlayerId, allPlayers }) => {
+const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentPlayerId, allPlayers, isMonopoly }) => {
     const groupStyle = GROUP_STYLES[property.group] || GROUP_STYLES.Special;
     const specialIcon = SPECIAL_ICONS[property.name];
     const isPropertyTile = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking'].includes(property.group) && !isCorner;
@@ -140,10 +140,6 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
     // User requested NO TEXT ROTATION. All text must be upright.
     // We keep the logic mostly simple now.
     let contentRotation = '';
-    // PREVIOUSLY:
-    // if (orientation === 'left-col') contentRotation = 'rotate-90';
-    // else if (orientation === 'right-col') contentRotation = '-rotate-90';
-    // else if (orientation === 'top-row') contentRotation = 'rotate-180';
 
     return (
         <div
@@ -154,7 +150,8 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
             className={`tile relative w-full h-full border ${property.is_destroyed ? 'tile-destroyed' : ''} ${currentPlayerHere ? 'ring-2 ring-yellow-400 z-20' : ''}`}
             style={{
                 ...style,
-                background: isCorner ? groupStyle.gradient : '#1a1a2e', // Dark background always (except corners)
+                // If monopoly, use owner's flag gradient as background instead of dark blue
+                background: isCorner ? groupStyle.gradient : (isMonopoly && hasOwner && ownerColors ? ownerColors.bg : '#1a1a2e'),
                 borderColor: hasOwner && ownerColors
                     ? ownerColors.border
                     : 'rgba(255,255,255,0.1)',
