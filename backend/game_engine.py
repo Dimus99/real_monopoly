@@ -17,7 +17,7 @@ WORLD_MAP_DATA = [
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Тегеран", "group": "Brown", "price": 60, "rent": [4, 20, 60, 180, 320, 450]},
     {"name": "Подоходный Налог", "group": "Tax", "price": 0, "rent": [200]},
-    {"name": "Аэропорт Шереметьево", "group": "Station", "price": 200, "rent": [25, 50, 75, 100]},
+    {"name": "Аэропорт Шереметьево", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},
     {"name": "Багдад", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Кабул", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
@@ -27,7 +27,7 @@ WORLD_MAP_DATA = [
     {"name": "Газпром", "group": "Utility", "price": 150, "rent": []},
     {"name": "Гонконг", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
     {"name": "Пекин", "group": "Pink", "price": 160, "rent": [12, 60, 180, 500, 700, 900]},
-    {"name": "Аэропорт Дасин", "group": "Station", "price": 200, "rent": [25, 50, 75, 100]},
+    {"name": "Аэропорт Дасин", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},
     {"name": "Тель-Авив", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Иерусалим", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
@@ -37,7 +37,7 @@ WORLD_MAP_DATA = [
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Дели", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
     {"name": "Москва", "group": "Red", "price": 240, "rent": [20, 100, 300, 750, 925, 1100]},
-    {"name": "Аэропорт Кеннеди", "group": "Station", "price": 200, "rent": [25, 50, 75, 100]},
+    {"name": "Аэропорт Кеннеди", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},
     {"name": "Берлин", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
     {"name": "Париж", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
     {"name": "Роснефть", "group": "Utility", "price": 150, "rent": []},
@@ -47,7 +47,7 @@ WORLD_MAP_DATA = [
     {"name": "Токио", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Вашингтон", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
-    {"name": "Аэропорт Хитроу", "group": "Station", "price": 200, "rent": [25, 50, 75, 100]},
+    {"name": "Аэропорт Хитроу", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Гренландия", "group": "DarkBlue", "price": 400, "rent": [35, 175, 500, 1100, 1300, 1500]},
     {"name": "Налог на Роскошь", "group": "Tax", "price": 0, "rent": [100]},
@@ -1088,6 +1088,54 @@ class GameEngine:
         prop.houses += 1
         
         game.logs.append(f"🏠 {player.name} built a {'hotel' if prop.houses == 5 else 'house'} on {prop.name} for ${house_price}")
+        
+        return {
+            "success": True,
+            "property": prop.dict(),
+            "game_state": game.dict()
+        }
+
+    def sell_house(self, game_id: str, player_id: str, property_id: int) -> Dict[str, Any]:
+        """Sell a house/hotel from a property (70% return)."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        player = game.players.get(player_id)
+        if not player:
+            return {"error": "Player not found"}
+            
+        if not game.player_order or game.player_order[game.current_turn_index] != player_id:
+            return {"error": "Not your turn"}
+            
+        prop = game.board[property_id]
+        if prop.owner_id != player_id:
+            return {"error": "You do not own this property"}
+            
+        if prop.houses <= 0:
+            return {"error": "No houses to sell"}
+            
+        # Even Selling Constraints? 
+        # Usually you must sell evenly too.
+        group_props = [t for t in game.board if t.group == prop.group]
+        max_houses = max(t.houses for t in group_props)
+        min_houses = min(t.houses for t in group_props)
+        
+        # If we sell, we drop to houses-1.
+        # This new value cannot be less than (max - 1). 
+        # So we can only sell if we have max_houses (or if all are equal).
+        if prop.houses < max_houses:
+             return {"error": "Must sell evenly! Reduce other properties first."}
+            
+        # Sell value (70% of build cost)
+        # Build cost = (price // 2) + 50
+        build_cost = (prop.price // 2) + 50
+        sell_value = int(build_cost * 0.70)
+        
+        player.money += sell_value
+        prop.houses -= 1
+        
+        game.logs.append(f"🏚️ {player.name} sold a house on {prop.name} for ${sell_value}")
         
         return {
             "success": True,

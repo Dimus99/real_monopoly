@@ -67,9 +67,8 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                         ease: "circOut", // Slows down naturally
                         repeat: 0
                     } : {
-                        type: "spring",
-                        stiffness: 100,
-                        damping: 15
+                        duration: 0.5,
+                        ease: "easeOut"
                     }}
                 >
                     <Face n={1} />

@@ -336,6 +336,14 @@ async def websocket_game(
                     await websocket.send_json({"type": "ERROR", "message": result["error"]})
                 else:
                     await manager.broadcast(game_id, {"type": "HOUSE_BUILT", **result})
+
+            elif action == "SELL_HOUSE":
+                property_id = action_data.get("property_id")
+                result = engine.sell_house(game_id, player_id, property_id)
+                if result.get("error"):
+                    await websocket.send_json({"type": "ERROR", "message": result["error"]})
+                else:
+                    await manager.broadcast(game_id, {"type": "HOUSE_SOLD", **result})
             
             elif action == "MORTGAGE":
                 property_id = action_data.get("property_id")

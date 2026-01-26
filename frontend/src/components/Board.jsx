@@ -99,7 +99,7 @@ const getTileCoordinates = (tileId, boardRef) => {
 
 
 
-const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onMortgage, onUnmortgage, canBuild, isMyTurn }) => {
+const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, onSendMessage, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, isMyTurn }) => {
     // Character colors for player tokens (derived from BOARD_CHARACTERS)
     const PLAYER_COLORS = React.useMemo(() => Object.fromEntries(
         Object.entries(BOARD_CHARACTERS).map(([k, v]) => [k, v.color])
@@ -477,25 +477,39 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, logs, on
                 <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
                     <AnimatePresence>
                         {selectedTileId !== null && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.8, y: 30 }}
-                                animate={{ opacity: 1, scale: 0.9, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.8, y: 30 }}
-                                className="pointer-events-auto"
-                            >
-                                <PropertyModal
-                                    property={tiles.find(t => t.id === selectedTileId)}
-                                    players={players}
-                                    canBuy={isMyTurn && players[currentPlayerId]?.position === selectedTileId && !tiles.find(t => t.id === selectedTileId)?.owner_id}
-                                    onBuy={onBuy}
-                                    onClose={() => onTileClick(null)}
-                                    onBuild={onBuild}
-                                    onMortgage={onMortgage}
-                                    onUnmortgage={onUnmortgage}
-                                    currentPlayerId={currentPlayerId}
-                                    canBuild={canBuild}
+                            <>
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="absolute inset-0 z-40 pointer-events-auto bg-black/20 backdrop-blur-[2px]"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onTileClick(null);
+                                    }}
                                 />
-                            </motion.div>
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.8, y: 30 }}
+                                    animate={{ opacity: 1, scale: 0.9, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.8, y: 30 }}
+                                    className="pointer-events-auto z-50 relative"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <PropertyModal
+                                        property={tiles.find(t => t.id === selectedTileId)}
+                                        players={players}
+                                        canBuy={isMyTurn && players[currentPlayerId]?.position === selectedTileId && !tiles.find(t => t.id === selectedTileId)?.owner_id}
+                                        onBuy={onBuy}
+                                        onClose={() => onTileClick(null)}
+                                        onBuild={onBuild}
+                                        onSellHouse={onSellHouse}
+                                        onMortgage={onMortgage}
+                                        onUnmortgage={onUnmortgage}
+                                        currentPlayerId={currentPlayerId}
+                                        canBuild={canBuild}
+                                    />
+                                </motion.div>
+                            </>
                         )}
                     </AnimatePresence>
                 </div>

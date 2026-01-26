@@ -51,7 +51,7 @@ const getTileImage = (property) => {
     return groupMap[property.group] || '/tiles/greenland.png';
 };
 
-const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild, onMortgage, onUnmortgage, canBuild, currentPlayerId }) => {
+const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, currentPlayerId }) => {
     if (!property) return null;
 
     const groupColor = GROUP_COLORS[property.group] || GROUP_COLORS.Special;
@@ -126,6 +126,17 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
                                 </div>
                             </div>
                         </div>
+                        {property.owner_id && !property.is_mortgaged && (
+                            <div className="mt-4 bg-green-500/10 border border-green-500/20 p-4 rounded-[20px] text-center backdrop-blur-md">
+                                <div className="text-[10px] text-green-400 uppercase font-black tracking-widest mb-1">Текущая аренда</div>
+                                <div className="text-3xl font-black text-white font-mono tracking-tighter shadow-green-500/50 drop-shadow-lg">
+                                    ${(() => {
+                                        if (property.houses > 0) return property.rent?.[property.houses] || 0;
+                                        return property.rent?.[0] || 0;
+                                    })()}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Special Rents Info (Utilities / Stations) */}
                         {property.group === 'Utility' && (
@@ -262,6 +273,19 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
                     </motion.button>
                 )}
 
+                {/* Sell House Button */}
+                {owner && owner.id === currentPlayerId && isPropertyType && property.houses > 0 && (
+                    <motion.button
+                        whileHover={{ scale: 1.02, y: -5 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onSellHouse && onSellHouse(property.id)}
+                        className="btn btn-error w-full h-16 text-xl tracking-tight flex items-center justify-center gap-2 mb-3"
+                    >
+                        <Home size={24} className="animate-pulse text-white" />
+                        ПРОДАТЬ {property.houses === 5 ? 'ОТЕЛЬ' : 'ДОМ'} (+${Math.floor(((property.price / 2) + 50) * 0.7)})
+                    </motion.button>
+                )}
+
                 {/* Mortgage / Unmortgage Buttons */}
                 {owner && owner.id === currentPlayerId && isPropertyType && (
                     <div className="flex gap-2">
@@ -270,7 +294,12 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => onMortgage(property.id)}
-                                className="flex-1 h-12 bg-orange-600/20 hover:bg-orange-600/40 text-orange-400 border border-orange-600/30 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+                                disabled={property.houses > 0}
+                                className={`flex-1 h-12 border rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${property.houses > 0
+                                    ? 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-50'
+                                    : 'bg-orange-600/20 hover:bg-orange-600/40 text-orange-400 border-orange-600/30'
+                                    }`}
+                                title={property.houses > 0 ? "Сначала продайте здания" : ""}
                             >
                                 Заложить (+${Math.floor(property.price * 0.7)})
                             </motion.button>

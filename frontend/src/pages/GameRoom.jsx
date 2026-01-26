@@ -142,6 +142,11 @@ const GameRoom = () => {
         sendAction('BUILD', { property_id: propertyId });
     };
 
+    const handleSellHouse = (propertyId) => {
+        if (!isMyTurn) return;
+        sendAction('SELL_HOUSE', { property_id: propertyId });
+    };
+
     const handleMortgage = (propertyId) => {
         sendAction('MORTGAGE', { property_id: propertyId });
     };
@@ -771,6 +776,7 @@ const GameRoom = () => {
                             setSelectedTile(null);
                         }}
                         onBuild={handleBuildHouse}
+                        onSellHouse={handleSellHouse}
                         onMortgage={handleMortgage}
                         onUnmortgage={handleUnmortgage}
                         canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && checkMonopolyByPlayer(selectedTile || currentTile)}
