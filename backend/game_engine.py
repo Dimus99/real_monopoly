@@ -496,44 +496,48 @@ class GameEngine:
                 result["action"] = "safe"
                 game.logs.append(f"🏖️ {player.name} is on vacation. No funding available right now.")
                 
+        elif tile.group == "Chance" or tile.group == "Tax":
             # Charge tax if it's a tax tile
             if tile.group == "Tax":
                 tax_amount = tile.rent[0] if tile.rent else 200
                 if player.money < tax_amount and player.is_bot:
                     self.bot_resolve_debt(game.id, player, tax_amount)
                 
-                # If still can't pay (even bot), handle it
+                # If still can't pay, handle bankruptcy
                 if player.money < tax_amount:
-                     # For Tax we don't transfer to creditor, just pay to pot
-                     if player.is_bot or True: # Force check for everyone
-                         assets = self._calculate_assets(game, player)
-                         if assets < tax_amount:
-                             return self._handle_bankruptcy(game, player, None, tax_amount)
+                     assets = self._calculate_assets(game, player)
+                     if assets < tax_amount:
+                         return self._handle_bankruptcy(game, player, None, tax_amount)
+                     else:
+                         # Human player needs to liquidate
+                         result["action"] = "tax"
+                         result["amount"] = tax_amount
+                         return result
                 
                 player.money -= tax_amount
                 game.pot += tax_amount
                 game.logs.append(f"💸 {player.name} оплатил налог в казну: ${tax_amount}")
                 result["tax_paid"] = tax_amount
+                result["action"] = "safe"
 
             # Trigger Chance card
-            chance_result = self._draw_chance_card(game, player)
-            result.update(chance_result)
-            
-            # If chance card moved player, handle landing on new tile
-            if "new_position" in chance_result:
-                new_tile = game.board[player.position]
-                landing_res = self._handle_landing(game, player, new_tile)
+            if tile.group == "Chance":
+                chance_result = self._draw_chance_card(game, player)
+                result.update(chance_result)
                 
-                # Merge results, but keep the chance_card and prioritize the new landing action
-                for k, v in landing_res.items():
-                    if k != "chance_card": # Don't overwrite the chance card info
-                        result[k] = v
+                # If chance card moved player, handle landing on new tile
+                if "new_position" in chance_result:
+                    new_tile = game.board[player.position]
+                    landing_res = self._handle_landing(game, player, new_tile)
+                    
+                    # Merge results
+                    for k, v in landing_res.items():
+                        if k != "chance_card":
+                            result[k] = v
+                    result["landed_on_after_chance"] = new_tile.name
                 
-                result["landed_on_after_chance"] = new_tile.name
-            
-            # If no specific action was set by new landing (like pay_rent), set it to chance
-            if result.get("action") in [None, "safe"]:
-                result["action"] = "chance"
+                if result.get("action") in [None, "safe"]:
+                    result["action"] = "chance"
             
         elif tile.group == "Jail": # Previously Tax block was here, now combined above
             result["action"] = "safe"
@@ -857,7 +861,7 @@ class GameEngine:
 
     
     def pay_tax(self, game_id: str, player_id: str) -> Dict[str, Any]:
-        """Pay tax for the current tile (Bot or Manual)."""
+        """Pay tax for the current tile (Manual after liquidation)."""
         game = self.games.get(game_id)
         if not game:
             return {"error": "Game not found"}
@@ -872,18 +876,23 @@ class GameEngine:
              
         amount = tile.rent[0] if tile.rent else 100
         
+        if player.money < amount:
+             return {"error": f"You still need ${amount - player.money} to pay taxes! Sell more houses or mortgage properties."}
+             
         player.money -= amount
         game.pot += amount
         
         log_msg = f"💸 {player.name} paid ${amount} in UN Membership Fees (Taxes)"
-        # Avoid duplicate logs if possible
-        if not game.logs or game.logs[-1] != log_msg:
-             game.logs.append(log_msg)
+        game.logs.append(log_msg)
+        
+        # Clear payment requirement
+        game.turn_state.pop("awaiting_payment", None)
+        self._reset_timer(game)
         
         return {
             "success": True,
+            "player_id": player_id,
             "amount": amount,
-            "pot": game.pot,
             "game_state": game.dict()
         }
 
@@ -971,21 +980,16 @@ class GameEngine:
         
         if player.money < rent:
             # Check if they can raise money
-            assets_value = player.money
-            # Add mortgageable value
-            for pid in player.properties:
-                p = game.board[pid]
-                if not p.is_mortgaged:
-                    # Sell houses first
-                    assets_value += (p.houses * ((p.price // 2) + 50) * 0.7) # Approx house sell value
-                    assets_value += (p.price * 0.7) # Mortgage value
+            assets_value = self._calculate_assets(game, player)
             
             if assets_value < rent:
-                 # BANKRUPTCY
-                 return self._handle_bankruptcy(game, player, owner, rent)
+                # BANKRUPTCY
+                game.turn_state.pop("awaiting_payment", None)
+                return self._handle_bankruptcy(game, player, owner, rent)
             else:
-                 # Force liquidation
-                 return {
+                # Force liquidation - mark that payment is required
+                game.turn_state["awaiting_payment"] = True
+                return {
                     "success": False,
                     "error": "Insufficient funds! You must sell houses or mortgage properties to pay rent.",
                     "required_amount": rent,
@@ -994,24 +998,14 @@ class GameEngine:
                     "game_state": game.dict()
                 }
         
-                # Track if payment is required to block ending turn
-                if result.get("action") == "pay_rent":
-                    game.turn_state["awaiting_payment"] = True
-                
-                return {
-                    "success": True,
-                    "player_id": player_id,
-                    "rent_paid": rent,
-                    "game_state": game.dict()
-                }
-            
-            player.money -= rent
-            owner.money += rent
-            
-            # Clear payment requirement
-            game.turn_state.pop("awaiting_payment", None)
-            
-            game.logs.append(f"{player.name} paid ${rent} rent to {owner.name}")
+        # Payment path
+        player.money -= rent
+        owner.money += rent
+        
+        # Clear payment requirement
+        game.turn_state.pop("awaiting_payment", None)
+        
+        game.logs.append(f"{player.name} paid ${rent} rent to {owner.name}")
         self._reset_timer(game)
         
         return {

@@ -161,7 +161,11 @@ const GameRoom = () => {
 
     const handlePayRent = React.useCallback(() => {
         if (!isMyTurn || !rentDetails) return;
-        sendAction('PAY_RENT', { property_id: currentPlayer?.position });
+        if (rentDetails.ownerId === 'BANK') {
+            sendAction('PAY_TAX');
+        } else {
+            sendAction('PAY_RENT', { property_id: currentPlayer?.position });
+        }
         setRentDetails(null);
     }, [isMyTurn, rentDetails, currentPlayer?.position, sendAction]);
 
@@ -363,10 +367,10 @@ const GameRoom = () => {
                             }
                             setIsRolling(false);
 
-                            if (lastAction.action === 'pay_rent' && lastAction.player_id === playerId) {
+                            if ((lastAction.action === 'pay_rent' || lastAction.action === 'tax') && lastAction.player_id === playerId) {
                                 setRentDetails({
-                                    amount: lastAction.amount,
-                                    ownerId: lastAction.owner_id
+                                    amount: lastAction.amount || lastAction.tax_paid,
+                                    ownerId: lastAction.owner_id || 'BANK'
                                 });
                             }
 
@@ -390,6 +394,7 @@ const GameRoom = () => {
                 break;
 
             case 'RENT_PAID':
+            case 'TAX_PAID':
                 if (lastAction.player_id === playerId) {
                     setShowRentModal(false); // Close rent modal if open
                 }

@@ -308,6 +308,13 @@ async def websocket_game(
                     await websocket.send_json({"type": "ERROR", "message": result["error"]})
                 else:
                     await manager.broadcast(game_id, {"type": "RENT_PAID", **result})
+
+            elif action == "PAY_TAX":
+                result = engine.pay_tax(game_id, player_id)
+                if result.get("error"):
+                    await websocket.send_json({"type": "ERROR", "message": result["error"]})
+                else:
+                    await manager.broadcast(game_id, {"type": "TAX_PAID", **result})
             
             elif action == "END_TURN":
                 result = engine.end_turn(game_id, player_id)
