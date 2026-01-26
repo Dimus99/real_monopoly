@@ -8,8 +8,6 @@ import {
 } from 'lucide-react';
 import useGameSocket from '../hooks/useGameSocket';
 import Board from '../components/Board';
-// Lazy load to avoid circular dependency/initialization issues
-const OreshnikAnimation = React.lazy(() => import('../components/OreshnikAnimation'));
 import PropertyModal from '../components/PropertyModal';
 import DiceAnimation from '../components/DiceAnimation';
 import ToastNotification from '../components/ToastNotification';
@@ -18,6 +16,9 @@ import TradeModal from '../components/TradeModal';
 import TradeNotification from '../components/TradeNotification';
 import ChanceModal from '../components/ChanceModal';
 import * as AbilityAnimations from '../components/AbilityAnimations';
+
+// Lazy load to avoid circular dependency/initialization issues
+const OreshnikAnimation = React.lazy(() => import('../components/OreshnikAnimation'));
 
 // Character data
 const ROOM_CHARACTERS = {
