@@ -137,6 +137,11 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
         if (orientation === 'right-col') contentPaddingClass = 'pl-3 pr-1 py-1';
     }
 
+    let contentRotation = '';
+    if (orientation === 'left-col') contentRotation = 'rotate-90';
+    else if (orientation === 'right-col') contentRotation = '-rotate-90';
+    else if (orientation === 'top-row') contentRotation = 'rotate-180';
+
     return (
         <div
             onMouseEnter={() => onClick(property.id, 'hover')}
@@ -178,7 +183,7 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
             )}
 
             {/* Tile Content */}
-            <div className={`flex-1 flex ${(!isPropertyTile && !isCorner) ? 'flex-row' : 'flex-col'} items-center justify-center gap-1.5 relative h-full ${contentPaddingClass}`}>
+            <div className={`flex-1 flex ${(!isPropertyTile && !isCorner) ? 'flex-row' : 'flex-col'} items-center justify-center gap-1.5 relative h-full ${contentPaddingClass} ${contentRotation}`}>
                 {/* Special tile icon */}
                 {(specialIcon || groupStyle.icon) && (
                     <div className={`${isCorner ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} drop-shadow-md`}>
