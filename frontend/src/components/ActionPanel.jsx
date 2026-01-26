@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Check, Zap } from 'lucide-react';
+import { Zap, ShoppingCart, Check } from 'lucide-react';
+import { ABILITIES } from '../constants/characters';
 
 const ActionPanel = ({
     isMyTurn,
@@ -22,16 +23,6 @@ const ActionPanel = ({
     onSurrender,
     isChanceOpen = false
 }) => {
-
-    // Ability configurations
-    const ABILITIES = {
-        'Putin': { id: 'ORESHNIK', name: 'Ебнуть Орешником', icon: '🚀', color: 'bg-red-600', desc: 'Уничтожить город' },
-        'Trump': { id: 'BUYOUT', name: 'Рейдерский Захват', icon: '💰', color: 'bg-orange-500', desc: 'Захватить город' },
-        'Zelensky': { id: 'AID', name: 'Попросить Помощь', icon: '🤝', color: 'bg-blue-600', desc: 'Собрать помощь' },
-        'Kim': { id: 'ISOLATION', name: 'Ядерная Угроза', icon: '☢️', color: 'bg-red-800', desc: 'Изоляция' },
-        'Biden': { id: 'SANCTIONS', name: 'Эконом. Санкции', icon: '🚫', color: 'bg-blue-800', desc: 'Санкции' },
-        'Xi': { id: 'BELT_ROAD', name: 'Пояс и Путь', icon: '🧧', color: 'bg-red-500', desc: 'Инфраструктура' }
-    };
 
     let ability = null;
     if (gameMode === 'oreshnik_all') {

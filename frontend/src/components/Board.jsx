@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Tile from './Tile';
 import ToastNotification from './ToastNotification';
-
+import { CHARACTERS as BOARD_CHARACTERS } from '../constants/characters';
 
 const getTileStyle = (index) => {
     // LAYOUT V3.1: 0(TL), 10(TR), 20(BR), 30(BL)
@@ -43,25 +43,10 @@ const TILE_IMAGES = {
     'Greenland': '/tiles/greenland.png'
 };
 
-// Character colors for player tokens
-const PLAYER_COLORS = {
-    Putin: '#C41E3A',
-    Trump: '#FF6B35',
-    Zelensky: '#0057B8',
-    Kim: '#8B0000',
-    Biden: '#3C3B6E',
-    Xi: '#DE2910'
-};
-
-// Character data for avatars
-const BOARD_CHARACTERS = {
-    Putin: { avatar: '/avatars/putin.png', color: '#C41E3A' },
-    Trump: { avatar: '/avatars/trump.png', color: '#FF6B35' },
-    Zelensky: { avatar: '/avatars/zelensky.png', color: '#0057B8' },
-    Kim: { avatar: '/avatars/kim.png', color: '#8B0000' },
-    Biden: { avatar: '/avatars/biden.png', color: '#3C3B6E' },
-    Xi: { avatar: '/avatars/xi.png', color: '#DE2910' }
-};
+// Character colors for player tokens (derived from BOARD_CHARACTERS)
+const PLAYER_COLORS = Object.fromEntries(
+    Object.entries(BOARD_CHARACTERS).map(([k, v]) => [k, v.color])
+);
 
 // Get absolute pixel coordinates for a tile position
 const getTileCoordinates = (tileId, boardRef) => {

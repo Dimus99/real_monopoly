@@ -16,19 +16,12 @@ import TradeModal from '../components/TradeModal';
 import TradeNotification from '../components/TradeNotification';
 import ChanceModal from '../components/ChanceModal';
 import { BuyoutAnimation, AidAnimation, NukeThreatAnimation } from '../components/AbilityAnimations';
+import { CHARACTERS } from '../constants/characters';
 
 // Lazy load to avoid circular dependency/initialization issues
 const OreshnikAnimation = React.lazy(() => import('../components/OreshnikAnimation'));
 
-// Character data
-const CHARACTERS = {
-    Putin: { avatar: '/avatars/putin.png', color: '#C41E3A', ability: 'ORESHNIK' },
-    Trump: { avatar: '/avatars/trump.png', color: '#FF6B35', ability: 'BUYOUT' },
-    Zelensky: { avatar: '/avatars/zelensky.png', color: '#0057B8', ability: 'AID' },
-    Kim: { avatar: '/avatars/kim.png', color: '#8B0000', ability: 'NUKE' },
-    Biden: { avatar: '/avatars/biden.png', color: '#3C3B6E', ability: 'SANCTIONS' },
-    Xi: { avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT' }
-};
+
 
 const GameRoom = () => {
     const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
@@ -116,8 +109,8 @@ const GameRoom = () => {
     const isMyTurn = gameState?.player_order?.[gameState?.current_turn_index] === playerId;
     const currentTurnPlayer = gameState?.players?.[gameState?.player_order?.[gameState?.current_turn_index]];
 
-    // Character data mapping check - Moved here to avoid initialization error
-    const char = CHARACTERS[currentPlayer?.character] || CHARACTERS.Putin;
+    // Character data mapping check
+    const playerChar = CHARACTERS[currentPlayer?.character] || CHARACTERS.Putin;
 
     const currentTile = gameState?.board?.[currentPlayer?.position];
     // Can buy only if on the tile (UI Logic)
@@ -668,7 +661,7 @@ const GameRoom = () => {
                         const p = delayedPlayers?.[pid];
                         if (!p) return null;
                         const isTurn = gameState?.player_order?.[gameState?.current_turn_index] === pid;
-                        const char = CHARACTERS[p.character] || {};
+                        const pChar = CHARACTERS[p.character] || {};
 
                         return (
                             <motion.div
@@ -687,7 +680,7 @@ const GameRoom = () => {
                                             ) : p.avatar_url ? (
                                                 <span>{p.avatar_url}</span>
                                             ) : (
-                                                <img src={char.avatar} className="w-full h-full object-cover" />
+                                                <img src={pChar.avatar} className="w-full h-full object-cover" />
                                             )}
                                         </div>
                                         {isTurn && <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border border-black" />}
@@ -704,7 +697,7 @@ const GameRoom = () => {
                                             ) : p.avatar_url ? (
                                                 <span>{p.avatar_url}</span>
                                             ) : (
-                                                <img src={char.avatar} className="w-full h-full object-cover" />
+                                                <img src={pChar.avatar} className="w-full h-full object-cover" />
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
