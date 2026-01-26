@@ -459,12 +459,28 @@ const GameRoom = () => {
     // Handle tile click
     const handleTileClick = (tileId) => {
         if (targetingAbility) {
-            sendAction('USE_ABILITY', { ability_type: targetingAbility, target_id: tileId });
-            setTargetingAbility(null);
+            // For property-targeting abilities (ORESHNIK, BUYOUT, ISOLATION)
+            if (['ORESHNIK', 'BUYOUT', 'ISOLATION'].includes(targetingAbility)) {
+                sendAction('USE_ABILITY', { ability_type: targetingAbility, target_id: tileId });
+                setTargetingAbility(null);
+            }
             return;
         }
         const tile = gameState?.board?.find(t => t.id === tileId);
         if (tile) setSelectedTile(tile);
+    };
+
+    const handleAvatarClick = (targetPid) => {
+        if (targetPid === playerId) return;
+
+        if (targetingAbility === 'SANCTIONS') {
+            sendAction('USE_ABILITY', { ability_type: targetingAbility, target_id: targetPid });
+            setTargetingAbility(null);
+            return;
+        }
+
+        // Default: Trade
+        initiateTrade(gameState.players[targetPid]);
     };
 
     if (!gameState) {
@@ -749,7 +765,7 @@ const GameRoom = () => {
                         onSendMessage={handleSendMessage}
 
                         externalRef={boardRef}
-                        onAvatarClick={(pid) => pid !== playerId && initiateTrade(gameState.players[pid])}
+                        onAvatarClick={handleAvatarClick}
                         winner={gameState.winner}
 
                         selectedTileId={selectedTile?.id}

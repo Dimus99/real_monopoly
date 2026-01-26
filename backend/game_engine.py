@@ -2,7 +2,7 @@
 Game engine for MonopolyX.
 Handles all game logic: movement, buying, rent, abilities, etc.
 """
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from datetime import datetime, timedelta
 import random
 import uuid
@@ -1106,7 +1106,7 @@ class GameEngine:
             "game_state": game.dict()
         }
     
-    def execute_ability(self, game_id: str, player_id: str, ability_type: str, target_id: int = None) -> Dict[str, Any]:
+    def execute_ability(self, game_id: str, player_id: str, ability_type: str, target_id: Union[int, str] = None) -> Dict[str, Any]:
         """Execute a character's special ability."""
         game = self.games.get(game_id)
         if not game:
@@ -1287,7 +1287,7 @@ class GameEngine:
             "target_name": target.name
         }
     
-    def _ability_sanctions(self, game: GameState, player: Player, target_player_id: int = None) -> Dict[str, Any]:
+    def _ability_sanctions(self, game: GameState, player: Player, target_player_id: Union[int, str] = None) -> Dict[str, Any]:
         """Biden's Sanctions: Skip opponent's next turn."""
         if target_player_id is None:
             # Pick random opponent

@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from typing import Optional
+from typing import Optional, Union
 
 from socket_manager import manager
 from game_engine import engine
@@ -593,7 +593,7 @@ async def buy_property(
 async def use_ability(
     game_id: str,
     ability_type: str,
-    target_id: Optional[int] = None,
+    target_id: Union[int, str] = None,
     current_user: User = Depends(get_current_user)
 ):
     """Use special ability (REST alternative)."""
