@@ -341,17 +341,23 @@ const GameRoom = () => {
                 setDiceRolling(true);
                 setIsRolling(true);
 
-                // Phase 1: Rolling animation (variable speed handled in component)
-                // Phase 1: Rolling animation
-                setTimeout(() => {
+                // Immediately set hasRolled based on doubles to prevent UI hang
+                if (lastAction.doubles) {
+                    setHasRolled(false);
+                } else {
+                    setHasRolled(true);
+                }
+
+                // Phase 1: Rolling animation (800ms)
+                const rollTimeout = setTimeout(() => {
                     setDiceRolling(false); // Show final result
 
-                    // Phase 2: Show result briefly
-                    setTimeout(() => {
+                    // Phase 2: Show result briefly (1s instead of 2s for better speed)
+                    const resultTimeout = setTimeout(() => {
                         setShowDice(false);
 
-                        // Phase 3: Update positions faster
-                        setTimeout(() => {
+                        // Phase 3: Final state update
+                        const finalTimeout = setTimeout(() => {
                             if (gameState?.players) {
                                 setDelayedPlayers(gameState.players);
                             }
@@ -367,10 +373,10 @@ const GameRoom = () => {
                             if (lastAction.chance_card && lastAction.player_id === playerId) {
                                 setChanceCard(lastAction.chance_card);
                             }
-                        }, 200);
+                        }, 100);
 
-                    }, 2000); // Increased to 2s per user request
-                }, 800); // Reduced from 1.2s
+                    }, 1000); // Faster result display
+                }, 800);
                 break;
 
             case 'PROPERTY_BOUGHT':
@@ -398,7 +404,11 @@ const GameRoom = () => {
                 break;
             case 'ERROR':
                 setIsRolling(false);
-                setHasRolled(false);
+                setDiceRolling(false);
+                setShowDice(false);
+                if (lastAction.message) {
+                    alert(`Внимание: ${lastAction.message}`);
+                }
                 break;
             case 'GAME_OVER': setShowVictory(true); break;
             case 'TRADE_OFFERED':

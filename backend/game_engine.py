@@ -466,6 +466,12 @@ class GameEngine:
             game.turn_state["has_rolled"] = False
         else:
             game.turn_state["has_rolled"] = True
+            
+        # Track if payment is required to block ending turn
+        if result.get("action") == "pay_rent" or result.get("action") == "tax":
+            game.turn_state["awaiting_payment"] = True
+        else:
+            game.turn_state.pop("awaiting_payment", None)
         
         result["game_state"] = game.dict()
         return result
@@ -490,10 +496,20 @@ class GameEngine:
                 result["action"] = "safe"
                 game.logs.append(f"🏖️ {player.name} is on vacation. No funding available right now.")
                 
-        elif tile.group == "Chance" or tile.group == "Tax":
             # Charge tax if it's a tax tile
             if tile.group == "Tax":
                 tax_amount = tile.rent[0] if tile.rent else 200
+                if player.money < tax_amount and player.is_bot:
+                    self.bot_resolve_debt(game.id, player, tax_amount)
+                
+                # If still can't pay (even bot), handle it
+                if player.money < tax_amount:
+                     # For Tax we don't transfer to creditor, just pay to pot
+                     if player.is_bot or True: # Force check for everyone
+                         assets = self._calculate_assets(game, player)
+                         if assets < tax_amount:
+                             return self._handle_bankruptcy(game, player, None, tax_amount)
+                
                 player.money -= tax_amount
                 game.pot += tax_amount
                 game.logs.append(f"💸 {player.name} оплатил налог в казну: ${tax_amount}")
@@ -978,10 +994,24 @@ class GameEngine:
                     "game_state": game.dict()
                 }
         
-        player.money -= rent
-        owner.money += rent
-        
-        game.logs.append(f"{player.name} paid ${rent} rent to {owner.name}")
+                # Track if payment is required to block ending turn
+                if result.get("action") == "pay_rent":
+                    game.turn_state["awaiting_payment"] = True
+                
+                return {
+                    "success": True,
+                    "player_id": player_id,
+                    "rent_paid": rent,
+                    "game_state": game.dict()
+                }
+            
+            player.money -= rent
+            owner.money += rent
+            
+            # Clear payment requirement
+            game.turn_state.pop("awaiting_payment", None)
+            
+            game.logs.append(f"{player.name} paid ${rent} rent to {owner.name}")
         self._reset_timer(game)
         
         return {
@@ -1209,6 +1239,19 @@ class GameEngine:
             "game_state": game.dict()
         }
     
+    def _calculate_assets(self, game: GameState, player: Player) -> int:
+        """Calculate total liquidation value of player's assets."""
+        value = player.money
+        for pid in player.properties:
+            prop = game.board[pid]
+            if not prop.is_mortgaged:
+                # Add house sell value (70% of build cost)
+                house_build_cost = (prop.price // 2) + 50
+                value += int(prop.houses * house_build_cost * 0.7)
+                # Add mortgage value (70% of property price)
+                value += int(prop.price * 0.7)
+        return value
+
     def execute_ability(self, game_id: str, player_id: str, ability_type: str, target_id: Union[int, str] = None) -> Dict[str, Any]:
         """Execute a character's special ability."""
         game = self.games.get(game_id)
@@ -1897,6 +1940,10 @@ class GameEngine:
         current_id = game.player_order[game.current_turn_index]
         if current_id != player_id:
             return {"error": "Not your turn"}
+            
+        # Check if they owe money
+        if game.turn_state.get("awaiting_payment"):
+             return {"error": "Вы должны оплатить аренду или налоги перед завершением хода!"}
         
         # Advance turn
         self._next_turn(game)
