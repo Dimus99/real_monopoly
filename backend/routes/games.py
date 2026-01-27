@@ -363,7 +363,7 @@ async def start_game(
     game.logs.append(f"Game started! Turn order: {', '.join([game.players[p].name for p in game.player_order])}")
     
     # Set initial turn expiry
-    game.turn_expiry = datetime.utcnow() + timedelta(seconds=45)
+    engine._reset_timer(game)
     
     # Broadcast
     from socket_manager import manager
