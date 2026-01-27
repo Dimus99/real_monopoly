@@ -28,11 +28,11 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
         // Calculate a stable final rotation that includes multiple full spins
         const finalRotation = useMemo(() => {
             const rot = getRotation(value);
-            // We add 1440 (4 full rotations) to ensure it spins into place even if it stopped at 0
+            // We add 360 (1 full rotation) for a quick settle
             return {
-                rotateX: rot.rotateX + 1440,
-                rotateY: rot.rotateY + 1440,
-                rotateZ: 1440
+                rotateX: rot.rotateX + 360,
+                rotateY: rot.rotateY + 360,
+                rotateZ: 360
             };
         }, [value]);
 

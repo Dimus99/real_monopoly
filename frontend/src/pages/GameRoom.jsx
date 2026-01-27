@@ -599,6 +599,16 @@ const GameRoom = () => {
         }
     }, [canBuy, hasRolled]);
     */
+    // Reset UI locks on NEW TURN to ensure buttons activate on time
+    useEffect(() => {
+        if (!gameState) return;
+        if (isMyTurn) {
+            // Force unlock UI when my turn starts or page loads into my turn
+            setIsRolling(false);
+            setDiceRolling(false);
+        }
+    }, [gameState?.turn_number, isMyTurn]);
+
 
     // Sync state from server to handle page reloads / reconnections / state updates
     useEffect(() => {
@@ -977,7 +987,7 @@ const GameRoom = () => {
             </motion.div>
 
             {/* MAIN BOARD AREA */}
-            <div className={`flex-1 relative bg-[#0c0c14] flex flex-col ${isMobile ? 'items-start overflow-auto pr-[50px] pb-24' : 'items-center overflow-hidden'}`}>
+            <div className={`flex-1 relative bg-[#0c0c14] flex flex-col ${isMobile ? 'items-start overflow-auto pr-[50px] pb-24' : 'items-center overflow-hidden pr-16'}`}>
                 {/* Background */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
