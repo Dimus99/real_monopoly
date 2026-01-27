@@ -204,22 +204,20 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
         if (!players || !boardRef.current) return;
 
         const handleResize = () => {
-            const handleResize = () => {
-                const newPositions = {};
-                const isMobile = window.innerWidth < 768;
-                const gap = isMobile ? 1 : 2;
+            const newPositions = {};
+            const isMobile = window.innerWidth < 768;
+            const gap = isMobile ? 1 : 2;
 
-                Object.values(players).forEach(p => {
-                    const coords = getTileCoordinates(p.position, boardRef, gap);
-                    newPositions[p.id] = {
-                        ...coords,
-                        position: p.position,
-                        character: p.character,
-                        name: p.name
-                    };
-                });
-                setPlayerPositions(newPositions);
-            };
+            Object.values(players).forEach(p => {
+                const coords = getTileCoordinates(p.position, boardRef, gap);
+                newPositions[p.id] = {
+                    ...coords,
+                    position: p.position,
+                    character: p.character,
+                    name: p.name
+                };
+            });
+            setPlayerPositions(newPositions);
         };
 
         window.addEventListener('resize', handleResize);

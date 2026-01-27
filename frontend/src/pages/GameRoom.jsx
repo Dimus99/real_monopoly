@@ -977,7 +977,7 @@ const GameRoom = () => {
             </motion.div>
 
             {/* MAIN BOARD AREA */}
-            <div className={`flex-1 relative bg-[#0c0c14] flex flex-col ${isMobile ? 'items-start overflow-auto' : 'items-center overflow-hidden'}`}>
+            <div className={`flex-1 relative bg-[#0c0c14] flex flex-col ${isMobile ? 'items-start overflow-auto pr-[50px] pb-24' : 'items-center overflow-hidden'}`}>
                 {/* Background */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
