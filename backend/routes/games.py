@@ -112,7 +112,8 @@ async def get_game(
 @router.get("")
 async def list_games(
     current_user: User = Depends(get_current_user),
-    status: Optional[str] = None
+    status: Optional[str] = None,
+    session: AsyncSession = Depends(get_db)
 ):
     """List available games."""
     engine = get_game_engine()
@@ -122,13 +123,24 @@ async def list_games(
         if status and game.game_status != status:
             continue
         
+        host_name = "Unknown Host"
+        host_avatar = None
+        if game.host_id:
+            host_user = await db_service.get_user(session, game.host_id)
+            if host_user:
+                host_name = host_user.name
+                host_avatar = host_user.avatar_url
+        
         games.append({
             "game_id": game.game_id,
             "map_type": game.map_type,
+            "game_mode": game.game_mode,
             "status": game.game_status,
             "player_count": len(game.players),
             "max_players": game.max_players,
             "host_id": game.host_id,
+            "host_name": host_name,
+            "host_avatar": host_avatar,
             "created_at": game.created_at.isoformat() if game.created_at else None
         })
     

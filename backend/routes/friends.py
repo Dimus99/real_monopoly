@@ -16,17 +16,19 @@ from models import (
     FriendRequest, FriendRequestCreate
 )
 from auth import get_current_user
+from socket_manager import manager
 
 router = APIRouter(prefix="/api/friends", tags=["friends"])
 
 
-def user_db_to_public(user_db) -> UserPublic:
+def user_db_to_public(user_db, is_online: bool = False) -> UserPublic:
     """Convert database user model to public Pydantic model."""
     return UserPublic(
         id=user_db.id,
         name=user_db.name,
         avatar_url=user_db.avatar_url,
         friend_code=user_db.friend_code,
+        is_online=is_online,
         stats=UserStats(
             games_played=user_db.games_played,
             wins=user_db.wins,
@@ -46,7 +48,7 @@ async def get_friends(
 ):
     """Get current user's friends list."""
     friends = await db_service.get_friends(session, current_user.id)
-    return [user_db_to_public(f) for f in friends]
+    return [user_db_to_public(f, is_online=manager.is_user_connected(f.id)) for f in friends]
 
 
 @router.delete("/{user_id}")
@@ -81,7 +83,7 @@ async def get_pending_requests(
         if from_user:
             result.append({
                 "id": req.id,
-                "from_user": user_db_to_public(from_user).model_dump(),
+                "from_user": user_db_to_public(from_user, is_online=manager.is_user_connected(from_user.id)).model_dump(),
                 "created_at": req.created_at.isoformat() if req.created_at else None
             })
     
@@ -105,7 +107,7 @@ async def get_sent_requests(
         if to_user:
             result.append({
                 "id": req.id,
-                "to_user": user_db_to_public(to_user).model_dump(),
+                "to_user": user_db_to_public(to_user, is_online=manager.is_user_connected(to_user.id)).model_dump(),
                 "status": req.status.value,
                 "created_at": req.created_at.isoformat() if req.created_at else None
             })

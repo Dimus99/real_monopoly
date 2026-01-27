@@ -626,10 +626,22 @@ const Lobby = () => {
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {activeGames.map(game => (
-                                        <div key={game.game_id} className="bg-white/5 border border-white/10 p-4 rounded-xl hover:bg-white/10 transition-all flex justify-between items-center group">
-                                            <div>
-                                                <div className="font-mono font-bold text-lg text-purple-400">#{game.game_id.substring(0, 6)}</div>
-                                                <div className="text-xs text-gray-400 mt-1">{game.map_type} • {game.player_count}/{game.max_players} Игроков</div>
+                                        <div key={game.game_id} className="bg-white/5 border border-white/10 p-4 rounded-xl hover:bg-white/10 transition-all flex justify-between items-center group relative overflow-hidden">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex-shrink-0">
+                                                    {game.host_avatar ? (
+                                                        <img src={game.host_avatar} className="w-full h-full object-cover" alt="Host" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-white/20 text-xl select-none">👤</div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="font-mono font-bold text-lg text-purple-400 leading-tight">#{game.game_id.substring(0, 6)}</div>
+                                                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mb-1 truncate max-w-[120px]">
+                                                        Создатель: {game.host_name}
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-500">{game.map_type} • {game.player_count}/{game.max_players}</div>
+                                                </div>
                                             </div>
                                             <div className="flex gap-2">
                                                 {myGames.some(mg => mg.game_id === game.game_id) ? (
@@ -832,7 +844,14 @@ const Lobby = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <div className="text-xs text-green-400 mr-2">Онлайн</div>
+                                            {f.is_online ? (
+                                                <div className="text-xs text-green-400 mr-2 flex items-center gap-1">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                                                    Онлайн
+                                                </div>
+                                            ) : (
+                                                <div className="text-xs text-gray-500 mr-2">Оффлайн</div>
+                                            )}
                                             <button
                                                 onClick={() => {
                                                     if (window.confirm('Удалить из друзей?')) {

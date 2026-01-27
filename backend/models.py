@@ -37,6 +37,7 @@ class UserPublic(BaseModel):
     avatar_url: Optional[str] = None
     stats: UserStats
     friend_code: Optional[str] = None
+    is_online: bool = False
 
 
 # ============== Friend Models ==============
