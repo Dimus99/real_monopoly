@@ -695,8 +695,8 @@ const Lobby = () => {
                     </div>
                 )}
 
-                {/* Telegram Bot Link (Browser Only) */}
-                {(!window.Telegram?.WebApp?.initData) && (
+                {/* Telegram Bot Link (Browser Only, Main Menu Only) */}
+                {(!window.Telegram?.WebApp?.initData && mode === 'menu') && (
                     <div className="mt-8 max-w-4xl w-full mx-auto px-4">
                         <a
                             href="https://t.me/monopoly_haha_bot"

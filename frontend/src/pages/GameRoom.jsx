@@ -461,11 +461,11 @@ const GameRoom = () => {
                 // But we must disable rolling again. isRolling=true handles that.
                 // We will sync hasRolled in the Final Phase.
 
-                // Phase 1: Rolling animation (2500ms - Slower spin duration)
+                // Phase 1: Rolling animation (2000ms spin)
                 const rollTimeout = setTimeout(() => {
-                    setDiceRolling(false); // Show final result
+                    setDiceRolling(false); // Stop spinning (Freeze)
 
-                    // Phase 2: Show result for 3 seconds (as requested, total +3s)
+                    // Phase 2: Show result for 3 seconds (Freeze phase)
                     const resultTimeout = setTimeout(() => {
                         setShowDice(false);
 
@@ -594,7 +594,11 @@ const GameRoom = () => {
             }
 
             // Sync other turn flags
-            if (!isRolling && !diceRolling) {
+            // STRICTER CHECK: Do not sync hasRolled if ANY rolling flag is true.
+            // This prevents the "Button Blocked" bug where server says hasRolled=true (immediately after roll),
+            // but our animation hasn't finished, so we might get into a weird state.
+            // We only trust the server sync when we are IDLE.
+            if (!isRolling && !diceRolling && !showDice) {
                 setHasRolled(!!gameState.turn_state.has_rolled);
             }
         }
@@ -939,21 +943,21 @@ const GameRoom = () => {
             </motion.div>
 
             {/* MAIN BOARD AREA */}
-            <div className="flex-1 relative bg-[#0c0c14] overflow-auto flex flex-col items-center">
+            <div className={`flex-1 relative bg-[#0c0c14] flex flex-col ${isMobile ? 'items-start overflow-auto' : 'items-center overflow-hidden'}`}>
                 {/* Background */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
-                <div className={`relative z-10 shadow-2xl transition-all duration-300 my-auto py-8 ${isMobile ? 'overflow-auto' : ''}`}
+                <div className={`relative z-10 shadow-2xl transition-all duration-300 my-auto py-8 ${isMobile ? 'overflow-visible' : ''}`}
                     style={{
-                        width: isMobile ? '800px' : '85%', // Reduced by 5%
+                        width: isMobile ? '800px' : '85%',
                         maxWidth: '1000px',
-                        aspectRatio: '1/1', // Keep square aspect ratio
+                        aspectRatio: '1/1',
                         minHeight: isMobile ? '800px' : 'auto',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: isMobile ? 'flex-start' : 'center', // Fix mobile left scroll
-                        // Mobile: Allow touch scrolling in all directions if content overflows
-                        touchAction: isMobile ? 'pan-x pan-y' : 'auto'
+                        justifyContent: 'center',
+                        // Mobile: Force min-width to allow scroll if parent is scrolling
+                        minWidth: isMobile ? '800px' : 'auto'
                     }}
                 >
                     <Board
@@ -978,27 +982,37 @@ const GameRoom = () => {
                         canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && checkMonopolyByPlayer(selectedTile || currentTile)}
                         isMyTurn={isMyTurn}
                         lastAction={lastAction}
+                        playersPos={gameState.players}
                     />
+
+                    {/* Chat relative to Board Center (Bottom) */}
+                    <div className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-full max-w-[400px] z-[200] pointer-events-none">
+                        <div className="pointer-events-auto">
+                            <ToastNotification logs={displayedLogs} onSendMessage={handleSendMessage} />
+                        </div>
+                    </div>
                 </div>
 
-                {/* Property Modal - Ensure High Z-Index */}
+                {/* Property Modal - Ensure High Z-Index & Centering */}
                 {gameState?.board && (
-                    <div className="relative z-[300]">
-                        <PropertyModal
-                            isOpen={!!selectedTile}
-                            onClose={() => setSelectedTile(null)}
-                            property={selectedTile}
-                            players={gameState.players}
-                            currentPlayerId={playerId}
-                            onBuy={handleBuyProperty}
-                            // ... props
-                            canBuy={canBuy && (selectedTile?.id === currentTile?.id)}
-                            onBuild={handleBuildHouse}
-                            onSellHouse={handleSellHouse}
-                            onMortgage={handleMortgage}
-                            onUnmortgage={handleUnmortgage}
-                            tiles={gameState.board} // Pass full board for station calculation
-                        />
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none">
+                        <div className="pointer-events-auto">
+                            <PropertyModal
+                                isOpen={!!selectedTile}
+                                onClose={() => setSelectedTile(null)}
+                                property={selectedTile}
+                                players={gameState.players}
+                                currentPlayerId={playerId}
+                                onBuy={handleBuyProperty}
+                                // ... props
+                                canBuy={canBuy && (selectedTile?.id === currentTile?.id)}
+                                onBuild={handleBuildHouse}
+                                onSellHouse={handleSellHouse}
+                                onMortgage={handleMortgage}
+                                onUnmortgage={handleUnmortgage}
+                                tiles={gameState.board}
+                            />
+                        </div>
                     </div>
                 )}
 
@@ -1044,12 +1058,7 @@ const GameRoom = () => {
                 </div>
 
                 {/* Chat / Toast Notification - Elevated to avoid overlap */}
-                {/* Fixed positioning above the action panel on mobile */}
-                <div className={`fixed left-0 right-0 z-[100] w-full flex flex-col justify-end pointer-events-none px-4 ${isMobile ? 'bottom-36' : 'bottom-0 pb-16'}`}>
-                    <div className="pointer-events-auto w-full max-w-[600px] mx-auto">
-                        <ToastNotification logs={displayedLogs} onSendMessage={handleSendMessage} />
-                    </div>
-                </div>
+                {/* Chat / Toast Notification - Removed fixed position here, moved inside Board container */}
             </div>
 
             {/* Fancy Newspaper Chance Modal */}
@@ -1296,8 +1305,7 @@ const GameRoom = () => {
                                 transition={{ delay: 0.8 }}
                                 onClick={(e) => {
                                     e.stopPropagation(); // Prevent bubbling
-                                    console.log('Navigating to lobby...');
-                                    navigate('/lobby');
+                                    navigate('/');
                                 }}
                                 className="px-8 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black text-lg rounded-full shadow-lg hover:scale-105 transition-all uppercase tracking-widest z-20 cursor-pointer pointer-events-auto"
                             >
