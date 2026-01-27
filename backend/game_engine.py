@@ -1992,6 +1992,9 @@ class GameEngine:
         if game.turn_state.get("awaiting_payment"):
              return {"error": "Вы должны оплатить аренду или налоги перед завершением хода!"}
         
+        if not game.turn_state.get("has_rolled"):
+            return {"error": "Сначала бросьте кубики!"}
+
         # Advance turn
         self._next_turn(game)
         

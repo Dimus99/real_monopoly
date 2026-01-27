@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const DiceAnimation = ({ show, rolling, values, glow }) => {
+const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
     // Local state to show rapid transforms during rolling
     const [displayValues, setDisplayValues] = useState([1, 1]);
 
@@ -74,7 +74,7 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                         repeat: Infinity,
                         ease: "linear"
                     } : {
-                        duration: 1.0,
+                        duration: 0.5, // Fast snap to result
                         type: "tween", // Use tween instead of spring to avoid wobble/shaking
                         ease: "easeOut"
                     }}
@@ -107,6 +107,18 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                     className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm"
                 >
                     <div className="flex gap-4 md:gap-12 relative p-12">
+                        {/* Player Name Label */}
+                        {playerName && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap"
+                            >
+                                <span className="text-xl font-black text-white uppercase tracking-widest bg-black/50 px-4 py-1 rounded-full border border-white/20 backdrop-blur-md">
+                                    {playerName}
+                                </span>
+                            </motion.div>
+                        )}
                         <Cube value={displayValues[0]} isRolling={rolling} isGlow={glow} />
                         <Cube value={displayValues[1]} isRolling={rolling} isGlow={glow} />
                     </div>

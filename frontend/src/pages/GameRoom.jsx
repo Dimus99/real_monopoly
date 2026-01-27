@@ -79,6 +79,7 @@ const GameRoom = () => {
     const [diceRolling, setDiceRolling] = useState(false);
     const [hasRolled, setHasRolled] = useState(false);
     const [chanceCard, setChanceCard] = useState(null);
+    const [rollingPlayerId, setRollingPlayerId] = useState(null);
 
     // Sync 'hasRolled' and 'dice' state from server to handle page reloads / reconnections
     useEffect(() => {
@@ -466,6 +467,7 @@ const GameRoom = () => {
                 setShowDice(true);
                 setDiceRolling(true);
                 setIsRolling(true);
+                setRollingPlayerId(lastAction.player_id);
 
                 // SAFETY: Force clear rolling state after 5 seconds in case something breaks
                 setTimeout(() => {
@@ -500,7 +502,8 @@ const GameRoom = () => {
 
                             // SYNC hasRolled accurately from the latest server state in case it changed
                             // Only update this AFTER animation completes to prevent premature button changes.
-                            if (gameState?.turn_state) {
+                            // CRITICAL: Only update if it was MY roll to avoid stale state from opponent turns.
+                            if (lastAction.player_id === playerId && gameState?.turn_state) {
                                 setHasRolled(!!gameState.turn_state.has_rolled);
                             }
 
@@ -517,7 +520,7 @@ const GameRoom = () => {
                                 setShowChanceModal(true);
                             }
                         }, 100);
-                    }, 2000);
+                    }, 3500);
                 }, 500);
                 break;
 
@@ -1341,7 +1344,13 @@ const GameRoom = () => {
             </AnimatePresence>
 
             {/* Global Dice Animation Overlay - Fixed to Viewport */}
-            <DiceAnimation show={showDice} rolling={diceRolling} values={diceValues} glow={diceValues[0] === diceValues[1]} />
+            <DiceAnimation
+                show={showDice}
+                rolling={diceRolling}
+                values={diceValues}
+                glow={diceValues[0] === diceValues[1]}
+                playerName={gameState?.players?.[rollingPlayerId]?.name || ''}
+            />
         </div>
     );
 };
