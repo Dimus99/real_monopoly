@@ -1296,23 +1296,24 @@ class GameEngine:
             
         # Check monopoly
         group_props = [t for t in game.board if t.group == prop.group]
-        has_monopoly = all(t.owner_id == player_id for t in group_props)
+        
         if not prop.is_monopoly:
             return {"error": "Must have MONOPOLY status to build"}
             
         if prop.houses >= 5:
             return {"error": "Maximum houses/hotel already built"}
             
+        # RULE: Max 1 build per property per turn
+        build_counts = game.turn_state.get("build_counts", {})
+        if build_counts.get(str(property_id), 0) >= 1:
+            return {"error": "Limit reached: max 1 house/hotel per property per turn."}
+            
         # Even Building Constraints
         # houseCount on same color cells cannot differ by more than 1
-        group_props = [t for t in game.board if t.group == prop.group]
         min_houses = min(t.houses for t in group_props)
-        max_houses = max(t.houses for t in group_props)
+        # max_houses unused
         
         # Rule: Cannot build 3 if another has 1. 
-        # Basically, we can only build if this property has 'min_houses'. 
-        # If we build, it becomes min_houses + 1. The max difference becomes (min+1) - min = 1.
-        # If we try to build on a property that already has more houses than others, it violates equality.
         if prop.houses > min_houses:
              return {"error": "Must build evenly! Develop other properties first."}
             
@@ -1324,6 +1325,11 @@ class GameEngine:
             
         player.money -= house_price
         prop.houses += 1
+        
+        # Update build counts
+        if "build_counts" not in game.turn_state:
+            game.turn_state["build_counts"] = {}
+        game.turn_state["build_counts"][str(property_id)] = build_counts.get(str(property_id), 0) + 1
         
         game.logs.append(f"🏠 {player.name} built a {'hotel' if prop.houses == 5 else 'house'} on {prop.name} for ${house_price}")
         

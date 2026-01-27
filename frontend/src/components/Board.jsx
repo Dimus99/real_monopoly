@@ -46,6 +46,18 @@ const TILE_IMAGES = {
 const getTileCoordinates = (tileId, boardRef, gap = 2) => {
     if (!boardRef?.current) return { x: 0, y: 0 };
 
+    // Try specific DOM lookup for exact positioning (fixes offsets during resize/sidebar toggle)
+    const tileEl = boardRef.current.querySelector(`[data-tile-id="${tileId}"]`);
+    if (tileEl) {
+        const tileRect = tileEl.getBoundingClientRect();
+        const boardRect = boardRef.current.getBoundingClientRect();
+
+        return {
+            x: tileRect.left - boardRect.left + tileRect.width / 2,
+            y: tileRect.top - boardRect.top + tileRect.height / 2
+        };
+    }
+
     const board = boardRef.current;
     const w = board.clientWidth;
     const h = board.clientHeight;

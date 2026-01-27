@@ -43,7 +43,7 @@ const GameRoom = () => {
         currentTile &&
         !currentTile.owner_id &&
         currentTile.price > 0 &&
-        !['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax'].includes(currentTile.group) &&
+        !['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Negotiations', 'RaiseTax', 'Casino'].includes(currentTile.group) &&
         !currentTile.is_destroyed;
 
     // UI States

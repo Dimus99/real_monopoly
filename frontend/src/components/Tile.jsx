@@ -112,7 +112,7 @@ const getColorBarStyle = (tileId) => {
 const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentPlayerId, allPlayers, isMonopoly }) => {
     const groupStyle = GROUP_STYLES[property.group] || GROUP_STYLES.Special;
     const specialIcon = SPECIAL_ICONS[property.name];
-    const isPropertyTile = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking'].includes(property.group) && !isCorner;
+    const isPropertyTile = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking', 'Negotiations', 'RaiseTax', 'Casino'].includes(property.group) && !isCorner;
     const hasOwner = property.owner_id !== null;
     const colorBarStyle = getColorBarStyle(property.id);
     const orientation = getTileOrientation(property.id);
