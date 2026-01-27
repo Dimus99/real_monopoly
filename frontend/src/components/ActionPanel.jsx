@@ -45,7 +45,11 @@ const ActionPanel = ({
 
     const showRoll = true; // Always show roll button in dashboard
     const disableRoll = isRolling || (hasRolled && !isDoubles);
-    const showEndTurn = hasRolled && !isDoubles && !rentDetails;
+    // Forbid pressing Done if can roll (User Request)
+    // If hasRolled is false, we definitely cannot end turn (unless special case logic changes, but for now strict).
+    // If isDoubles is true, we can roll again, so cannot end turn.
+    // Also strictly hide End Turn if currently rolling to prevent premature clicks.
+    const showEndTurn = !isRolling && hasRolled && !isDoubles && !rentDetails;
 
     const isAbilityBlocked = abilityUsed || abilityCooldown > 0;
 

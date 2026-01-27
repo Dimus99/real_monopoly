@@ -10,7 +10,7 @@ const GROUP_STYLES = {
     Red: { gradient: 'linear-gradient(135deg, #DC143C 0%, #B22222 100%)', textColor: '#fff' },
     Yellow: { gradient: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)', textColor: '#1a1a2e' },
     Green: { gradient: 'linear-gradient(135deg, #228B22 0%, #006400 100%)', textColor: '#fff' },
-    DarkBlue: { gradient: 'linear-gradient(135deg, #191970 0%, #00008B 100%)', textColor: '#fff' },
+    DarkBlue: { gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', textColor: '#fff' }, // Bright Ice Blue
     Blue: { gradient: 'linear-gradient(135deg, #4169E1 0%, #2c4fa6 100%)', textColor: '#fff' },
     Station: { gradient: 'linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%)', textColor: '#fff', icon: '✈️' },
     Railroad: { gradient: 'linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%)', textColor: '#fff', icon: '🚂' },

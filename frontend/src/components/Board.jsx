@@ -43,18 +43,16 @@ const TILE_IMAGES = {
 };
 
 // Get absolute pixel coordinates for a tile position
-const getTileCoordinates = (tileId, boardRef) => {
+const getTileCoordinates = (tileId, boardRef, gap = 2) => {
     if (!boardRef?.current) return { x: 0, y: 0 };
 
     const board = boardRef.current;
-    // clientWidth/Height are in local coordinate space, which matches Framer Motion's x/y transforms
     const w = board.clientWidth;
     const h = board.clientHeight;
 
     if (w === 0 || h === 0) return { x: 0, y: 0 };
 
     const gridStyle = getTileStyle(tileId);
-    const GRID_GAP = 2; // Matches index.css gap
 
     // Grid configuration: Corners 1.5fr, others 1fr
     // 1st col (index 1) and 11th col (index 11) are 1.5fr
@@ -63,9 +61,9 @@ const getTileCoordinates = (tileId, boardRef) => {
     const totalUnits = 12;
 
     // Calculate unit size after subtracting gaps
-    // 11 cells have 10 gaps (10 * 2px = 20px)
-    const availableWidth = w - (10 * GRID_GAP);
-    const availableHeight = h - (10 * GRID_GAP);
+    // 11 cells have 10 gaps
+    const availableWidth = w - (10 * gap);
+    const availableHeight = h - (10 * gap);
 
     const unitX = availableWidth / totalUnits;
     const unitY = availableHeight / totalUnits;
@@ -75,31 +73,21 @@ const getTileCoordinates = (tileId, boardRef) => {
         for (let i = 1; i < index; i++) {
             if (i === 1 || i === 11) pos += 1.5 * unitSize;
             else pos += 1 * unitSize;
-            pos += GRID_GAP;
+            pos += gap;
         }
         const currentSize = (index === 1 || index === 11) ? 1.5 : 1;
         pos += (currentSize * unitSize) / 2;
         return pos;
     };
 
-    const checkGroupMonopoly = (group) => {
-        if (['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Utility', 'Station'].includes(group)) return false;
-        const groupTiles = tiles.filter(t => t.group === group);
-        if (groupTiles.length === 0) return false;
-        const firstOwner = groupTiles[0].owner_id;
-        if (!firstOwner) return false;
-        return groupTiles.every(t => t.owner_id === firstOwner);
-    };
-
     const x = getCoordinate(gridStyle.gridColumnStart, unitX);
     const y = getCoordinate(gridStyle.gridRowStart, unitY);
 
-    return { x, y, checkGroupMonopoly };
+    return { x, y };
 };
 
 
-
-const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, isMyTurn, lastAction }) => {
+const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, isMyTurn, lastAction, playersPos }) => {
     // Character colors for player tokens (derived from BOARD_CHARACTERS)
     const PLAYER_COLORS = React.useMemo(() => Object.fromEntries(
         Object.entries(BOARD_CHARACTERS).map(([k, v]) => [k, v.color])
@@ -179,13 +167,16 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                 const prevP = lastPositionsRef.current[p.id];
                 const prevPosition = prevP?.position ?? position;
 
+                const isMobile = window.innerWidth < 768;
+                const gap = isMobile ? 1 : 2;
+
                 // Calculate path if moved
                 if (prevPosition !== position) {
                     const path = calculatePath(prevPosition, position, p.id);
-                    newPaths[p.id] = path.map(pos => getTileCoordinates(pos, boardRef));
+                    newPaths[p.id] = path.map(pos => getTileCoordinates(pos, boardRef, gap));
                 }
 
-                const coords = getTileCoordinates(position, boardRef);
+                const coords = getTileCoordinates(position, boardRef, gap);
                 if (coords.x > 0 || coords.y > 0 || position === 0) {
                     newPositions[p.id] = {
                         ...coords,
@@ -213,17 +204,22 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
         if (!players || !boardRef.current) return;
 
         const handleResize = () => {
-            const newPositions = {};
-            Object.values(players).forEach(p => {
-                const coords = getTileCoordinates(p.position, boardRef);
-                newPositions[p.id] = {
-                    ...coords,
-                    position: p.position,
-                    character: p.character,
-                    name: p.name
-                };
-            });
-            setPlayerPositions(newPositions);
+            const handleResize = () => {
+                const newPositions = {};
+                const isMobile = window.innerWidth < 768;
+                const gap = isMobile ? 1 : 2;
+
+                Object.values(players).forEach(p => {
+                    const coords = getTileCoordinates(p.position, boardRef, gap);
+                    newPositions[p.id] = {
+                        ...coords,
+                        position: p.position,
+                        character: p.character,
+                        name: p.name
+                    };
+                });
+                setPlayerPositions(newPositions);
+            };
         };
 
         window.addEventListener('resize', handleResize);

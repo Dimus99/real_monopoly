@@ -451,12 +451,23 @@ const GameRoom = () => {
             case 'AID': setShowAid(true); break;
             case 'NUKE': setShowNuke(true); break;
             case 'DICE_ROLLED':
+                // Handle Skipped Turn (Sanctions)
+                if (lastAction.action === 'skipped_turn') {
+                    // No animation needed. Just update state strictly.
+                    // Ensure we don't block controls.
+                    setDiceRolling(false);
+                    setIsRolling(false);
+                    setShowDice(false);
+                    // setHasRolled(false); // Do not force false here, let server sync handle it naturally, essentially it's end of turn.
+                    return;
+                }
+
                 setDiceValues(lastAction.dice || [1, 1]);
                 setShowDice(true);
                 setDiceRolling(true);
                 setIsRolling(true);
 
-                // SAFETY: Force clear rolling state after 6 seconds in case something breaks
+                // SAFETY: Force clear rolling state after 5 seconds in case something breaks
                 setTimeout(() => {
                     setIsRolling(false);
                     setDiceRolling(false);
@@ -822,7 +833,7 @@ const GameRoom = () => {
     }
 
     return (
-        <div className="flex bg-[#0c0c14] h-screen w-full overflow-hidden font-sans selection:bg-purple-500/30 fixed inset-0">
+        <div className="flex bg-[#0c0c14] min-h-screen w-full font-sans selection:bg-purple-500/30 relative">
             {/* COLLAPSIBLE SIDEBAR */}
             <motion.div
                 animate={{
@@ -835,7 +846,7 @@ const GameRoom = () => {
                 {isMobile && sidebarCollapsed && (
                     <button
                         onClick={() => setSidebarCollapsed(false)}
-                        className="fixed top-4 left-4 z-50 p-3 bg-yellow-500 rounded-full text-black shadow-lg"
+                        className="fixed top-4 left-4 z-[200] p-3 bg-yellow-500 rounded-full text-black shadow-lg"
                     >
                         <Menu size={20} />
                     </button>
@@ -863,7 +874,7 @@ const GameRoom = () => {
 
                     <button
                         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                        className="absolute -right-3 top-20 bg-yellow-500 rounded-full p-1 text-black shadow-lg hover:scale-110 transition-transform z-50"
+                        className="absolute -right-3 top-20 bg-yellow-500 rounded-full p-1 text-black shadow-lg hover:scale-110 transition-transform z-[200]"
                     >
                         {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                     </button>
@@ -969,7 +980,8 @@ const GameRoom = () => {
                         justifyContent: 'center',
                         // Mobile: Force min-width to allow scroll if parent is scrolling
                         minWidth: isMobile ? '800px' : 'auto',
-                        paddingRight: isMobile ? '50px' : '0' // Allow scrolling extra to right
+                        paddingRight: isMobile ? '50px' : '0', // Allow scrolling extra to right
+                        paddingLeft: isMobile ? '50px' : '0'  // Allow scrolling extra to left (expose sidebar hint)
                     }}
                 >
                     <Board
@@ -991,7 +1003,9 @@ const GameRoom = () => {
                         onSellHouse={handleSellHouse}
                         onMortgage={handleMortgage}
                         onUnmortgage={handleUnmortgage}
-                        canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && checkMonopolyByPlayer(selectedTile || currentTile)}
+                        onMortgage={handleMortgage}
+                        onUnmortgage={handleUnmortgage}
+                        canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && (selectedTile || currentTile)?.is_monopoly}
                         isMyTurn={isMyTurn}
                         lastAction={lastAction}
                         playersPos={gameState.players}
