@@ -1089,8 +1089,8 @@ const GameRoom = () => {
                                 players={gameState.players}
                                 currentPlayerId={playerId}
                                 onBuy={handleBuyProperty}
-                                // ... props
                                 canBuy={canBuy && (selectedTile?.id === currentTile?.id)}
+                                canBuild={isMyTurn}
                                 onBuild={handleBuildHouse}
                                 onSellHouse={handleSellHouse}
                                 onMortgage={handleMortgage}

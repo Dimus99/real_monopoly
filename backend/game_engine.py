@@ -451,6 +451,12 @@ class GameEngine:
         new_position = (player.position + d1 + d2) % board_size
         player.position = new_position
         
+        # Handle landing object retrieval early
+        tile = game.board[new_position]
+        
+        # Log roll and move BEFORE side effects (Passed Go, Chance cards, etc)
+        game.logs.append(f"{player.name} rolled {d1}+{d2} and moved to {tile.name}")
+        
         # Check if passed GO
         # Standard: if crossed 0. Also handles landing exactly on 0.
         if (new_position < old_position) or (new_position == 0 and old_position != 0):
@@ -459,15 +465,11 @@ class GameEngine:
             result["passed_go"] = True
             game.logs.append(f"🏧 {player.name} passed START and collected ${go_money}")
         
-        # Handle landing
-        tile = game.board[new_position]
         result["landed_on"] = tile.name
         result["tile_type"] = tile.group
         
         landing_result = self._handle_landing(game, player, tile)
         result.update(landing_result)
-        
-        game.logs.append(f"{player.name} rolled {d1}+{d2} and moved to {tile.name}")
         
         # If doubles, remind to roll again
         if is_doubles:

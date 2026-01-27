@@ -1,7 +1,7 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 
-const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
+const DiceAnimation = ({ show, rolling, values, playerName }) => {
     // Local state to track displayed values to avoid jumping
     const [displayValues, setDisplayValues] = useState([1, 1]);
 
@@ -11,23 +11,18 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
         }
     }, [values]);
 
-    // Standard Dice Layout:
-    // 1: Front
-    // 6: Back
-    // 2: Right
-    // 5: Left
-    // 3: Top
-    // 4: Bottom
-    // SIZE: 100px (translateZ 50px)
-
+    // Standard Dice Layout (Opposite sides sum to 7)
+    // 1(Front) vs 6(Back)
+    // 2(Right) vs 5(Left)
+    // 3(Top)   vs 4(Bottom)
     const getRotation = (val) => {
         switch (val) {
-            case 1: return { x: 0, y: 0 };      // Show Front
-            case 6: return { x: 180, y: 0 };    // Show Back (Flip X)
-            case 2: return { x: 0, y: -90 };    // Show Right (Rotate Y Left)
-            case 5: return { x: 0, y: 90 };     // Show Left (Rotate Y Right)
-            case 3: return { x: -90, y: 0 };    // Show Top (Rotate X Down)
-            case 4: return { x: 90, y: 0 };     // Show Bottom (Rotate X Up)
+            case 1: return { x: 0, y: 0 };
+            case 6: return { x: 180, y: 0 };
+            case 2: return { x: 0, y: -90 };
+            case 5: return { x: 0, y: 90 };
+            case 3: return { x: -90, y: 0 };
+            case 4: return { x: 90, y: 0 };
             default: return { x: 0, y: 0 };
         }
     };
@@ -39,27 +34,28 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
         useEffect(() => {
             if (show && isRolling) {
                 const target = getRotation(value);
-                const randomX = (Math.random() - 0.5) * 400;
-                const randomY = -200 - Math.random() * 200;
 
-                // Extra spins for chaos
-                const loopsX = 2 + Math.floor(Math.random() * 2);
-                const loopsY = 2 + Math.floor(Math.random() * 2);
+                // Throw from bottom-left or bottom-right depending on index
+                const startX = index === 0 ? -200 : 200;
+                const startY = 300;
+
+                // Ensure enough spins for realism
+                const loopsX = 4;
+                const loopsY = 4;
 
                 // Throwing sequence
                 controls.start({
-                    x: [randomX, 0],
-                    y: [randomY, 0],
-                    z: [300, 0],
+                    x: [startX, 0],
+                    y: [startY, 0],
+                    z: [500, 0], // Start 'close to camera' and fall to board
                     rotateX: [0, (loopsX * 360) + target.x],
                     rotateY: [0, (loopsY * 360) + target.y],
-                    rotateZ: [0, 360 + (index * 90)],
-                    scale: [0.4, 1.1, 1],
+                    rotateZ: [0, (2 * 360) + (index * 90)],
+                    scale: [0.5, 1],
                     opacity: [0, 1],
-                    // Removed filter blur
                     transition: {
-                        duration: 2.0,
-                        ease: [0.16, 1, 0.3, 1], // Power4 easeOut
+                        duration: 1.5,
+                        ease: "easeOut", // Smooth deceleration
                     }
                 });
             }
@@ -92,9 +88,10 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
 
         const Face = ({ n }) => (
             <div
-                className="absolute w-[100px] h-[100px] bg-white rounded-xl border-2 border-gray-300 flex flex-wrap content-center justify-between p-2 backface-hidden"
+                className="absolute w-[100px] h-[100px] bg-white rounded-xl border border-gray-300 flex flex-wrap content-center justify-between p-2"
                 style={{
                     transform: getFaceTransform(n),
+                    backfaceVisibility: 'hidden', // Clean edges
                     boxShadow: 'inset 0 0 15px rgba(0,0,0,0.1)'
                 }}
             >
@@ -108,18 +105,17 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
                         </div>
                     ))}
                 </div>
-                {/* Glossy overlay */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-white/30 rounded-xl" />
             </div>
         );
 
         return (
-            <div className="dice-container relative w-[100px] h-[100px]">
+            // CRITICAL: Perspective here ensures the child motion.div rotates IN 3D space relative to this container
+            <div className="dice-container relative w-[100px] h-[100px]" style={{ perspective: '800px' }}>
                 <motion.div
                     className="cube w-full h-full relative"
                     style={{ transformStyle: 'preserve-3d' }}
                     animate={controls}
-                    initial={{ opacity: 0, scale: 0.2 }}
+                    initial={{ opacity: 0, scale: 0.5, z: 500 }}
                 >
                     {[1, 2, 3, 4, 5, 6].map(n => <Face key={n} n={n} />)}
                 </motion.div>
@@ -129,9 +125,9 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
                     className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-24 h-6 bg-black/40 blur-xl rounded-full -z-10"
                     initial={{ scale: 0, opacity: 0 }}
                     animate={show ? {
-                        scale: [0.5, 1.2, 1],
-                        opacity: [0.2, 0.6, 0.4],
-                        transition: { duration: 2, ease: "easeOut" }
+                        scale: [0, 1.2, 1],
+                        opacity: [0, 0.6, 0.4],
+                        transition: { duration: 1.5, ease: "easeOut" }
                     } : {}}
                 />
             </div>
@@ -146,16 +142,15 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0, transition: { duration: 0.5 } }}
                     className="fixed inset-0 z-[200] flex flex-col items-center justify-center pointer-events-none bg-black/40"
-                // REMOVED backdrop-blur attributes here as requested
                 >
-                    <div className="flex gap-12 md:gap-32 relative p-20 perspective-[1000px]">
+                    <div className="flex gap-16 relative">
                         {/* Player Name Label */}
                         {playerName && (
                             <motion.div
                                 initial={{ opacity: 0, y: -60, scale: 0.9 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 transition={{ type: "spring", delay: 0.1 }}
-                                className="absolute -top-16 left-1/2 -translate-x-1/2 whitespace-nowrap"
+                                className="absolute -top-24 left-1/2 -translate-x-1/2 whitespace-nowrap"
                             >
                                 <div className="flex flex-col items-center">
                                     <span className="text-[10px] font-black text-yellow-500/80 uppercase tracking-[0.5em] mb-1">
@@ -177,12 +172,9 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
                             initial={{ opacity: 0, scale: 0.5, y: 100 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                            className="mt-12 flex flex-col items-center gap-1"
+                            className="mt-20 flex flex-col items-center gap-1"
                         >
                             <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-3xl px-16 py-6 rounded-[2.5rem] border border-white/20 shadow-2xl flex flex-col items-center relative overflow-hidden group">
-                                {/* Inner animated glow */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 via-transparent to-yellow-500/20 animate-pulse" />
-
                                 <span className="text-xs text-blue-300 uppercase font-black tracking-[0.3em] mb-2 z-10">Сумма Броска</span>
                                 <span className="text-8xl font-black text-white font-game drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] leading-none z-10 italic">
                                     {displayValues[0] + displayValues[1]}
