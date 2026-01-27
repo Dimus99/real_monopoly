@@ -1006,7 +1006,7 @@ class GameEngine:
              # We should ensure index mod len
              if len(game.player_order) > 0:
                  game.current_turn_index = game.current_turn_index % len(game.player_order)
-                 game.turn_expiry = datetime.utcnow() + timedelta(seconds=45)
+                 self._reset_timer(game)
 
         return {
             "kicked_id": player.id, 
@@ -1427,7 +1427,7 @@ class GameEngine:
                 # Just reset turn state for the new current player.
                 game.turn_number += 1
                 game.turn_state = {}
-                game.turn_expiry = datetime.utcnow() + timedelta(seconds=45)
+                self._reset_timer(game)
         
         # Check for winner (Last man standing)
         active_players = [p for p in game.players.values() if not p.is_bankrupt]

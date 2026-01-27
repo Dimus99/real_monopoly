@@ -5,7 +5,7 @@ import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 const getRotation = (val) => {
     switch (val) {
         case 1: return { x: 0, y: 0 };
-        case 6: return { x: 180, y: 0 };
+        case 6: return { x: 0, y: 180 };
         case 2: return { x: 0, y: -90 };
         case 5: return { x: 0, y: 90 };
         case 3: return { x: -90, y: 0 };
@@ -40,20 +40,35 @@ const DiceFace = ({ n }) => {
         }
     };
 
+    // Shading for 3D effect based on face position
+    const getFaceShading = (n) => {
+        switch (n) {
+            case 3: return 'brightness(1.05) contrast(1.02)'; // Top (brightest)
+            case 4: return 'brightness(0.85) contrast(1.1)';  // Bottom (darkest)
+            case 1: return 'brightness(1)';                  // Front
+            case 6: return 'brightness(0.9)';                // Back
+            case 2: return 'brightness(0.95)';               // Right
+            case 5: return 'brightness(0.95)';               // Left
+            default: return 'brightness(1)';
+        }
+    };
+
     return (
         <div
-            className="absolute w-[100px] h-[100px] bg-white rounded-xl border-2 border-gray-300 flex flex-wrap content-center justify-between p-2"
+            className="absolute w-[100px] h-[100px] bg-white rounded-2xl border border-gray-200 flex flex-wrap content-center justify-between p-2"
             style={{
                 transform: getFaceTransform(n),
                 backfaceVisibility: 'hidden',
-                boxShadow: 'inset 0 0 15px rgba(0,0,0,0.1)'
+                boxShadow: 'inset 0 0 20px rgba(0,0,0,0.15), 0 0 2px rgba(0,0,0,0.1)',
+                filter: getFaceShading(n),
+                background: 'radial-gradient(circle at 30% 30%, #fff 0%, #f0f0f0 100%)'
             }}
         >
             <div className="w-full h-full relative grid grid-cols-3 grid-rows-3 gap-1 p-1">
                 {[...Array(9)].map((_, i) => (
                     <div key={i} className="flex items-center justify-center">
                         {dots(n).includes(i) && (
-                            <div className="w-4 h-4 rounded-full bg-black shadow-sm"
+                            <div className="w-4 h-4 rounded-full bg-black shadow-inner"
                                 style={{ background: 'radial-gradient(circle at 30% 30%, #444, #000)' }} />
                         )}
                     </div>
@@ -70,49 +85,59 @@ const Cube = ({ value, isRolling, index, show }) => {
         if (show && isRolling) {
             const target = getRotation(value);
 
-            // Throw from bottom-left (-200) for die 1, bottom-right (200) for die 2
-            const startX = index === 0 ? -300 : 300;
-            const startY = 400;
+            // Throw from different positions for die 1 and 2
+            const startX = index === 0 ? -400 : 400;
+            const startY = 500;
+            const startZ = 600;
 
-            const loopsX = 3;
-            const loopsY = 3;
+            const finalRotationX = (720 * 2) + target.x + (Math.random() * 10 - 5); // Add slight random tilt
+            const finalRotationY = (720 * 2) + target.y + (Math.random() * 10 - 5);
+            const finalRotationZ = (index * 90) + (Math.random() * 20 - 10);
 
             controls.start({
-                x: [startX, 0],
-                y: [startY, 0],
-                z: [400, 0],
-                rotateX: [720, (loopsX * 360) + target.x], // Rotate a lot
-                rotateY: [720, (loopsY * 360) + target.y],
-                rotateZ: [360, (index * 90)],
-                scale: [0.2, 1],
-                opacity: [0, 1],
+                x: [startX, index === 0 ? -60 : 60, 0],
+                y: [startY, -100, 0],
+                z: [startZ, 200, 0],
+                rotateX: [0, 720, finalRotationX],
+                rotateY: [0, 1080, finalRotationY],
+                rotateZ: [0, 360, finalRotationZ],
+                scale: [0.1, 1.2, 1],
+                opacity: [0, 1, 1],
                 transition: {
-                    duration: 1.2,
-                    ease: "circOut",
+                    duration: 1.5,
+                    times: [0, 0.6, 1],
+                    ease: ["easeOut", "circOut"],
                 }
             });
         }
     }, [show, isRolling, value, index, controls]);
 
     return (
-        <div className="relative w-[100px] h-[100px]" style={{ perspective: '1000px' }}>
+        <div className="relative w-[120px] h-[120px]" style={{ perspective: '1200px' }}>
             <motion.div
                 className="w-full h-full relative"
                 style={{ transformStyle: 'preserve-3d' }}
                 animate={controls}
-                initial={{ opacity: 0, scale: 0.5, z: 200 }}
+                initial={{
+                    opacity: 0,
+                    scale: 0.5,
+                    z: 200,
+                    rotateX: -15,
+                    rotateY: 15
+                }}
             >
                 {[1, 2, 3, 4, 5, 6].map(n => <DiceFace key={n} n={n} />)}
             </motion.div>
 
-            {/* Shadow */}
+            {/* Enhanced Shadow */}
             <motion.div
-                className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-24 h-6 bg-black/40 blur-xl rounded-full -z-10"
+                className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 h-8 bg-black/40 blur-2xl rounded-full -z-10"
                 initial={{ scale: 0, opacity: 0 }}
                 animate={show ? {
-                    scale: [0, 1.2, 1],
-                    opacity: [0, 0.6, 0.4],
-                    transition: { duration: 1.2, ease: "easeOut" }
+                    scale: isRolling ? [0, 1.5, 1] : 1,
+                    opacity: isRolling ? [0, 0.6, 0.4] : 0.4,
+                    y: isRolling ? [50, 0] : 0,
+                    transition: { duration: 1.5, ease: "easeOut" }
                 } : {}}
             />
         </div>
