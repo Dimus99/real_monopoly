@@ -631,12 +631,26 @@ const Lobby = () => {
                                                 <div className="font-mono font-bold text-lg text-purple-400">#{game.game_id.substring(0, 6)}</div>
                                                 <div className="text-xs text-gray-400 mt-1">{game.map_type} • {game.player_count}/{game.max_players} Игроков</div>
                                             </div>
-                                            <button
-                                                onClick={() => { setMode('join'); setGameIdInput(game.game_id); }}
-                                                className="btn-sm btn-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                Войти
-                                            </button>
+                                            <div className="flex gap-2">
+                                                {myGames.some(mg => mg.game_id === game.game_id) ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            const mg = myGames.find(m => m.game_id === game.game_id);
+                                                            navigate(`/game/${mg.game_id}/${mg.player_id}`);
+                                                        }}
+                                                        className="btn-sm btn-purple opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        Продолжить
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => { setMode('join'); setGameIdInput(game.game_id); }}
+                                                        className="btn-sm btn-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        Войти
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -734,8 +748,19 @@ const Lobby = () => {
                                 <CharacterSelection characters={LOBBY_CHARACTERS} selectedId={character} onSelect={setCharacter} />
                             </div>
 
-                            <button onClick={() => joinGame(gameIdInput)} disabled={isLoading || !gameIdInput} className="btn-primary w-full py-4 text-xl font-bold">
-                                {isLoading ? 'Вход...' : 'Войти в лобби'}
+                            <button
+                                onClick={() => {
+                                    const existingGame = myGames.find(mg => mg.game_id === gameIdInput);
+                                    if (existingGame) {
+                                        navigate(`/game/${existingGame.game_id}/${existingGame.player_id}`);
+                                    } else {
+                                        joinGame(gameIdInput);
+                                    }
+                                }}
+                                disabled={isLoading || !gameIdInput}
+                                className="btn-primary w-full py-4 text-xl font-bold"
+                            >
+                                {isLoading ? 'Вход...' : (myGames.some(mg => mg.game_id === gameIdInput) ? 'Продолжить' : 'Войти в лобби')}
                             </button>
                         </div>
                     </div>
@@ -806,7 +831,20 @@ const Lobby = () => {
                                                 <div className="text-[10px] text-gray-500 font-mono">#{f.friend_code}</div>
                                             </div>
                                         </div>
-                                        <div className="text-xs text-green-400">Онлайн</div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="text-xs text-green-400 mr-2">Онлайн</div>
+                                            <button
+                                                onClick={() => {
+                                                    if (window.confirm('Удалить из друзей?')) {
+                                                        authFetch(`/api/friends/${f.id}`, { method: 'DELETE' }).then(fetchFriendsData);
+                                                    }
+                                                }}
+                                                className="p-1.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded transition-colors"
+                                                title="Удалить из друзей"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))
                             }

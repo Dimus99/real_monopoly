@@ -271,6 +271,17 @@ const GameRoom = () => {
         }
     };
 
+    const handleLeaveGame = async () => {
+        try {
+            const token = localStorage.getItem('monopoly_token');
+            await fetch(`${API_BASE}/api/games/${gameId}/leave`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            navigate('/');
+        } catch (e) { navigate('/'); }
+    };
+
     const handleAddBot = async () => {
         try {
             const token = localStorage.getItem('monopoly_token');
@@ -281,14 +292,14 @@ const GameRoom = () => {
         } catch (e) { alert('Failed to add bot'); }
     };
 
-    const handleRemoveBot = async (botId) => {
+    const handleKickPlayer = async (playerId) => {
         try {
             const token = localStorage.getItem('monopoly_token');
-            await fetch(`${API_BASE}/api/games/${gameId}/bots/${botId}`, {
+            await fetch(`${API_BASE}/api/games/${gameId}/players/${playerId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-        } catch (e) { alert('Failed to remove bot'); }
+        } catch (e) { alert('Не удалось исключить игрока'); }
     };
 
     useEffect(() => {
@@ -303,6 +314,7 @@ const GameRoom = () => {
             } catch (e) { console.error(e); }
         };
         fetchMe();
+        fetchFriends();
     }, [API_BASE]);
 
     const fetchFriends = async () => {
@@ -656,21 +668,21 @@ const GameRoom = () => {
                                 <Map className="text-blue-400" size={20} />
                                 <div>
                                     <div className="text-[10px] text-gray-400 uppercase font-bold">Карта</div>
-                                    <div className="text-sm text-white font-medium">{gameState.map_type === 'Monopoly1' ? 'Классика' : 'СССР'}</div>
+                                    <div className="text-sm text-white font-medium">{gameState.map_type}</div>
                                 </div>
                             </div>
                             <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center gap-3">
                                 <Zap className="text-yellow-400" size={20} />
                                 <div>
                                     <div className="text-[10px] text-gray-400 uppercase font-bold">Режим</div>
-                                    <div className="text-sm text-white font-medium">{gameState.game_mode === 'abilities' ? 'Способности' : 'Орешник для всех'}</div>
+                                    <div className="text-sm text-white font-medium">{gameState.game_mode}</div>
                                 </div>
                             </div>
                             <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center gap-3">
                                 <Clock className="text-green-400" size={20} />
                                 <div>
                                     <div className="text-[10px] text-gray-400 uppercase font-bold">Таймер</div>
-                                    <div className="text-sm text-white font-medium">{gameState.turn_timer} сек</div>
+                                    <div className="text-sm text-white font-medium">{gameState.turn_timer === 0 ? 'Без таймера' : `${gameState.turn_timer} сек`}</div>
                                 </div>
                             </div>
                             <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center gap-3">
@@ -700,13 +712,13 @@ const GameRoom = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        {!p.is_bot && p.user_id !== myUser?.id && (
+                                        {!p.is_bot && p.user_id !== myUser?.id && !friends.some(f => f.id === p.user_id) && (
                                             <button onClick={() => handleSendFriendRequest(p.user_id)} className="p-2 text-blue-400 hover:bg-white/10 rounded-full transition-colors" title="Добавить в друзья">
                                                 <UserPlus size={16} />
                                             </button>
                                         )}
                                         {isHost && p.user_id !== myUser?.id && (
-                                            <button onClick={() => handleRemoveBot(p.id)} className="p-2 text-red-500 hover:bg-white/10 rounded-full transition-colors" title="Исключить">
+                                            <button onClick={() => handleKickPlayer(p.id)} className="p-2 text-red-500 hover:bg-white/10 rounded-full transition-colors" title="Исключить">
                                                 <X size={16} />
                                             </button>
                                         )}
@@ -750,7 +762,7 @@ const GameRoom = () => {
                             </button>
 
                             <button
-                                onClick={() => navigate('/')}
+                                onClick={handleLeaveGame}
                                 className="py-3 px-6 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg transition-transform hover:scale-105 ml-auto"
                             >
                                 <X size={20} /> Выйти

@@ -457,13 +457,13 @@ async def add_bot(
     }
 
 
-@router.delete("/{game_id}/bots/{bot_id}")
-async def remove_bot(
+@router.delete("/{game_id}/players/{player_id}")
+async def kick_player(
     game_id: str,
-    bot_id: str,
+    player_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Remove a bot from the game (host only)."""
+    """Kick a player or bot from the game (host only)."""
     engine = get_game_engine()
     game = engine.games.get(game_id.upper())
     
@@ -471,20 +471,21 @@ async def remove_bot(
         raise HTTPException(status_code=404, detail="Game not found")
     
     if game.host_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Only the host can remove bots")
+        raise HTTPException(status_code=403, detail="Only the host can kick players")
     
     if game.game_status != "waiting":
-        raise HTTPException(status_code=400, detail="Cannot remove bots after game started")
+        raise HTTPException(status_code=400, detail="Cannot kick players after game started")
     
-    if bot_id not in game.players:
-        raise HTTPException(status_code=404, detail="Bot not found")
+    if player_id not in game.players:
+        raise HTTPException(status_code=404, detail="Player not found")
     
-    if not game.players[bot_id].is_bot:
-        raise HTTPException(status_code=400, detail="This player is not a bot")
-    
-    del game.players[bot_id]
-    if bot_id in game.player_order:
-        game.player_order.remove(bot_id)
+    # Preventing host from kicking themselves accidentally
+    if game.players[player_id].user_id == current_user.id:
+         raise HTTPException(status_code=400, detail="Host cannot kick themselves")
+
+    del game.players[player_id]
+    if player_id in game.player_order:
+        game.player_order.remove(player_id)
     
     # Broadcast removal
     from socket_manager import manager
@@ -492,12 +493,18 @@ async def remove_bot(
     asyncio.create_task(
         manager.broadcast(game_id.upper(), {
             "type": "PLAYER_LEFT",
-            "player_id": bot_id,
+            "player_id": player_id,
             "game_state": game.dict()
         })
     )
     
     return {"success": True, "game_state": game.dict()}
+
+
+@router.delete("/{game_id}/bots/{bot_id}")
+async def remove_bot_legacy(game_id: str, bot_id: str, current_user: User = Depends(get_current_user)):
+    """Legacy endpoint for backward compatibility, redirects to kick_player."""
+    return await kick_player(game_id, bot_id, current_user)
 
 
 # ============== Game Invites ==============
