@@ -70,11 +70,11 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
                         ...finalRotation
                     }}
                     transition={isRolling ? {
-                        duration: 1.0, // Faster spin - synced with GameRoom timeout
+                        duration: 2.0, // Slower spin
                         repeat: Infinity,
                         ease: "linear"
                     } : {
-                        duration: 0.6,
+                        duration: 1.2, // Long deceleration for smooth stop
                         type: "tween",
                         ease: "easeOut"
                     }}
@@ -88,9 +88,17 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
                 </motion.div>
                 {isGlow && !isRolling && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1.2 }}
-                        className="absolute inset-0 rounded-full bg-yellow-400/20 blur-2xl -z-10"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{
+                            opacity: [0.4, 0.7, 0.4],
+                            scale: [1, 1.4, 1]
+                        }}
+                        transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                        className="absolute inset-0 rounded-full bg-yellow-400/30 blur-3xl -z-10"
                     />
                 )}
             </div>

@@ -482,18 +482,18 @@ const GameRoom = () => {
                     if (gameState?.turn_state) {
                         setHasRolled(!!gameState.turn_state.has_rolled);
                     }
-                }, 3500); // 1000ms spin + 1500ms display + 300ms fade + buffer
+                }, 6000); // 2000ms spin + 3000ms display + 300ms fade + buffer
 
                 // Immediately set hasRolled based on doubles to prevent UI hang
                 // Update: DO NOT change hasRolled here immediately if we want to wait for animation.
                 // But we must disable rolling again. isRolling=true handles that.
                 // We will sync hasRolled in the Final Phase.
 
-                // Phase 1: Rolling animation (1000ms spin - synced with DiceAnimation duration)
+                // Phase 1: Rolling animation (2000ms spin - synced with DiceAnimation duration)
                 const rollTimeout = setTimeout(() => {
                     setDiceRolling(false); // Stop spinning (Freeze)
 
-                    // Phase 2: Show result for 1.5 seconds (Freeze phase - allows reading)
+                    // Phase 2: Show result for 3 seconds (Freeze phase - allows reading)
                     const resultTimeout = setTimeout(() => {
                         setShowDice(false);
 
@@ -524,8 +524,8 @@ const GameRoom = () => {
                                 setShowChanceModal(true);
                             }
                         }, 300);
-                    }, 1500);
-                }, 1000);
+                    }, 3000);
+                }, 2000);
                 break;
 
             case 'PROPERTY_BOUGHT':

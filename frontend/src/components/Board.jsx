@@ -54,36 +54,31 @@ const getTileCoordinates = (tileId, boardRef, gap = 2) => {
 
     const gridStyle = getTileStyle(tileId);
 
-    // Grid configuration: Corners 1.8fr, others 1fr (Updated to match CSS)
-    // 1st col (index 1) and 11th col (index 11) are 1.8fr
-    // Cols 2-10 are 1fr
-    // Total units = 1.8 + 9 + 1.8 = 12.6
+    // Total units = 1.8 (corner) + 9 * 1 (side) + 1.8 (corner) = 12.6
     const totalUnits = 12.6;
 
-    // Calculate unit size after subtracting gaps
-    // 11 cells have 10 gaps
     const availableWidth = w - (10 * gap);
     const availableHeight = h - (10 * gap);
 
     const unitX = availableWidth / totalUnits;
     const unitY = availableHeight / totalUnits;
 
-    const getCoordinate = (index, unitSize) => {
+    const getCoordinate = (gridIndex, unitSize) => {
         let pos = 0;
-        for (let i = 1; i < index; i++) {
-            if (i === 1 || i === 11) pos += 1.8 * unitSize;
-            else pos += 1 * unitSize;
-            pos += gap;
+        // Sum up sizes of all preceding cells
+        for (let i = 1; i < gridIndex; i++) {
+            const size = (i === 1 || i === 11) ? 1.8 : 1;
+            pos += size * unitSize + gap;
         }
-        const currentSize = (index === 1 || index === 11) ? 1.8 : 1;
-        pos += (currentSize * unitSize) / 2;
-        return pos;
+        // Add half of the current cell's size to find the center
+        const currentCellSize = (gridIndex === 1 || gridIndex === 11) ? 1.8 : 1;
+        return pos + (currentCellSize * unitSize) / 2;
     };
 
-    const x = getCoordinate(gridStyle.gridColumnStart, unitX);
-    const y = getCoordinate(gridStyle.gridRowStart, unitY);
-
-    return { x, y };
+    return {
+        x: getCoordinate(gridStyle.gridColumnStart, unitX),
+        y: getCoordinate(gridStyle.gridRowStart, unitY)
+    };
 };
 
 
