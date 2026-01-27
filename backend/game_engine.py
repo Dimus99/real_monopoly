@@ -834,8 +834,20 @@ class GameEngine:
         player = game.players.get(player_id)
         if not player: return {"error": "Player not found"}
         
+        # Handle SKIP (Refuse to play)
+        if bet_numbers == []:
+            cost = 50
+            player.money -= cost
+            game.logs.append(f"🎰 {player.name} отказался от игры в Казино и заплатил $50 штрафа.")
+            return {
+                "player_id": player_id,
+                "action": "casino_result",
+                "skipped": True,
+                "game_state": game.dict()
+            }
+
         # Validate bet
-        if not bet_numbers or len(bet_numbers) > 3:
+        if len(bet_numbers) > 3:
             return {"error": "Invalid bet. Choose 1-3 numbers."}
         
         for n in bet_numbers:
@@ -845,6 +857,7 @@ class GameEngine:
         # Roll One Die (1-6)
         roll = random.randint(1, 6)
         won = roll in bet_numbers
+        choices_str = ", ".join(map(str, sorted(bet_numbers)))
         
         # Calculate prize
         prize = 0
@@ -855,8 +868,9 @@ class GameEngine:
             elif count == 3: prize = 1000
             
             player.money += prize
-            game.logs.append(f"🎰 {player.name} rolled {roll} and WON ${prize} in the Casino!")
+            game.logs.append(f"🎰 {player.name} выбрал ({choices_str}), выпало {roll} и ВЫИГРАЛ ${prize}!")
             return {
+                "player_id": player_id,
                 "action": "casino_result",
                 "win": True,
                 "roll": roll,
@@ -864,31 +878,23 @@ class GameEngine:
                 "game_state": game.dict()
             }
         else:
-            game.logs.append(f"🎰 {player.name} rolled {roll} and LOST everything. Revolution!")
+            game.logs.append(f"🎰 {player.name} выбрал ({choices_str}), выпало {roll} и ПРОИГРАЛ ВСЕ. Революция!")
             # ELIMINATE PLAYER (Revolution)
-            # Reset assets to unowned (active revolution returning fields to game)
-            # We can use handle_bankruptcy, but we need to ensure the creditor is None (Bank)
-            # bankruptcy normally auctions? Or just returns to bank.
-            # "his fields return to game" -> Become unowned.
-            
-            # Custom bankruptcy without auction logic if we want, or use standard.
-            # But standard bankruptcy usually auctions stuff if implied?
-            # Let's check _handle_bankruptcy... it's not fully visible, but usually it handles returning directly or auction.
-            # User said "fields return to game".
-            
-            # Proceed to elimination
             res = self._handle_bankruptcy(game, player, None, 0)
             
             # Override message log?
-            game.logs.append(f"🔥 REVOLUTION! {player.name} was overthrown.")
+            game.logs.append(f"🔥 РЕВОЛЮЦИЯ! {player.name} был свергнут.")
             
             return {
+                "player_id": player_id,
                 "action": "casino_result",
                 "win": False,
                 "roll": roll,
-                "game_state": game.dict(),
-                "eliminated": True
+                "eliminated": True,
+                "game_state": res["game_state"],
+                "game_over": res["game_over"]
             }
+
             
     def _handle_bankruptcy(self, game: GameState, debtor: Player, creditor_id: Optional[str], amount: int) -> Dict[str, Any]:
         """Handle player bankruptcy."""

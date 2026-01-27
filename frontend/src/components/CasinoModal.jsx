@@ -76,8 +76,8 @@ const CasinoModal = ({ onClose, onBet }) => {
                                     key={num}
                                     onClick={() => toggleNumber(num)}
                                     className={`relative h-16 rounded-xl flex items-center justify-center transition-all ${selectedNumbers.includes(num)
-                                            ? 'bg-yellow-500 text-black shadow-[0_0_15px_rgba(234,179,8,0.5)] scale-105'
-                                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                        ? 'bg-yellow-500 text-black shadow-[0_0_15px_rgba(234,179,8,0.5)] scale-105'
+                                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                         }`}
                                 >
                                     <DiceIcon value={num} size={32} />
@@ -115,12 +115,20 @@ const CasinoModal = ({ onClose, onBet }) => {
                             <button
                                 onClick={handleBet}
                                 disabled={selectedNumbers.length === 0 || isSubmitting}
-                                className={`w-full py-4 rounded-xl font-bold text-lg uppercase tracking-wider transition-all ${selectedNumbers.length > 0
-                                        ? 'bg-gradient-to-r from-yellow-500 to-amber-600 text-black hover:shadow-[0_0_20px_rgba(234,179,8,0.4)]'
-                                        : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                className={`w-full py-4 rounded-xl font-bold text-lg uppercase tracking-wider transition-all mb-3 ${selectedNumbers.length > 0
+                                    ? 'bg-gradient-to-r from-yellow-500 to-amber-600 text-black hover:shadow-[0_0_20px_rgba(234,179,8,0.4)]'
+                                    : 'bg-gray-700 text-gray-400 cursor-not-allowed'
                                     }`}
                             >
                                 {isSubmitting ? 'Ставки сделаны...' : 'СДЕЛАТЬ СТАВКУ'}
+                            </button>
+
+                            <button
+                                onClick={() => onBet([])}
+                                disabled={isSubmitting}
+                                className="w-full py-2 rounded-xl font-bold text-xs uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/5 transition-all"
+                            >
+                                Отказаться от игры (Штраф $50)
                             </button>
                         </div>
                     </div>

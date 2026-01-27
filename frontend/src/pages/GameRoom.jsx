@@ -591,16 +591,12 @@ const GameRoom = () => {
             case 'CASINO_RESULT':
                 if (lastAction.player_id === playerId) {
                     setShowCasinoModal(false);
-                    if (lastAction.win) {
+                    if (lastAction.skipped) {
+                        // Just quiet close or toast
+                    } else if (lastAction.win) {
                         alert(`💰 КАЗИНО: Вы выиграли $${lastAction.amount}!`);
                     } else {
                         alert(`🔥 КАЗИНО: Вы проиграли! В стране произошла РЕВОЛЮЦИЯ.`);
-                    }
-                } else {
-                    // Notify others
-                    const pName = gameState.players[lastAction.player_id]?.name || 'Игрок';
-                    if (lastAction.win) {
-                        // Toast handled by logs usually, but we can add extra flare if needed
                     }
                 }
                 break;
@@ -1034,8 +1030,8 @@ const GameRoom = () => {
                                                     title={`${ABILITIES[p.character].name}: ${ABILITIES[p.character].desc}`}
                                                 >
                                                     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold transition-colors ${p.ability_cooldown > 0
-                                                            ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
-                                                            : 'bg-green-500/10 border-green-500/30 text-green-400'
+                                                        ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                                                        : 'bg-green-500/10 border-green-500/30 text-green-400'
                                                         }`}>
                                                         <span>{ABILITIES[p.character].icon}</span>
                                                         <span>{p.ability_cooldown > 0 ? `${p.ability_cooldown} Х` : 'ГОТОВО'}</span>
@@ -1146,8 +1142,8 @@ const GameRoom = () => {
                 )}
 
 
-                {/* Action Panel - CENTERED - Hide when TradeModal is open */}
-                {!showTradeModal && (
+                {/* Action Panel - CENTERED - Hide when TradeModal or CasinoModal is open */}
+                {!showTradeModal && !showCasinoModal && (
                     <div className={`fixed left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-24 scale-90' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
                         <div className="bg-black/80 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/20 w-fit mx-auto">
                             <ActionPanel
