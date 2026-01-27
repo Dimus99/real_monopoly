@@ -533,6 +533,10 @@ const GameRoom = () => {
                             if (lastAction.action === 'casino_prompt') {
                                 setShowCasinoModal(true);
                             }
+                            // Added: immediate jail check update
+                            if (lastAction.action === 'go_to_jail') {
+                                setHasRolled(true);
+                            }
                         }
 
                         // Phase 3: Wait more for visual "freeze" (2000ms) then HIDE DICE

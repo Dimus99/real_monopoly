@@ -1125,7 +1125,7 @@ class GameEngine:
         if prop.isolation_turns > 0:
             return {"error": "Property is Isolated (Kim's Nuke Threat) - Cannot buy!"}
         
-        if prop.group in ["Special", "Jail", "FreeParking", "GoToJail", "Chance", "Tax"]:
+        if prop.group in ["Special", "Jail", "FreeParking", "GoToJail", "Chance", "Tax", "Negotiations", "RaiseTax", "Casino"]:
             return {"error": "Cannot buy this tile"}
         
         if player.money < prop.price:
@@ -1999,7 +1999,7 @@ class GameEngine:
                     }
 
         # 3. PROPERTY (Free) - Logic
-        elif not tile.owner_id and tile.group not in ["Special", "Jail", "FreeParking", "GoToJail", "Chance", "Tax"]:
+        elif not tile.owner_id and tile.group not in ["Special", "Jail", "FreeParking", "GoToJail", "Chance", "Tax", "Negotiations", "RaiseTax", "Casino"]:
             should_buy = False
             
             # Check if buying completes a street (PRIORITY)
