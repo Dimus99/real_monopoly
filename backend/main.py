@@ -48,8 +48,11 @@ async def lifespan(app: FastAPI):
     # Startup
     bot_token = os.getenv("BOT_TOKEN")
     if bot_token:
+        from auth import set_bot_token, fetch_bot_username
         set_bot_token(bot_token)
         print("✓ Telegram bot token configured")
+        # Automatically fetch bot info to correct deep links
+        asyncio.create_task(fetch_bot_username())
     else:
         print("⚠ Warning: BOT_TOKEN not set, Telegram auth will run in dev mode")
     

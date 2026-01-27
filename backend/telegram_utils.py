@@ -5,9 +5,10 @@ from typing import Optional
 # Configuration
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 # Usually for Telegram Mini Apps the link is: https://t.me/botname/appname?startapp=parameter
-BOT_USERNAME = os.getenv("BOT_USERNAME", "monopoly_haha_bot")
-# The name of the Mini App in BotFather. Usually defaulted to "game" or "play"
-APP_SHORT_NAME = os.getenv("TG_APP_NAME", "play")
+# Or if it's the main app of the bot: https://t.me/botname?startapp=parameter
+BOT_USERNAME = os.getenv("BOT_USERNAME")
+# The name of the Mini App in BotFather. If empty, the link format changes to the direct bot-app link
+APP_SHORT_NAME = os.getenv("TG_APP_NAME")
 
 async def send_telegram_game_invite(
     to_telegram_id: int, 
@@ -29,8 +30,17 @@ async def send_telegram_game_invite(
 
     # Construct the Mini App deep link
     # Ref: https://core.telegram.org/bots/webapps#direct-links
-    # Format: https://t.me/botname/appname?startapp=parameter
-    join_url = f"https://t.me/{BOT_USERNAME}/{APP_SHORT_NAME}?startapp={game_id}"
+    # If not provided, we try the direct bot link: https://t.me/botname?startapp=parameter
+    
+    # Read at runtime because it might be fetched during lifespan startup
+    bot_name = os.getenv("BOT_USERNAME") or "monopoly_haha_bot"
+    app_target = os.getenv("TG_APP_NAME")
+    
+    if app_target:
+        join_url = f"https://t.me/{bot_name}/{app_target}?startapp={game_id}"
+    else:
+        # Many bots use the main app attached to the bot username
+        join_url = f"https://t.me/{bot_name}?startapp={game_id}"
     
     text = (
         f"🎲 *{from_user_name}* вызывает тебя на партию в монополию!\n\n"

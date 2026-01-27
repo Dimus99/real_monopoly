@@ -37,6 +37,30 @@ def set_bot_token(token: str):
         print("DEBUG AUTH: set_bot_token called with empty token")
 
 
+async def fetch_bot_username() -> Optional[str]:
+    """Fetch the bot's username from Telegram API."""
+    if not BOT_TOKEN:
+        return None
+    
+    import httpx
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getMe")
+            if res.status_code == 200:
+                data = res.json()
+                username = data.get("result", {}).get("username")
+                if username:
+                    print(f"✓ Bot detected: @{username}")
+                    # Also update os.environ so other modules can see it
+                    import os
+                    if not os.getenv("BOT_USERNAME"):
+                        os.environ["BOT_USERNAME"] = username
+                    return username
+    except Exception as e:
+        print(f"DEBUG AUTH: Failed to fetch bot info: {e}")
+    return None
+
+
 def generate_token() -> str:
     """Generate a secure random token."""
     return secrets.token_urlsafe(32)
