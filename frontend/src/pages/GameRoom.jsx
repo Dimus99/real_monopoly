@@ -457,13 +457,11 @@ const GameRoom = () => {
                 setIsRolling(true);
 
                 // Immediately set hasRolled based on doubles to prevent UI hang
-                if (lastAction.doubles) {
-                    setHasRolled(false);
-                } else {
-                    setHasRolled(true);
-                }
+                // Update: DO NOT change hasRolled here immediately if we want to wait for animation.
+                // But we must disable rolling again. isRolling=true handles that.
+                // We will sync hasRolled in the Final Phase.
 
-                // Phase 1: Rolling animation (1200ms - Slower spin)
+                // Phase 1: Rolling animation (2500ms - Slower spin duration)
                 const rollTimeout = setTimeout(() => {
                     setDiceRolling(false); // Show final result
 
@@ -479,6 +477,7 @@ const GameRoom = () => {
                             setIsRolling(false);
 
                             // SYNC hasRolled accurately from the latest server state in case it changed
+                            // Only update this AFTER animation completes to prevent premature button changes.
                             if (gameState?.turn_state) {
                                 setHasRolled(!!gameState.turn_state.has_rolled);
                             }
@@ -497,7 +496,7 @@ const GameRoom = () => {
                             }
                         }, 500);
                     }, 3000);
-                }, 1200);
+                }, 2500);
                 break;
 
             case 'PROPERTY_BOUGHT':
@@ -952,7 +951,7 @@ const GameRoom = () => {
                         minHeight: isMobile ? '800px' : 'auto',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
+                        justifyContent: isMobile ? 'flex-start' : 'center', // Fix mobile left scroll
                         // Mobile: Allow touch scrolling in all directions if content overflows
                         touchAction: isMobile ? 'pan-x pan-y' : 'auto'
                     }}
@@ -967,9 +966,6 @@ const GameRoom = () => {
 
                         externalRef={boardRef}
                         onAvatarClick={handleAvatarClick}
-                        winner={gameState.winner}
-
-                        selectedTileId={selectedTile?.id}
                         onBuy={() => {
                             handleBuyProperty();
                             setShowBuyModal(false);
@@ -984,6 +980,27 @@ const GameRoom = () => {
                         lastAction={lastAction}
                     />
                 </div>
+
+                {/* Property Modal - Ensure High Z-Index */}
+                {gameState?.board && (
+                    <div className="relative z-[300]">
+                        <PropertyModal
+                            isOpen={!!selectedTile}
+                            onClose={() => setSelectedTile(null)}
+                            property={selectedTile}
+                            players={gameState.players}
+                            currentPlayerId={playerId}
+                            onBuy={handleBuyProperty}
+                            // ... props
+                            canBuy={canBuy && (selectedTile?.id === currentTile?.id)}
+                            onBuild={handleBuildHouse}
+                            onSellHouse={handleSellHouse}
+                            onMortgage={handleMortgage}
+                            onUnmortgage={handleUnmortgage}
+                            tiles={gameState.board} // Pass full board for station calculation
+                        />
+                    </div>
+                )}
 
                 <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
                     <AnimatePresence>
@@ -1027,7 +1044,9 @@ const GameRoom = () => {
                 </div>
 
                 {/* Chat / Toast Notification - Elevated to avoid overlap */}
-                <div className={`absolute left-0 right-0 z-[150] w-full flex flex-col justify-end pointer-events-none px-4 ${isMobile ? 'top-16 bottom-24' : 'bottom-0 pb-24'}`}>
+                {/* Lowered z-index to 100 so it goes UNDER Modals (usually z-150+) if they overlap. 
+                    Moved to bottom-0 with no bottom padding to sit lower. */}
+                <div className={`absolute left-0 right-0 z-[100] w-full flex flex-col justify-end pointer-events-none px-4 bottom-0 pb-16`}>
                     <div className="pointer-events-auto w-full max-w-[600px] mx-auto">
                         <ToastNotification logs={displayedLogs} onSendMessage={handleSendMessage} />
                     </div>
@@ -1035,14 +1054,17 @@ const GameRoom = () => {
             </div>
 
             {/* Fancy Newspaper Chance Modal */}
-            <ChanceModal
-                show={showChanceModal}
-                data={chanceData}
-                onClose={() => {
-                    setShowChanceModal(false);
-                    setChanceCard(null); // Sync with ActionPanel
-                }}
-            />
+            {/* Fancy Newspaper Chance Modal - High Z-Index */}
+            <div className="relative z-[300]">
+                <ChanceModal
+                    show={showChanceModal}
+                    data={chanceData}
+                    onClose={() => {
+                        setShowChanceModal(false);
+                        setChanceCard(null); // Sync with ActionPanel
+                    }}
+                />
+            </div>
 
             {/* Target Overlay */}
             <AnimatePresence>
