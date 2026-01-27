@@ -12,14 +12,15 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
     }, [rolling, values]);
 
     const getRotation = (val) => {
+        // Ensure standard rotations
         switch (val) {
-            case 1: return { rotateY: 0, rotateX: 0 };
-            case 2: return { rotateY: -90, rotateX: 0 };
-            case 3: return { rotateY: 0, rotateX: -90 };
-            case 4: return { rotateY: 0, rotateX: 90 };
-            case 5: return { rotateY: 90, rotateX: 0 };
-            case 6: return { rotateY: 180, rotateX: 0 };
-            default: return { rotateY: 0, rotateX: 0 };
+            case 1: return { rotateY: 0, rotateX: 0, rotateZ: 0 };
+            case 2: return { rotateY: -90, rotateX: 0, rotateZ: 0 };
+            case 3: return { rotateY: 0, rotateX: -90, rotateZ: 0 };
+            case 4: return { rotateY: 0, rotateX: 90, rotateZ: 0 };
+            case 5: return { rotateY: 90, rotateX: 0, rotateZ: 0 };
+            case 6: return { rotateY: 180, rotateX: 0, rotateZ: 0 };
+            default: return { rotateY: 0, rotateX: 0, rotateZ: 0 };
         }
     };
 
@@ -69,7 +70,7 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                         ...finalRotation
                     }}
                     transition={isRolling ? {
-                        duration: 2.5,
+                        duration: 0.8, // Faster spin for better effect
                         repeat: Infinity,
                         ease: "linear"
                     } : {

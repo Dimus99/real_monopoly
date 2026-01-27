@@ -1013,7 +1013,7 @@ const GameRoom = () => {
                 </div>
 
                 {/* Action Panel - CENTERED */}
-                <div className={`absolute left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-20 scale-100' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
+                <div className={`fixed left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-8 scale-100' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
                     <div className="bg-black/80 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/20 w-fit mx-auto">
                         <ActionPanel
                             isMyTurn={isMyTurn}
@@ -1044,9 +1044,8 @@ const GameRoom = () => {
                 </div>
 
                 {/* Chat / Toast Notification - Elevated to avoid overlap */}
-                {/* Lowered z-index to 100 so it goes UNDER Modals (usually z-150+) if they overlap. 
-                    Moved to bottom-0 with no bottom padding to sit lower. */}
-                <div className={`absolute left-0 right-0 z-[100] w-full flex flex-col justify-end pointer-events-none px-4 bottom-0 pb-16`}>
+                {/* Fixed positioning above the action panel on mobile */}
+                <div className={`fixed left-0 right-0 z-[100] w-full flex flex-col justify-end pointer-events-none px-4 ${isMobile ? 'bottom-36' : 'bottom-0 pb-16'}`}>
                     <div className="pointer-events-auto w-full max-w-[600px] mx-auto">
                         <ToastNotification logs={displayedLogs} onSendMessage={handleSendMessage} />
                     </div>
