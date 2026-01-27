@@ -250,18 +250,24 @@ const Lobby = () => {
             setIsInitializing(false);
         };
 
-        init();
+        if (isInitializing) {
+            init();
+        }
+    }, [handleTelegramLogin, API_BASE]); // Initial init should only depend on basic auth setup
+
+    // Handle Telegram Deep Links (Invites)
+    useEffect(() => {
         if (user && (mode === 'menu' || mode === 'join')) {
             const tg = window.Telegram?.WebApp;
             const startParam = tg?.initDataUnsafe?.start_param;
             if (startParam && startParam !== window._handledStartParam) {
                 console.log("DEBUG AUTH: Detected Telegram start_param:", startParam);
-                window._handledStartParam = startParam; // Prevent infinite loop/re-triggers
+                window._handledStartParam = startParam;
                 setGameIdInput(startParam.toUpperCase());
                 setMode('join');
             }
         }
-    }, [user, mode, handleTelegramLogin]); // Run once on mount
+    }, [user, mode]);
 
     const authFetch = async (url, options = {}) => {
         const token = localStorage.getItem('monopoly_token');

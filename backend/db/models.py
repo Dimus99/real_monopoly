@@ -37,6 +37,7 @@ class GameStatus(str, enum.Enum):
 class MapType(str, enum.Enum):
     UKRAINE = "Ukraine"
     WORLD = "World"
+    MONOPOLY1 = "Monopoly1"
 
 
 class CharacterType(str, enum.Enum):
