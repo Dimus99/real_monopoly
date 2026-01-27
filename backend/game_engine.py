@@ -60,7 +60,7 @@ UKRAINE_MAP_DATA = [
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Ровно", "group": "Brown", "price": 60, "rent": [4, 20, 60, 180, 320, 450]},
     {"name": "Налог", "group": "Tax", "price": 0, "rent": [200]},
-    {"name": "Киевский Вокзал", "group": "Station", "price": 200, "rent": [25, 50, 75, 100]},
+    {"name": "Киевский Вокзал", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},
     {"name": "Чернигов", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Сумы", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
@@ -70,7 +70,7 @@ UKRAINE_MAP_DATA = [
     {"name": "Укрэнерго", "group": "Utility", "price": 150, "rent": []},
     {"name": "Херсон", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},
     {"name": "Николаев", "group": "Pink", "price": 160, "rent": [12, 60, 180, 500, 700, 900]},
-    {"name": "Одесский Порт", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},
+    {"name": "Одесский Порт", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},
     {"name": "Винница", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Хмельницкий", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
@@ -80,7 +80,7 @@ UKRAINE_MAP_DATA = [
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Ужгород", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
     {"name": "Черновцы", "group": "Red", "price": 240, "rent": [20, 100, 300, 750, 925, 1100]},
-    {"name": "ГП Антонов", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},
+    {"name": "ГП Антонов", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},
     {"name": "Ивано-Франковск", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
     {"name": "Львов", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},
     {"name": "Укртелеком", "group": "Utility", "price": 150, "rent": []},
@@ -90,7 +90,7 @@ UKRAINE_MAP_DATA = [
     {"name": "Кривой Рог", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Мариуполь", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
-    {"name": "Аэропорт Борисполь", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},
+    {"name": "Аэропорт Борисполь", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Харьков", "group": "DarkBlue", "price": 350, "rent": [35, 175, 500, 1100, 1300, 1500]},
     {"name": "Налог на Роскошь", "group": "Tax", "price": 0, "rent": [100]},
@@ -103,7 +103,7 @@ MONOPOLY1_MAP_DATA = [
     {"name": "Chance", "group": "Chance", "price": 0, "rent": []},  # 2
     {"name": "KFC", "group": "Brown", "price": 60, "rent": [4, 20, 60, 180, 320, 450]},  # 3
     {"name": "Income Tax", "group": "Tax", "price": 0, "rent": [200]},  # 4
-    {"name": "M1 Sky", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},  # 5
+    {"name": "M1 Sky", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},  # 5
     {"name": "American Airlines", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},  # 6
     {"name": "Chance", "group": "Chance", "price": 0, "rent": []},  # 7
     {"name": "Lufthansa", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},  # 8
@@ -113,7 +113,7 @@ MONOPOLY1_MAP_DATA = [
     {"name": "Electric Company", "group": "Utility", "price": 150, "rent": []},  # 12
     {"name": "Radisson", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},  # 13
     {"name": "Novotel", "group": "Pink", "price": 160, "rent": [12, 60, 180, 500, 700, 900]},  # 14
-    {"name": "Rail Station 2", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},  # 15
+    {"name": "Rail Station 2", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},  # 15
     {"name": "Land Rover", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},  # 16
     {"name": "Chance", "group": "Chance", "price": 0, "rent": []},  # 17
     {"name": "Pepsi", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},  # 18
@@ -123,7 +123,7 @@ MONOPOLY1_MAP_DATA = [
     {"name": "Chance", "group": "Chance", "price": 0, "rent": []},  # 22
     {"name": "Sunsilk", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},  # 23
     {"name": "World", "group": "Red", "price": 240, "rent": [20, 100, 300, 750, 925, 1100]},  # 24
-    {"name": "Cash", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},  # 25
+    {"name": "Cash", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},  # 25
     {"name": "Reebok", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},  # 26
     {"name": "Diesel", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},  # 27
     {"name": "Water Works", "group": "Utility", "price": 150, "rent": []},  # 28
@@ -133,7 +133,7 @@ MONOPOLY1_MAP_DATA = [
     {"name": "Facebook", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},  # 32
     {"name": "Chance", "group": "Chance", "price": 0, "rent": []},  # 33
     {"name": "Twitter", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},  # 34
-    {"name": "Space", "group": "Station", "price": 200, "rent": [25, 50, 100, 200]},  # 35
+    {"name": "Space", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},  # 35
     {"name": "Chance", "group": "Chance", "price": 0, "rent": []},  # 36
     {"name": "7up", "group": "DarkBlue", "price": 350, "rent": [35, 175, 500, 1100, 1300, 1500]},  # 37
     {"name": "Luxury Tax", "group": "Tax", "price": 0, "rent": [100]},  # 38
@@ -470,8 +470,12 @@ class GameEngine:
         # Track if payment is required to block ending turn
         if result.get("action") == "pay_rent" or result.get("action") == "tax":
             game.turn_state["awaiting_payment"] = True
+            game.turn_state["awaiting_payment_amount"] = result.get("amount") or result.get("tax_paid")
+            game.turn_state["awaiting_payment_owner"] = result.get("owner_id") or "BANK"
         else:
             game.turn_state.pop("awaiting_payment", None)
+            game.turn_state.pop("awaiting_payment_amount", None)
+            game.turn_state.pop("awaiting_payment_owner", None)
         
         result["game_state"] = game.dict()
         return result
@@ -887,6 +891,8 @@ class GameEngine:
         
         # Clear payment requirement
         game.turn_state.pop("awaiting_payment", None)
+        game.turn_state.pop("awaiting_payment_amount", None)
+        game.turn_state.pop("awaiting_payment_owner", None)
         self._reset_timer(game)
         
         return {
@@ -985,10 +991,14 @@ class GameEngine:
             if assets_value < rent:
                 # BANKRUPTCY
                 game.turn_state.pop("awaiting_payment", None)
+                game.turn_state.pop("awaiting_payment_amount", None)
+                game.turn_state.pop("awaiting_payment_owner", None)
                 return self._handle_bankruptcy(game, player, owner, rent)
             else:
                 # Force liquidation - mark that payment is required
                 game.turn_state["awaiting_payment"] = True
+                game.turn_state["awaiting_payment_amount"] = rent
+                game.turn_state["awaiting_payment_owner"] = owner.id
                 return {
                     "success": False,
                     "error": "Insufficient funds! You must sell houses or mortgage properties to pay rent.",
@@ -1004,6 +1014,8 @@ class GameEngine:
         
         # Clear payment requirement
         game.turn_state.pop("awaiting_payment", None)
+        game.turn_state.pop("awaiting_payment_amount", None)
+        game.turn_state.pop("awaiting_payment_owner", None)
         
         game.logs.append(f"{player.name} paid ${rent} rent to {owner.name}")
         self._reset_timer(game)

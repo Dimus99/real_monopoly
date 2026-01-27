@@ -480,7 +480,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
 
                 <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
                     <AnimatePresence>
-                        {selectedTileId !== null && (
+                        {(selectedTileId !== null && selectedTileId !== undefined) && (
                             <>
                                 <motion.div
                                     initial={{ opacity: 0 }}
@@ -502,6 +502,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                                     <PropertyModal
                                         property={tiles.find(t => t.id === selectedTileId)}
                                         players={players}
+                                        tiles={tiles}
                                         canBuy={isMyTurn && players[currentPlayerId]?.position === selectedTileId && !tiles.find(t => t.id === selectedTileId)?.owner_id}
                                         onBuy={onBuy}
                                         onClose={() => onTileClick(null)}

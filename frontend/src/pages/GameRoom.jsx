@@ -458,15 +458,35 @@ const GameRoom = () => {
     }, [canBuy, hasRolled]);
     */
 
-    // Sync state from server to handle page reloads / reconnections
+    // Sync state from server to handle page reloads / reconnections / state updates
     useEffect(() => {
-        if (gameState && !isRolling && !diceRolling) {
-            setDiceValues(gameState.dice || [1, 1]);
-            if (gameState.turn_state) {
+        if (!gameState) return;
+
+        // Sync basic flags that don't interfere with animations
+        if (gameState.turn_state) {
+            // Strictly sync rent pending state from server's truth
+            if (gameState.turn_state.awaiting_payment && isMyTurn) {
+                setRentDetails({
+                    amount: gameState.turn_state.awaiting_payment_amount,
+                    ownerId: gameState.turn_state.awaiting_payment_owner
+                });
+            } else if (!isRolling && !diceRolling) {
+                // Only clear if we are NOT in the middle of a roll animation
+                // which might be about to set its own rentDetails from the action data
+                setRentDetails(null);
+            }
+
+            // Sync other turn flags
+            if (!isRolling && !diceRolling) {
                 setHasRolled(!!gameState.turn_state.has_rolled);
             }
         }
-    }, [gameState, isRolling, diceRolling]);
+
+        // Basic sync for dice values if not currently rolling
+        if (!isRolling && !diceRolling && gameState.dice) {
+            setDiceValues(gameState.dice);
+        }
+    }, [gameState, isRolling, diceRolling, isMyTurn]);
 
     // Handle tile click
     const handleTileClick = (tileId) => {

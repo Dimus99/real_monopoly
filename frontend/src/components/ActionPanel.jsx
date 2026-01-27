@@ -118,6 +118,7 @@ const ActionPanel = ({
                 <AnimatePresence>
                     {rentDetails && (
                         <motion.button
+                            key="pay-rent"
                             initial={{ width: 0, opacity: 0, padding: 0 }}
                             animate={{ width: 'auto', opacity: 1, padding: '0 16px' }}
                             exit={{ width: 0, opacity: 0, padding: 0 }}
@@ -143,6 +144,7 @@ const ActionPanel = ({
                 <AnimatePresence>
                     {canBuy && (
                         <motion.button
+                            key="buy-prop"
                             initial={{ width: 0, opacity: 0, padding: 0 }}
                             animate={{ width: 'auto', opacity: 1, padding: '0 16px' }}
                             exit={{ width: 0, opacity: 0, padding: 0 }}
@@ -169,6 +171,7 @@ const ActionPanel = ({
                 <AnimatePresence>
                     {showEndTurn && (
                         <motion.button
+                            key="end-turn"
                             initial={{ width: 0, opacity: 0, padding: 0, scale: 0.5 }}
                             animate={{ width: 'auto', opacity: 1, padding: '0 20px', scale: 1 }}
                             exit={{ width: 0, opacity: 0, padding: 0, scale: 0.5 }}

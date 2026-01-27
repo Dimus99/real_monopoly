@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { X, DollarSign, Home, Building2, Hotel, MapPin } from 'lucide-react';
+import { X, DollarSign, Home, Building2, Hotel, MapPin, Plane } from 'lucide-react';
+import { CHARACTERS } from '../constants/characters';
 
 // Group color mapping
 const GROUP_COLORS = {
@@ -51,7 +52,7 @@ const getTileImage = (property) => {
     return groupMap[property.group] || '/tiles/greenland.png';
 };
 
-const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, currentPlayerId }) => {
+const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, currentPlayerId }) => {
     if (!property) return null;
 
     const groupColor = GROUP_COLORS[property.group] || GROUP_COLORS.Special;
@@ -67,7 +68,7 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="w-[400px] min-h-[600px] bg-[#1a1b26] rounded-[32px] overflow-hidden flex flex-col relative shadow-[0_30px_90px_rgba(0,0,0,0.8)] border border-white/10"
+            className="w-[320px] md:w-[350px] max-h-[90vh] bg-[#1a1b26] rounded-[32px] overflow-hidden flex flex-col relative shadow-[0_30px_90px_rgba(0,0,0,0.8)] border border-white/10"
         >
             {/* Close Button */}
             <button
@@ -78,7 +79,7 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
             </button>
 
             {/* Premium Card Header */}
-            <div className="relative h-[200px] shrink-0 overflow-hidden">
+            <div className="relative h-[140px] shrink-0 overflow-hidden">
                 <div
                     className="absolute inset-0 z-10 opacity-90"
                     style={{ background: groupColor.gradient || groupColor.bg }}
@@ -94,12 +95,17 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
                 <div className="absolute top-0 left-0 right-0 h-1 bg-white/20 z-20" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a2e] to-transparent z-20" />
 
-                <div className="relative z-30 h-full flex flex-col items-center justify-end p-8 pb-6 text-center">
-                    <div className="mb-2 text-[10px] font-black uppercase tracking-[0.4em] text-white/50">
-                        {property.group} АКТИВЫ
+                <div className="relative z-30 h-full flex flex-col items-center justify-end p-4 pb-4 text-center">
+                    {property.group === 'Station' && (
+                        <div className="absolute top-4 left-4 z-40 p-2 bg-blue-500/20 rounded-lg backdrop-blur-md border border-blue-400/30">
+                            <Plane size={16} className="text-blue-200" />
+                        </div>
+                    )}
+                    <div className="mb-1 text-[8px] font-black uppercase tracking-[0.4em] text-white/50">
+                        {property.group === 'Station' ? 'ТРАНСПОРТНЫЙ УЗЕЛ' : `${property.group} АКТИВЫ`}
                     </div>
                     <h2
-                        className="font-display text-4xl font-black leading-tight text-white tracking-tight uppercase"
+                        className="font-display text-2xl font-black leading-tight text-white tracking-tight uppercase"
                         style={{ textShadow: '0 4px 12px rgba(0,0,0,0.6)' }}
                     >
                         {displayName}
@@ -108,31 +114,35 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
             </div>
 
             {/* Card Content */}
-            <div className="flex-1 p-8 space-y-8 bg-gradient-to-b from-[#1a1a2e] to-[#0c0c14]">
+            <div className="flex-1 p-6 space-y-4 bg-gradient-to-b from-[#1a1a2e] to-[#0c0c14] overflow-y-auto custom-scrollbar">
                 {isPropertyType ? (
                     <>
                         {/* Price & Stats */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white/[0.03] border border-white/5 p-4 rounded-[20px] text-center backdrop-blur-md">
-                                <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Цена выкупа</div>
-                                <div className="text-2xl font-black text-yellow-400 font-mono tracking-tighter">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-white/[0.03] border border-white/5 p-3 rounded-[16px] text-center backdrop-blur-md">
+                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-0.5">Цена</div>
+                                <div className="text-xl font-black text-yellow-400 font-mono tracking-tighter">
                                     ${property.price?.toLocaleString()}
                                 </div>
                             </div>
-                            <div className="bg-white/[0.03] border border-white/5 p-4 rounded-[20px] text-center backdrop-blur-md">
-                                <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Базовая рента</div>
-                                <div className="text-2xl font-black text-white font-mono tracking-tighter">
+                            <div className="bg-white/[0.03] border border-white/5 p-3 rounded-[16px] text-center backdrop-blur-md">
+                                <div className="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-0.5">Рента</div>
+                                <div className="text-xl font-black text-white font-mono tracking-tighter">
                                     ${property.rent?.[0]?.toLocaleString()}
                                 </div>
                             </div>
                         </div>
                         {property.owner_id && !property.is_mortgaged && (
-                            <div className="mt-4 bg-green-500/10 border border-green-500/20 p-4 rounded-[20px] text-center backdrop-blur-md">
-                                <div className="text-[10px] text-green-400 uppercase font-black tracking-widest mb-1">Текущая аренда</div>
-                                <div className="text-3xl font-black text-white font-mono tracking-tighter shadow-green-500/50 drop-shadow-lg">
+                            <div className="bg-green-500/10 border border-green-500/20 p-3 rounded-[16px] text-center backdrop-blur-md">
+                                <div className="text-[9px] text-green-400 uppercase font-black tracking-widest mb-0.5">Текущая аренда</div>
+                                <div className="text-2xl font-black text-white font-mono tracking-tighter">
                                     ${(() => {
                                         if (property.houses > 0) return property.rent?.[property.houses] || 0;
-                                        return property.rent?.[0] || 0;
+                                        if (property.group === 'Station') {
+                                            const stations_owned = tiles ? tiles.filter(t => t.group === 'Station' && t.owner_id === property.owner_id).length : 1;
+                                            return property.rent?.[stations_owned - 1] || property.rent?.[0] || 0;
+                                        }
+                                        return (property.is_monopoly && property.group !== 'Utility') ? (property.rent?.[0] * 2) : (property.rent?.[0] || 0);
                                     })()}
                                 </div>
                             </div>
@@ -153,34 +163,39 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
                             <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-[20px] text-center backdrop-blur-md">
                                 <div className="text-[10px] text-blue-300 uppercase font-black tracking-widest mb-1">Тарифная сетка</div>
                                 <div className="text-xs text-blue-100 leading-relaxed font-bold grid grid-cols-4 gap-1 mt-1">
-                                    <div>1: $25</div>
-                                    <div>2: <span className="text-white">$50</span></div>
-                                    <div>3: <span className="text-white">$75</span></div>
-                                    <div>4: <span className="text-yellow-400">$100</span></div>
+                                    {property.rent?.map((r, i) => {
+                                        const stations_owned = tiles ? tiles.filter(t => t.group === 'Station' && t.owner_id === property.owner_id).length : 0;
+                                        const active = stations_owned === (i + 1);
+                                        return (
+                                            <div key={i} className={active ? 'scale-110' : 'opacity-60'}>
+                                                {i + 1}: <span className={active ? 'text-yellow-400 font-black' : 'text-white'}>${r}</span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
 
                         {/* Ownership Badge */}
-                        <div className="flex items-center justify-between p-5 bg-white/[0.02] rounded-[24px] border border-white/5 shadow-inner">
+                        <div className="flex items-center justify-between p-4 bg-white/[0.02] rounded-[20px] border border-white/5 shadow-inner">
                             <div className="flex flex-col">
-                                <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-0.5">Владелец</span>
-                                <span className={`text-xs font-bold ${owner ? 'text-white' : 'text-green-400'}`}>
+                                <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest mb-0.5">Владелец</span>
+                                <span className={`text-[11px] font-bold ${owner ? 'text-white' : 'text-green-400'}`}>
                                     {owner ? 'Частный актив' : 'Свободно'}
                                 </span>
                             </div>
                             {owner ? (
-                                <div className="flex items-center gap-3 bg-black/40 px-3 py-2 rounded-2xl border border-white/10">
+                                <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-xl border border-white/10">
                                     <img
-                                        src={owner.avatar || '/avatars/putin.png'}
-                                        className="w-7 h-7 rounded-full border border-white/20 object-cover shadow-lg"
+                                        src={CHARACTERS[owner.character]?.avatar || owner.avatar || '/avatars/putin.png'}
+                                        className="w-6 h-6 rounded-full border border-white/20 object-cover shadow-lg"
                                         alt=""
                                     />
-                                    <span className="text-sm font-bold text-white truncate max-w-[90px]">{owner.name}</span>
+                                    <span className="text-xs font-bold text-white truncate max-w-[80px]">{owner.name}</span>
                                 </div>
                             ) : (
-                                <div className="w-9 h-9 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20">
-                                    <MapPin size={18} className="text-green-400" />
+                                <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20">
+                                    <MapPin size={16} className="text-green-400" />
                                 </div>
                             )}
                         </div>
@@ -249,15 +264,15 @@ const PropertyDetailView = ({ property, players, canBuy, onBuy, onClose, onBuild
             </div>
 
             {/* Action Buttons */}
-            <div className="p-8 pt-0 space-y-3 bg-[#0c0c14]">
+            <div className="p-6 pt-0 space-y-2 bg-[#0c0c14]">
                 {canBuy && isPropertyType && !owner && (
                     <motion.button
                         whileHover={{ scale: 1.02, y: -5 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={onBuy}
-                        className="btn btn-success w-full h-16 text-xl tracking-tight"
+                        className="btn btn-success w-full h-14 text-lg tracking-tight"
                     >
-                        <DollarSign size={24} className="animate-bounce" /> КУПИТЬ АКТИВ
+                        <DollarSign size={20} className="animate-bounce" /> КУПИТЬ АКТИВ
                     </motion.button>
                 )}
 
