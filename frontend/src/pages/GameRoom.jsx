@@ -623,14 +623,16 @@ const GameRoom = () => {
             // This prevents the "Button Blocked" bug where server says hasRolled=true (immediately after roll),
             // but our animation hasn't finished, so we might get into a weird state.
             // We only trust the server sync when we are IDLE.
-            const serverHasRolled = !!gameState.turn_state.has_rolled;
-            if (!isRolling && !diceRolling && !showDice) {
-                setHasRolled(serverHasRolled);
-            } else {
-                // Critical Fix: If server says we have NOT rolled (e.g. Doubles reset), force client to false even if animating
-                // This prevents getting stuck in "Done" state when we should be able to roll again.
-                if (!serverHasRolled) {
-                    setHasRolled(false);
+            if (isMyTurn) {
+                const serverHasRolled = !!gameState.turn_state.has_rolled;
+                if (!isRolling && !diceRolling && !showDice) {
+                    setHasRolled(serverHasRolled);
+                } else {
+                    // Critical Fix: If server says we have NOT rolled (e.g. Doubles reset), force client to false even if animating
+                    // This prevents getting stuck in "Done" state when we should be able to roll again.
+                    if (!serverHasRolled) {
+                        setHasRolled(false);
+                    }
                 }
             }
         }

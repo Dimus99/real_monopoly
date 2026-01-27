@@ -104,7 +104,7 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.5 }}
-                    className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm"
+                    className="fixed inset-0 z-[200] flex flex-col items-center justify-center pointer-events-none"
                 >
                     <div className="flex gap-4 md:gap-12 relative p-12">
                         {/* Player Name Label */}
