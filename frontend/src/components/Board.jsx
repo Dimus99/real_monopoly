@@ -199,11 +199,12 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
         return () => clearTimeout(timeoutId);
     }, [players]);
 
-    // Update positions on window resize
+    // Use ResizeObserver for more accurate position updates on board resize
     useEffect(() => {
-        if (!players || !boardRef.current) return;
+        if (!boardRef.current) return;
 
-        const handleResize = () => {
+        const updatePositions = () => {
+            if (!players) return;
             const newPositions = {};
             const isMobile = window.innerWidth < 768;
             const gap = isMobile ? 1 : 2;
@@ -220,8 +221,19 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
             setPlayerPositions(newPositions);
         };
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        const observer = new ResizeObserver(() => {
+            updatePositions();
+        });
+
+        observer.observe(boardRef.current);
+
+        // Also handle window resize for orientation changes
+        window.addEventListener('resize', updatePositions);
+
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', updatePositions);
+        };
     }, [players]);
 
     // Group players by tile position (for static display)
@@ -446,32 +458,10 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                             exit={{ opacity: 0, scale: 0.8, y: 10 }}
                             className="absolute z-50 pointer-events-none"
                             style={{
-                                ...(() => {
-                                    const coords = getTileCoordinates(hoveredTileId, boardRef);
-                                    const id = hoveredTileId;
-                                    // Offset the tooltip based on which side of the board we're on
-                                    let top = coords.y;
-                                    let left = coords.x;
-
-                                    // Force tooltip to always point towards center
-                                    // Tooltip is ~140px wide, ~100px high
-                                    // Coordinates are center of tile.
-                                    // Reduced offsets to keep it closer and within bounds
-                                    const OFFSET_Y = 80; // Changed from 120/140
-                                    const OFFSET_X = 100; // Changed from 160
-
-                                    if (id <= 10) { // Top Row -> Push DOWN
-                                        top += OFFSET_Y;
-                                    } else if (id < 20) { // Right Col -> Push LEFT
-                                        left -= OFFSET_X;
-                                    } else if (id <= 30) { // Bottom Row -> Push UP
-                                        top -= OFFSET_Y;
-                                    } else { // Left Col -> Push RIGHT
-                                        left += OFFSET_X;
-                                    }
-
-                                    return { top, left, transform: 'translate(-50%, -50%)' };
-                                })()
+                                // Always center tooltip in the board area for consistent visibility
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)'
                             }}
                         >
                             <div className="bg-[#1a1b26]/95 backdrop-blur-xl p-3 px-5 rounded-2xl border border-white/20 text-white shadow-[0_10px_40px_rgba(0,0,0,0.6)] flex flex-col items-center gap-1 min-w-[140px]">

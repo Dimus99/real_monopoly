@@ -328,6 +328,8 @@ body {
   /* Don't clip! */
   position: relative;
   gap: 2px;
+  /* Minimum width for desktop to enable horizontal scroll if needed */
+  min-width: 600px;
 }
 
 @media (max-width: 768px) {

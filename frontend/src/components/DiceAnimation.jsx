@@ -28,11 +28,11 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
         // Calculate a stable final rotation that includes multiple full spins
         const finalRotation = useMemo(() => {
             const rot = getRotation(value);
-            // We add 360 (1 full rotation) for a quick settle
+            // Use direct rotation without extra spin to prevent jerk
             return {
-                rotateX: rot.rotateX + 360,
-                rotateY: rot.rotateY + 360,
-                rotateZ: 360
+                rotateX: rot.rotateX,
+                rotateY: rot.rotateY,
+                rotateZ: 0
             };
         }, [value]);
 
@@ -74,9 +74,9 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
                         repeat: Infinity,
                         ease: "linear"
                     } : {
-                        duration: 0.5, // Fast snap to result
-                        type: "tween", // Use tween instead of spring to avoid wobble/shaking
-                        ease: "easeOut"
+                        duration: 0.3,
+                        type: "tween",
+                        ease: [0.25, 0.1, 0.25, 1] // Custom cubic bezier for smooth stop
                     }}
                 >
                     <Face n={1} />

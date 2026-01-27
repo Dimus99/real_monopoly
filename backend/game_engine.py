@@ -678,7 +678,7 @@ class GameEngine:
 
         elif card["type"] == "move_to":
             player.position = card["position"]
-            if card["position"] == 25: # Go to jail
+            if card["position"] == 30:  # Go to jail (Epstein Island)
                 player.is_jailed = True
                 player.jail_turns = 0
             return {"chance_card": log_text, "new_position": card["position"]}

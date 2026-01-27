@@ -466,8 +466,12 @@ const GameRoom = () => {
                 setDiceValues(lastAction.dice || [1, 1]);
                 setShowDice(true);
                 setDiceRolling(true);
-                setIsRolling(true);
                 setRollingPlayerId(lastAction.player_id);
+
+                // CRITICAL FIX: Only block MY controls if it's MY roll
+                if (lastAction.player_id === playerId) {
+                    setIsRolling(true);
+                }
 
                 // SAFETY: Force clear rolling state after 5 seconds in case something breaks
                 setTimeout(() => {
@@ -1063,37 +1067,39 @@ const GameRoom = () => {
                 )}
 
 
-                {/* Action Panel - CENTERED */}
-                <div className={`fixed left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-24 scale-90' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
-                    <div className="bg-black/80 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/20 w-fit mx-auto">
-                        <ActionPanel
-                            onToggleSidebar={isMobile ? () => setSidebarCollapsed(!sidebarCollapsed) : null}
-                            isMyTurn={isMyTurn}
-                            isRolling={isRolling}
-                            hasRolled={hasRolled}
-                            onRoll={handleRoll}
-                            canBuy={canBuy}
-                            onBuy={handleBuyProperty}
-                            onEndTurn={handleEndTurn}
-                            character={currentPlayer?.character}
-                            onAbility={handleAbility}
-                            currentTilePrice={currentTile?.price}
-                            currentTileName={currentTile?.name}
+                {/* Action Panel - CENTERED - Hide when TradeModal is open */}
+                {!showTradeModal && (
+                    <div className={`fixed left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-24 scale-90' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
+                        <div className="bg-black/80 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/20 w-fit mx-auto">
+                            <ActionPanel
+                                onToggleSidebar={isMobile ? () => setSidebarCollapsed(!sidebarCollapsed) : null}
+                                isMyTurn={isMyTurn}
+                                isRolling={isRolling}
+                                hasRolled={hasRolled}
+                                onRoll={handleRoll}
+                                canBuy={canBuy}
+                                onBuy={handleBuyProperty}
+                                onEndTurn={handleEndTurn}
+                                character={currentPlayer?.character}
+                                onAbility={handleAbility}
+                                currentTilePrice={currentTile?.price}
+                                currentTileName={currentTile?.name}
 
-                            gameMode={gameState.game_mode}
-                            isChatOpen={false}
-                            isChanceOpen={!!chanceCard}
-                            isDoubles={diceValues[0] === diceValues[1]}
-                            isJailed={currentPlayer?.is_jailed}
-                            abilityCooldown={currentPlayer?.ability_cooldown}
-                            abilityUsed={currentPlayer?.ability_used_this_game}
-                            onSurrender={() => sendAction('SURRENDER')}
-                            rentDetails={rentDetails}
-                            onPayRent={handlePayRent}
-                            onPayBail={handlePayBail}
-                        />
+                                gameMode={gameState.game_mode}
+                                isChatOpen={false}
+                                isChanceOpen={!!chanceCard}
+                                isDoubles={diceValues[0] === diceValues[1]}
+                                isJailed={currentPlayer?.is_jailed}
+                                abilityCooldown={currentPlayer?.ability_cooldown}
+                                abilityUsed={currentPlayer?.ability_used_this_game}
+                                onSurrender={() => sendAction('SURRENDER')}
+                                rentDetails={rentDetails}
+                                onPayRent={handlePayRent}
+                                onPayBail={handlePayBail}
+                            />
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Chat / Toast Notification - Elevated to avoid overlap */}
                 {/* Chat / Toast Notification - Removed fixed position here, moved inside Board container */}
