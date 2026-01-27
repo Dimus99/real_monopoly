@@ -788,7 +788,7 @@ const GameRoom = () => {
                                                         </div>
                                                         <div className="font-semibold text-white">{friend.name}</div>
                                                     </div>
-                                                    <button onClick={() => handleSendInvite(friend.id)} className="btn-sm btn-success flex items-center gap-1"><UserPlus size={14} /> Отправить</button>
+                                                    <button onClick={() => handleSendGameInvite(friend.id)} className="btn-sm btn-success flex items-center gap-1"><UserPlus size={14} /> Отправить</button>
                                                 </div>
                                             ))
                                         )}
