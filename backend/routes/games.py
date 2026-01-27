@@ -68,7 +68,8 @@ async def get_my_active_games(current_user: User = Depends(get_current_user)):
 @router.post("", response_model=dict)
 async def create_game(
     request: CreateGameRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
 ):
     """Create a new game. The creator becomes the host."""
     engine = get_game_engine()
@@ -87,6 +88,21 @@ async def create_game(
         max_players=request.max_players,
         turn_timer=request.turn_timer
     )
+    
+    # Persist to database so invites/other DB-linked features work
+    try:
+        await db_service.create_game(session, {
+            "game_id": game_id,
+            "host_id": current_user.id,
+            "map_type": request.map_type,
+            "starting_money": starting_money,
+            "max_players": request.max_players,
+            "game_status": "waiting"
+        })
+    except Exception as e:
+        print(f"Error persisting game to DB: {e}")
+        # We don't fail the request here because the in-memory game is still valid
+        # but invites might fail later.
     
     return {
         "game_id": game_id,
@@ -151,7 +167,8 @@ async def list_games(
 async def join_game(
     game_id: str,
     request: JoinGameRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
 ):
     """Join a game."""
     engine = get_game_engine()
@@ -159,6 +176,18 @@ async def join_game(
     
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
+    
+    # Ensure game exists in DB
+    db_game = await db_service.get_game(session, game_id.upper())
+    if not db_game:
+        await db_service.create_game(session, {
+            "game_id": game_id.upper(),
+            "host_id": game.host_id,
+            "map_type": game.map_type,
+            "starting_money": game.starting_money,
+            "max_players": game.max_players,
+            "game_status": game.game_status
+        })
     
     if game.game_status != "waiting":
         raise HTTPException(status_code=400, detail="Game already started")
@@ -214,7 +243,8 @@ async def join_game(
 @router.post("/{game_id}/leave")
 async def leave_game(
     game_id: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
 ):
     """Leave a game."""
     engine = get_game_engine()
@@ -265,6 +295,8 @@ async def leave_game(
         if game_id.upper() in engine.games:
             del engine.games[game_id.upper()]
             print(f"Game {game_id} deleted because no humans left.")
+        # Also remove/archive from DB
+        await db_service.update_game(session, game_id.upper(), {"status": "finished"})
     
     # Check if only 1 player (human or bot) left in active game -> End game
     elif game.game_status == "active" and len(game.players) < 2:
@@ -287,7 +319,8 @@ async def leave_game(
 @router.post("/{game_id}/start")
 async def start_game(
     game_id: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
 ):
     """Start the game (host only)."""
     engine = get_game_engine()
@@ -316,6 +349,12 @@ async def start_game(
     # Start the game
     game.game_status = "active"
     game.started_at = datetime.utcnow()
+    
+    # Update DB
+    await db_service.update_game(session, game_id.upper(), {
+        "status": "active",
+        "started_at": game.started_at
+    })
     
     # Randomize player order
     random.shuffle(game.player_order)
@@ -553,6 +592,19 @@ async def invite_friend(
     already_in = any(p.user_id == request.to_user_id for p in game.players.values())
     if already_in:
         raise HTTPException(status_code=400, detail="User is already in this game")
+    
+    # Ensure game exists in DB (defensive check for in-memory only games)
+    db_game = await db_service.get_game(session, game_id.upper())
+    if not db_game:
+        print(f"Game {game_id} missing in DB, sync-creating it now")
+        await db_service.create_game(session, {
+            "game_id": game_id.upper(),
+            "host_id": game.host_id,
+            "map_type": game.map_type,
+            "starting_money": game.starting_money,
+            "max_players": game.max_players,
+            "game_status": game.game_status
+        })
     
     # Create invite
     invite_id = str(uuid.uuid4())

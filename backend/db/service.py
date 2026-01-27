@@ -370,6 +370,9 @@ async def update_game(session: AsyncSession, game_id: str, updates: dict) -> Opt
     
     for key, value in updates.items():
         if hasattr(game, key):
+            if key == "status" and isinstance(value, str):
+                from db.models import GameStatus
+                value = GameStatus(value)
             setattr(game, key, value)
     
     await session.commit()
