@@ -70,14 +70,13 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                         ...finalRotation
                     }}
                     transition={isRolling ? {
-                        duration: 0.8, // Faster spin for better effect
+                        duration: 1.5, // Slower spin
                         repeat: Infinity,
                         ease: "linear"
                     } : {
-                        duration: 1.2,
-                        type: "spring",
-                        stiffness: 50,
-                        damping: 15
+                        duration: 1.0,
+                        type: "tween", // Use tween instead of spring to avoid wobble/shaking
+                        ease: "easeOut"
                     }}
                 >
                     <Face n={1} />

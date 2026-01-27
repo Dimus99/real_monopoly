@@ -456,6 +456,17 @@ const GameRoom = () => {
                 setDiceRolling(true);
                 setIsRolling(true);
 
+                // SAFETY: Force clear rolling state after 6 seconds in case something breaks
+                setTimeout(() => {
+                    setIsRolling(false);
+                    setDiceRolling(false);
+                    setShowDice(false);
+                    // Re-check server state
+                    if (gameState?.turn_state) {
+                        setHasRolled(!!gameState.turn_state.has_rolled);
+                    }
+                }, 6000);
+
                 // Immediately set hasRolled based on doubles to prevent UI hang
                 // Update: DO NOT change hasRolled here immediately if we want to wait for animation.
                 // But we must disable rolling again. isRolling=true handles that.
@@ -957,7 +968,8 @@ const GameRoom = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         // Mobile: Force min-width to allow scroll if parent is scrolling
-                        minWidth: isMobile ? '800px' : 'auto'
+                        minWidth: isMobile ? '800px' : 'auto',
+                        paddingRight: isMobile ? '50px' : '0' // Allow scrolling extra to right
                     }}
                 >
                     <Board
@@ -1027,7 +1039,7 @@ const GameRoom = () => {
                 </div>
 
                 {/* Action Panel - CENTERED */}
-                <div className={`fixed left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-8 scale-100' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
+                <div className={`fixed left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-24 scale-90' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
                     <div className="bg-black/80 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/20 w-fit mx-auto">
                         <ActionPanel
                             isMyTurn={isMyTurn}
