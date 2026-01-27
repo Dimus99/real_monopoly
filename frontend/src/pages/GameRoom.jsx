@@ -7,7 +7,7 @@ import {
     Menu, UserPlus, X, MapPin, ChevronLeft, ChevronRight, Crosshair, Flag,
     Map, Zap
 } from 'lucide-react';
-import { CHARACTERS } from '../constants/characters';
+import { CHARACTERS, ABILITIES } from '../constants/characters';
 import useGameSocket from '../hooks/useGameSocket';
 import Board from '../components/Board';
 import PropertyModal from '../components/PropertyModal';
@@ -983,9 +983,34 @@ const GameRoom = () => {
                                             <img src={CHARACTERS[p.character]?.avatar} className="w-full h-full object-cover" />
                                         </div>
                                         {isTurn && <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border border-black" />}
+
+                                        {/* Ability indicator for collapsed view */}
+                                        {p.character && ABILITIES[p.character] && (
+                                            <div
+                                                className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-md flex items-center justify-center text-[10px] border border-black shadow-lg ${p.ability_cooldown > 0 ? 'bg-orange-600/90' : 'bg-green-600/90'}`}
+                                            >
+                                                {p.ability_cooldown > 0 ? p.ability_cooldown : ABILITIES[p.character].icon}
+                                            </div>
+                                        )}
+
                                         {/* Tooltip */}
-                                        <div className="absolute left-14 top-0 bg-black/90 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none">
-                                            {p.name} (${p.money})
+                                        <div className="absolute left-14 top-0 bg-[#1a1a2e]/95 text-white px-3 py-2 rounded-xl text-xs opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none border border-white/10 shadow-2xl transition-all scale-95 group-hover:scale-100">
+                                            <div className="font-bold border-b border-white/10 pb-1.5 mb-1.5 flex justify-between gap-4">
+                                                <span>{p.name}</span>
+                                                <span className="text-yellow-400">${p.money.toLocaleString()}</span>
+                                            </div>
+                                            {p.character && ABILITIES[p.character] && (
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-1.5 font-bold text-blue-300">
+                                                        <span>{ABILITIES[p.character].icon}</span>
+                                                        <span>{ABILITIES[p.character].name}</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-400 italic mb-1">{ABILITIES[p.character].desc}</div>
+                                                    <div className={`text-[10px] font-bold ${p.ability_cooldown > 0 ? 'text-orange-400' : 'text-green-400'}`}>
+                                                        {p.ability_cooldown > 0 ? `Кулдаун: ${p.ability_cooldown} ходов` : 'Способность готова!'}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ) : (
@@ -1002,6 +1027,21 @@ const GameRoom = () => {
                                             <div className="text-lg font-mono font-black text-yellow-400 leading-none">
                                                 ${p.money?.toLocaleString()}
                                             </div>
+                                            {/* Ability Status */}
+                                            {p.character && ABILITIES[p.character] && (
+                                                <div
+                                                    className="mt-1.5 flex items-center group/ability cursor-help"
+                                                    title={`${ABILITIES[p.character].name}: ${ABILITIES[p.character].desc}`}
+                                                >
+                                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold transition-colors ${p.ability_cooldown > 0
+                                                            ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                                                            : 'bg-green-500/10 border-green-500/30 text-green-400'
+                                                        }`}>
+                                                        <span>{ABILITIES[p.character].icon}</span>
+                                                        <span>{p.ability_cooldown > 0 ? `${p.ability_cooldown} Х` : 'ГОТОВО'}</span>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-1">
                                             {p.id !== playerId ? (
