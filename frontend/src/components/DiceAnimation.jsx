@@ -24,6 +24,17 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
     };
 
     const Cube = ({ value, isRolling, isGlow }) => {
+        // Calculate a stable final rotation that includes multiple full spins
+        const finalRotation = useMemo(() => {
+            const rot = getRotation(value);
+            // We add 1440 (4 full rotations) to ensure it spins into place even if it stopped at 0
+            return {
+                rotateX: rot.rotateX + 1440,
+                rotateY: rot.rotateY + 1440,
+                rotateZ: 1440
+            };
+        }, [value]);
+
         const dots = (face) => {
             switch (face) {
                 case 1: return [4];
@@ -51,20 +62,21 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                 <motion.div
                     className="cube"
                     animate={isRolling ? {
-                        rotateX: [0, 360],
-                        rotateY: [0, 360],
-                        rotateZ: [0, 180],
+                        rotateX: [0, 360, 720, 1080],
+                        rotateY: [0, 360, 720, 1080],
+                        rotateZ: [0, 180, 360, 540],
                     } : {
-                        ...getRotation(value),
-                        rotateZ: 0
+                        ...finalRotation
                     }}
                     transition={isRolling ? {
-                        duration: 0.5,
+                        duration: 1.5,
                         repeat: Infinity,
                         ease: "linear"
                     } : {
-                        duration: 0.8,
-                        ease: "backOut" // Uses current rotation as start
+                        duration: 1.2,
+                        type: "spring",
+                        stiffness: 50,
+                        damping: 15
                     }}
                 >
                     <Face n={1} />

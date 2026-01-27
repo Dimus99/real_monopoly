@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Newspaper, AlertCircle, Info } from 'lucide-react';
+import { Newspaper, AlertCircle, Info, X } from 'lucide-react';
 
 const ChanceModal = ({ show, data, onClose }) => {
     if (!data) return null;
@@ -16,7 +16,13 @@ const ChanceModal = ({ show, data, onClose }) => {
                         className="relative w-full max-w-[340px] bg-[#f4f1ea] rounded-xl overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.8)] border-4 border-[#2c2c2c]"
                     >
                         {/* Newspaper Header */}
-                        <div className="bg-[#2c2c2c] text-[#f4f1ea] p-4 flex flex-col items-center">
+                        <div className="bg-[#2c2c2c] text-[#f4f1ea] p-4 flex flex-col items-center relative">
+                            <button
+                                onClick={onClose}
+                                className="absolute top-2 right-2 p-1 hover:bg-white/10 rounded-full transition-colors z-[210]"
+                            >
+                                <X size={20} />
+                            </button>
                             <div className="text-3xl font-black tracking-tighter uppercase font-display border-b-2 border-[#f4f1ea]/30 w-full text-center pb-1">
                                 Политические Вести
                             </div>

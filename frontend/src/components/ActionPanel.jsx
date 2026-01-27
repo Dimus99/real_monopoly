@@ -37,7 +37,7 @@ const ActionPanel = ({
         ability = ABILITIES[charKey];
     }
 
-    if (!isMyTurn || isChatOpen || isChanceOpen) return null;
+    if (!isMyTurn || isChatOpen) return null;
 
     // Logic: ROLL button is always shown, but disabled if rolled && !doubles
     // BUY button is shown if canBuy

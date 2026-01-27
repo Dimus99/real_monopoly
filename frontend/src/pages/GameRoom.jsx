@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Copy, Users, Bot, Play, Check, Home, Clock, ArrowLeftRight,
     ArrowLeft, MessageSquare, Settings, Bell,
-    Menu, UserPlus, X, MapPin, ChevronLeft, ChevronRight, Crosshair, Flag
+    Menu, UserPlus, X, MapPin, ChevronLeft, ChevronRight, Crosshair, Flag,
+    Map, Clock, Zap
 } from 'lucide-react';
 import { CHARACTERS } from '../constants/characters';
 import useGameSocket from '../hooks/useGameSocket';
@@ -54,6 +55,13 @@ const GameRoom = () => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [friends, setFriends] = useState([]);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    // New States for Profiles & Friends
+    const [selectedUserProfile, setSelectedUserProfile] = useState(null);
+    const [pendingRequests, setPendingRequests] = useState([]);
+    const [showRequestsModal, setShowRequestsModal] = useState(false);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+    const [myUser, setMyUser] = useState(null);
 
     useEffect(() => {
         const handleResize = () => {
@@ -283,6 +291,20 @@ const GameRoom = () => {
         } catch (e) { alert('Failed to remove bot'); }
     };
 
+    useEffect(() => {
+        const fetchMe = async () => {
+            try {
+                const token = localStorage.getItem('monopoly_token');
+                if (!token) return;
+                const res = await fetch(`${API_BASE}/api/users/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) setMyUser(await res.json());
+            } catch (e) { console.error(e); }
+        };
+        fetchMe();
+    }, [API_BASE]);
+
     const fetchFriends = async () => {
         try {
             const token = localStorage.getItem('monopoly_token');
@@ -293,7 +315,7 @@ const GameRoom = () => {
         } catch (e) { console.error(e); }
     };
 
-    const handleSendInvite = async (friendId) => {
+    const handleSendGameInvite = async (friendId) => {
         try {
             const token = localStorage.getItem('monopoly_token');
             const res = await fetch(`${API_BASE}/api/games/${gameId}/invite`, {
@@ -305,13 +327,85 @@ const GameRoom = () => {
                 body: JSON.stringify({ to_user_id: friendId })
             });
             if (res.ok) {
-                alert('Invite sent!');
+                alert('Приглашение отправлено!');
             } else {
                 const err = await res.json();
-                alert(err.detail || 'Failed to send invite');
+                alert(err.detail || 'Не удалось отправить приглашение');
             }
-        } catch (e) { alert('Error sending invite'); }
+        } catch (e) { alert('Ошибка при отправке приглашения'); }
     };
+
+    const handleSendFriendRequest = async (targetUserId) => {
+        try {
+            const token = localStorage.getItem('monopoly_token');
+            const res = await fetch(`${API_BASE}/api/friends/request`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ to_user_id: targetUserId })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(data.message || 'Заявка в друзья отправлена!');
+            } else {
+                alert(data.detail || 'Ошибка при отправке заявки');
+            }
+        } catch (e) { alert('Ошибка сети'); }
+    };
+
+    const fetchPendingRequests = async () => {
+        try {
+            const token = localStorage.getItem('monopoly_token');
+            const res = await fetch(`${API_BASE}/api/friends/requests`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setPendingRequests(data.slice(0, 5)); // Only last 5
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    const handleAcceptFriend = async (requestId) => {
+        try {
+            const token = localStorage.getItem('monopoly_token');
+            const res = await fetch(`${API_BASE}/api/friends/requests/${requestId}/accept`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                fetchPendingRequests();
+                alert('Заявка принята!');
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    const handleRejectFriend = async (requestId) => {
+        try {
+            const token = localStorage.getItem('monopoly_token');
+            const res = await fetch(`${API_BASE}/api/friends/requests/${requestId}/reject`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) fetchPendingRequests();
+        } catch (e) { console.error(e); }
+    };
+
+    const fetchUserProfile = async (userId) => {
+        setIsLoadingProfile(true);
+        try {
+            const token = localStorage.getItem('monopoly_token');
+            const res = await fetch(`${API_BASE}/api/users/${userId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) setSelectedUserProfile(await res.json());
+        } catch (e) { console.error(e); }
+        finally { setIsLoadingProfile(false); }
+    };
+
+
 
     const openInviteModal = () => {
         fetchFriends();
@@ -361,11 +455,11 @@ const GameRoom = () => {
                 const rollTimeout = setTimeout(() => {
                     setDiceRolling(false); // Show final result
 
-                    // Phase 2: Show result briefly (1s instead of 2s for better speed)
+                    // Phase 2: Show result for 3 seconds (as requested, total +2s)
                     const resultTimeout = setTimeout(() => {
                         setShowDice(false);
 
-                        // Phase 3: Final state update
+                        // Phase 3: Final state update after hide
                         const finalTimeout = setTimeout(() => {
                             if (gameState?.players) {
                                 setDelayedPlayers(gameState.players);
@@ -381,10 +475,11 @@ const GameRoom = () => {
 
                             if (lastAction.chance_card && lastAction.player_id === playerId) {
                                 setChanceCard(lastAction.chance_card);
+                                setChanceData({ chance_card: lastAction.chance_card });
+                                setShowChanceModal(true);
                             }
-                        }, 100);
-
-                    }, 1000); // Faster result display
+                        }, 500);
+                    }, 3000);
                 }, 800);
                 break;
 
@@ -513,17 +608,27 @@ const GameRoom = () => {
         if (tile) setSelectedTile(tile);
     };
 
-    const handleAvatarClick = (targetPid) => {
-        if (targetPid === playerId) return;
+    const handleAvatarClick = (targetPlayer) => {
+        if (!targetPlayer) return;
+        const targetPid = targetPlayer.id;
 
-        if (targetingAbility === 'SANCTIONS') {
+        // 1. Check targeting ability
+        if (targetingAbility === 'SANCTIONS' && targetPid !== playerId) {
             sendAction('USE_ABILITY', { ability_type: targetingAbility, target_id: targetPid });
             setTargetingAbility(null);
             return;
         }
 
-        // Default: Trade
-        initiateTrade(gameState.players[targetPid]);
+        // 2. Self -> show friend requests
+        if (targetPlayer.user_id === myUser?.id) {
+            fetchPendingRequests();
+            setShowRequestsModal(true);
+        }
+        // 3. Other Human -> show profile
+        else if (!targetPlayer.is_bot) {
+            fetchUserProfile(targetPlayer.user_id);
+        }
+        // 4. Bot or fallback -> maybe trade? Bot trade is complex, usually we don't open profile for bots.
     };
 
     if (!gameState) {
@@ -546,32 +651,66 @@ const GameRoom = () => {
 
                     <div className="relative z-10">
                         <h1 className="text-4xl font-display font-bold text-white mb-2">Ожидание в лобби</h1>
-                        <div className="flex items-center gap-4 text-gray-400 mb-8">
-                            <div className="bg-white/10 px-3 py-1 rounded font-mono">ID: {gameId}</div>
-                            <div className="flex items-center justify-center gap-2"><Users size={16} /> {Object.keys(gameState.players).length}/{gameState.max_players} Игроков</div>
-                            {!isHost && <div className="text-yellow-500 animate-pulse">Ожидание начала игры хостом...</div>}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                            <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center gap-3">
+                                <Map className="text-blue-400" size={20} />
+                                <div>
+                                    <div className="text-[10px] text-gray-400 uppercase font-bold">Карта</div>
+                                    <div className="text-sm text-white font-medium">{gameState.map_type === 'Monopoly1' ? 'Классика' : 'СССР'}</div>
+                                </div>
+                            </div>
+                            <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center gap-3">
+                                <Zap className="text-yellow-400" size={20} />
+                                <div>
+                                    <div className="text-[10px] text-gray-400 uppercase font-bold">Режим</div>
+                                    <div className="text-sm text-white font-medium">{gameState.game_mode === 'abilities' ? 'Способности' : 'Орешник для всех'}</div>
+                                </div>
+                            </div>
+                            <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center gap-3">
+                                <Clock className="text-green-400" size={20} />
+                                <div>
+                                    <div className="text-[10px] text-gray-400 uppercase font-bold">Таймер</div>
+                                    <div className="text-sm text-white font-medium">{gameState.turn_timer} сек</div>
+                                </div>
+                            </div>
+                            <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center gap-3">
+                                <Users className="text-purple-400" size={20} />
+                                <div>
+                                    <div className="text-[10px] text-gray-400 uppercase font-bold">Игроки</div>
+                                    <div className="text-sm text-white font-medium">{Object.keys(gameState.players).length}/{gameState.max_players}</div>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
                             {Object.values(gameState.players).map(p => (
                                 <div key={p.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-4 cursor-pointer hover:bg-white/5 p-1 rounded-lg transition-colors"
+                                        onClick={() => handleAvatarClick(p)}>
                                         <div className="relative">
                                             <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-black/40 flex items-center justify-center text-2xl">
                                                 <img src={CHARACTERS[p.character]?.avatar} className="w-full h-full object-cover" />
                                             </div>
                                             {p.is_bot && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-[10px] px-1 rounded">БОТ</div>}
+                                            {p.user_id === myUser?.id && <div className="absolute -top-1 -right-1 bg-green-500 w-3 h-3 rounded-full border-2 border-[#1a1a2e]" />}
                                         </div>
                                         <div>
-                                            <div className="font-bold text-white">{p.name}</div>
-                                            <div className="text-xs text-gray-400">{p.character}</div>
+                                            <div className="font-bold text-white leading-tight">{p.name}</div>
+                                            <div className="text-[10px] text-gray-400 uppercase tracking-tighter">{p.character}</div>
                                         </div>
                                     </div>
-                                    {isHost && p.is_bot && (
-                                        <button onClick={() => handleRemoveBot(p.id)} className="p-2 text-red-500 hover:bg-white/10 rounded-full transition-colors" title="Удалить бота">
-                                            <X size={16} />
-                                        </button>
-                                    )}
+                                    <div className="flex items-center gap-1">
+                                        {!p.is_bot && p.user_id !== myUser?.id && (
+                                            <button onClick={() => handleSendFriendRequest(p.user_id)} className="p-2 text-blue-400 hover:bg-white/10 rounded-full transition-colors" title="Добавить в друзья">
+                                                <UserPlus size={16} />
+                                            </button>
+                                        )}
+                                        {isHost && p.user_id !== myUser?.id && (
+                                            <button onClick={() => handleRemoveBot(p.id)} className="p-2 text-red-500 hover:bg-white/10 rounded-full transition-colors" title="Исключить">
+                                                <X size={16} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -745,12 +884,14 @@ const GameRoom = () => {
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-black/40 flex items-center justify-center text-xl">
+                                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-black/40 flex items-center justify-center text-xl cursor-pointer"
+                                            onClick={() => handleAvatarClick(p)}>
                                             <img src={CHARACTERS[p.character]?.avatar} className="w-full h-full object-cover" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-0.5">
-                                                <span className={`text-xs font-bold truncate ${isTurn ? 'text-white' : 'text-gray-300'}`}>{p.name}</span>
+                                                <span className={`text-xs font-bold truncate cursor-pointer ${isTurn ? 'text-white' : 'text-gray-300'}`}
+                                                    onClick={() => handleAvatarClick(p)}>{p.name}</span>
                                             </div>
                                             <div className="text-lg font-mono font-black text-yellow-400 leading-none">
                                                 ${p.money?.toLocaleString()}
@@ -767,8 +908,8 @@ const GameRoom = () => {
                                                     <Flag size={14} />
                                                 </button>
                                             )}
-                                            {!p.is_bot && p.id !== playerId && (
-                                                <button onClick={(e) => { e.stopPropagation(); handleSendInvite(p.user_id); }} className="p-1 hover:bg-white/10 rounded" title="Добавить в друзья">
+                                            {!p.is_bot && p.user_id !== myUser?.id && (
+                                                <button onClick={(e) => { e.stopPropagation(); handleSendFriendRequest(p.user_id); }} className="p-1 hover:bg-white/10 rounded" title="Добавить в друзья">
                                                     <UserPlus size={14} className="text-gray-400" />
                                                 </button>
                                             )}
@@ -821,6 +962,7 @@ const GameRoom = () => {
                         onUnmortgage={handleUnmortgage}
                         canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && checkMonopolyByPlayer(selectedTile || currentTile)}
                         isMyTurn={isMyTurn}
+                        lastAction={lastAction}
                     />
                 </div>
 
@@ -865,43 +1007,23 @@ const GameRoom = () => {
                     </div>
                 </div>
 
-                {/* Chat / Toast Notification - Moved to main view for proper layering */}
-                <div className="absolute bottom-0 left-0 right-0 z-[150] w-full flex flex-col justify-end pointer-events-none p-4">
+                {/* Chat / Toast Notification - Elevated to avoid overlap */}
+                <div className="absolute bottom-0 left-0 right-0 z-[150] w-full flex flex-col justify-end pointer-events-none pb-24 px-4">
                     <div className="pointer-events-auto w-full max-w-[600px] mx-auto">
                         <ToastNotification logs={displayedLogs} onSendMessage={handleSendMessage} />
                     </div>
                 </div>
             </div>
 
-            {/* CHANCE CARD NOTIFICATION PANEL */}
-            <AnimatePresence>
-                {chanceCard && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 50, scale: 0.9 }}
-                        className="absolute bottom-32 left-1/2 -translate-x-1/2 z-[160] w-full max-w-lg px-4"
-                    >
-                        <div className="bg-[#1e1e2f] border-2 border-yellow-500 rounded-2xl p-6 shadow-[0_0_50px_rgba(234,179,8,0.4)] flex items-center gap-6">
-                            <div className="w-16 h-16 bg-yellow-500/20 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse">
-                                <span className="text-4xl">📰</span>
-                            </div>
-                            <div className="flex-1">
-                                <div className="text-yellow-500 font-bold tracking-widest uppercase text-xs mb-1">Срочные Новости</div>
-                                <div className="text-white text-lg font-bold leading-tight">
-                                    {chanceCard}
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setChanceCard(null)}
-                                className="px-6 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase text-sm rounded-lg shadow-lg hover:scale-105 transition-all"
-                            >
-                                Понятно
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Fancy Newspaper Chance Modal */}
+            <ChanceModal
+                show={showChanceModal}
+                data={chanceData}
+                onClose={() => {
+                    setShowChanceModal(false);
+                    setChanceCard(null); // Sync with ActionPanel
+                }}
+            />
 
             {/* Target Overlay */}
             <AnimatePresence>
@@ -948,6 +1070,126 @@ const GameRoom = () => {
             {/* Also show trade modal (only needed if trading in waiting room enabled? Probably not, but safe to keep) */}
             <TradeModal isOpen={showTradeModal} onClose={() => setShowTradeModal(false)} fromPlayer={currentPlayer} toPlayer={tradeTarget} gameState={gameState} onSendOffer={handleSendOffer} />
             <TradeNotification trade={incomingTrade} fromPlayer={gameState?.players?.[incomingTrade?.from_player_id]} onRespond={handleRespondTrade} board={gameState?.board} />
+            {/* User Profile Modal */}
+            <AnimatePresence>
+                {selectedUserProfile && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="glass-card max-w-sm w-full p-6 relative"
+                        >
+                            <button onClick={() => setSelectedUserProfile(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+                                <X size={24} />
+                            </button>
+
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white/20 mb-4 bg-black/40">
+                                    {selectedUserProfile.avatar_url ? (
+                                        <img src={selectedUserProfile.avatar_url} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-4xl text-white/20">👤</div>
+                                    )}
+                                </div>
+                                <h2 className="text-2xl font-display font-bold text-white mb-1">{selectedUserProfile.name}</h2>
+                                <div className="bg-white/10 px-3 py-1 rounded-full text-[10px] text-gray-300 font-mono mb-6">
+                                    CODE: {selectedUserProfile.friend_code}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 w-full mb-8">
+                                    <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+                                        <div className="text-[10px] text-gray-400 uppercase font-bold mb-1">Игр</div>
+                                        <div className="text-xl font-mono text-white">{selectedUserProfile.stats.games_played}</div>
+                                    </div>
+                                    <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+                                        <div className="text-[10px] text-gray-400 uppercase font-bold mb-1">Побед</div>
+                                        <div className="text-xl font-mono text-green-400">{selectedUserProfile.stats.wins}</div>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-2 w-full">
+                                    <button
+                                        onClick={() => { handleSendFriendRequest(selectedUserProfile.id); setSelectedUserProfile(null); }}
+                                        className="btn-primary py-3 w-full flex items-center justify-center gap-2"
+                                    >
+                                        <UserPlus size={20} /> Добавить в друзья
+                                    </button>
+                                    <button
+                                        onClick={() => { initiateTrade(Object.values(gameState.players).find(p => p.user_id === selectedUserProfile.id)); setSelectedUserProfile(null); }}
+                                        className="btn-ghost py-3 w-full border border-white/10 hover:bg-white/5"
+                                    >
+                                        Предложить обмен
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Friend Requests Modal */}
+            <AnimatePresence>
+                {showRequestsModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="glass-card max-w-md w-full p-6 relative"
+                        >
+                            <button onClick={() => setShowRequestsModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+                                <X size={24} />
+                            </button>
+
+                            <h2 className="text-2xl font-display font-bold text-white mb-6 flex items-center gap-3">
+                                <Users size={28} className="text-blue-400" /> Заявки в друзья
+                            </h2>
+
+                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                {pendingRequests.length > 0 ? (
+                                    pendingRequests.map(req => (
+                                        <div key={req.id} className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-black/40">
+                                                    {req.from_user.avatar_url ? (
+                                                        <img src={req.from_user.avatar_url} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-white/20 select-none text-xl">👤</div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm font-bold text-white">{req.from_user.name}</div>
+                                                    <div className="text-[10px] text-gray-400">Игр: {req.from_user.stats.games_played} | Побед: {req.from_user.stats.wins}</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleAcceptFriend(req.id)}
+                                                    className="p-2 bg-green-500/20 text-green-500 hover:bg-green-500 rounded-lg transition-all"
+                                                >
+                                                    <Check size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRejectFriend(req.id)}
+                                                    className="p-2 bg-red-500/20 text-red-500 hover:bg-red-500 rounded-lg transition-all"
+                                                >
+                                                    <X size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-12 text-gray-500">
+                                        <div className="text-4xl mb-4 opacity-20 text-center flex justify-center">💌</div>
+                                        <p>Пока нет новых заявок</p>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

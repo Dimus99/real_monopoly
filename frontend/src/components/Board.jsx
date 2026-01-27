@@ -99,7 +99,7 @@ const getTileCoordinates = (tileId, boardRef) => {
 
 
 
-const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, isMyTurn }) => {
+const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, isMyTurn, lastAction }) => {
     // Character colors for player tokens (derived from BOARD_CHARACTERS)
     const PLAYER_COLORS = React.useMemo(() => Object.fromEntries(
         Object.entries(BOARD_CHARACTERS).map(([k, v]) => [k, v.color])
@@ -114,11 +114,28 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
     const [animatedPaths, setAnimatedPaths] = useState({});
 
     // Calculate full path for animation along board edges
-    const calculatePath = (start, end) => {
+    const calculatePath = (start, end, pid) => {
         if (start === end) return [start];
 
-        // Detect teleport (e.g. sent to Jail)
-        // If it's more than 12 steps or specifically to tile 10 (Jail) from non-9 position
+        // 1. Check for "Go to Jail" intermediate landing (tile 30 -> 10)
+        if (lastAction && lastAction.player_id === pid && lastAction.type === 'DICE_ROLLED') {
+            const sum = (lastAction.dice?.[0] || 0) + (lastAction.dice?.[1] || 0);
+            const intermediate = (start + sum) % tiles.length;
+
+            // If they landed on 30 (Go To Jail) and were redirected to 10 (Jail)
+            if (intermediate === 30 && end === 10) {
+                const pathTo30 = [];
+                let curr = start;
+                while (curr !== 30) {
+                    curr = (curr + 1) % tiles.length;
+                    pathTo30.push(curr);
+                }
+                // Return path including 30, then the jump to 10
+                return [start, ...pathTo30, 10];
+            }
+        }
+
+        // Standard teleport detect (Teleport to Jail or long range Chance card)
         const dist = (end - start + tiles.length) % tiles.length;
         if (end === 10 || dist > 12) {
             return [start, end]; // Instant teleport
@@ -164,7 +181,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
 
                 // Calculate path if moved
                 if (prevPosition !== position) {
-                    const path = calculatePath(prevPosition, position);
+                    const path = calculatePath(prevPosition, position, p.id);
                     newPaths[p.id] = path.map(pos => getTileCoordinates(pos, boardRef));
                 }
 
@@ -542,7 +559,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                         currentPlayerId={currentPlayerId}
                         allPlayers={players}
                         isMonopoly={(() => {
-                            if (['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Utility', 'Station'].includes(tile.group)) return false;
+                            if (['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Utility'].includes(tile.group)) return false;
                             const groupTiles = tiles.filter(t => t.group === tile.group);
                             if (groupTiles.length === 0) return false;
                             const firstOwner = groupTiles[0].owner_id;
