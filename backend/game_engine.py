@@ -504,25 +504,23 @@ class GameEngine:
             # Charge tax if it's a tax tile
             if tile.group == "Tax":
                 tax_amount = tile.rent[0] if tile.rent else 200
-                if player.money < tax_amount and player.is_bot:
-                    self.bot_resolve_debt(game.id, player, tax_amount)
                 
-                # If still can't pay, handle bankruptcy
+                # Check if player can pay right now
                 if player.money < tax_amount:
                      assets = self._calculate_assets(game, player)
                      if assets < tax_amount:
                          return self._handle_bankruptcy(game, player, None, tax_amount)
                      else:
-                         # Human player needs to liquidate
+                         # Still needs to liquidate (even bots, they will resolve in post_roll)
                          result["action"] = "tax"
                          result["amount"] = tax_amount
                          return result
                 
-                player.money -= tax_amount
-                game.pot += tax_amount
-                game.logs.append(f"💸 {player.name} оплатил налог в казну: ${tax_amount}")
-                result["tax_paid"] = tax_amount
-                result["action"] = "safe"
+                # If they HAVE enough money, let's still make them pay via the action loop 
+                # (or we could auto-pay for everyone, but let's keep it consistent: return action)
+                result["action"] = "tax"
+                result["amount"] = tax_amount
+                return result
 
             # Trigger Chance card
             if tile.group == "Chance":
@@ -772,13 +770,14 @@ class GameEngine:
                 player = game.players.get(current_pid)
                 
                 if player:
-                    # Logic: Skip turn instead of kicking
-                    game.logs.append(f"⏳ {player.name} ran out of time! Turn skipped.")
-                    self._next_turn(game)
+                    # Logic: Disqualify player for inactivity
+                    game.logs.append(f"⏰ {player.name} disqualified for inactivity (Timeout)!")
+                    self._handle_bankruptcy(game, player, None, 0)
                     
                     updates.append({
                         "game_id": game.game_id,
-                        "type": "TURN_SKIPPED",
+                        "type": "PLAYER_DISQUALIFIED",
+                        "game_state": game.dict(),
                         "data": {"player_id": player.id}
                     })
         return updates
@@ -861,6 +860,45 @@ class GameEngine:
             "game_state": game.dict(),
             "game_over": game_over,
             "game_deleted": game_deleted
+        }
+
+    def pay_bail(self, game_id: str, player_id: str) -> Dict[str, Any]:
+        """Pay $50 to get out of jail."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        # Turn Check
+        if not game.player_order or game.player_order[game.current_turn_index] != player_id:
+            return {"error": "Not your turn"}
+
+        player = game.players.get(player_id)
+        if not player:
+            return {"error": "Player not found"}
+        
+        if not player.is_jailed:
+            return {"error": "You are not in jail"}
+        
+        bail_amount = 50
+        if player.money < bail_amount:
+            return {"error": f"Need ${bail_amount} to pay bail"}
+            
+        player.money -= bail_amount
+        player.is_jailed = False
+        player.jail_turns = 0
+        
+        # Reset roll status so they can roll now
+        if game.turn_state:
+            game.turn_state.pop("has_rolled", None)
+        
+        game.logs.append(f"⚖️ {player.name} paid $50 bail and left Epstein Island.")
+        self._reset_timer(game)
+        
+        return {
+            "success": True,
+            "player_id": player_id,
+            "amount": bail_amount,
+            "game_state": game.dict()
         }
 
     
@@ -1272,7 +1310,11 @@ class GameEngine:
         if not player:
             return {"error": "Player not found"}
         
-        # Check cooldown
+        # Check if already used (once per game)
+        if player.ability_used_this_game:
+            return {"error": "Ability already used! You can only use it once per game."}
+        
+        # Check cooldown (legacy support, though once per game makes this moot)
         if player.ability_cooldown > 0:
             return {"error": f"Ability on cooldown ({player.ability_cooldown} turns remaining)"}
         
@@ -1312,8 +1354,8 @@ class GameEngine:
             return {"error": "Unknown ability"}
         
         if result.get("success"):
-            player.ability_cooldown = ability["cooldown"]
             player.ability_used_this_game = True
+            player.ability_cooldown = 999  # Visual indicator that it's gone
             self._reset_timer(game)
         
         result["game_state"] = game.dict()
@@ -1730,33 +1772,41 @@ class GameEngine:
             return None
         
         tile = game.board[player.position]
-        
-        # RENT CHECK
-        if tile.owner_id and tile.owner_id != player.id and not tile.is_mortgaged:
-             rent = self._calculate_rent(game, tile, game.dice, player)
-             if player.money < rent:
-                 # Try to pay
-                 resolved = self.bot_resolve_debt(game_id, player, rent)
-                 if not resolved:
-                     # Bankruptcy
-                     # _handle_bankruptcy is called inside pay_rent if we call pay_rent now? 
-                     # No, pay_rent calls _handle_bankruptcy only if we added the logic there.
-                     # We added the logic to pay_rent above. So just calling pay_rent will trigger it.
-                     pass
-             
-             # Pay Rent
-             self.pay_rent(game_id, player.id, tile.id)
-             # If bankrupt, return immediately
-             if player.is_bankrupt:
-                 return None
-
         actions = []
         reserve_cash = 300
         
-        # 1. PROPERTY (Free) - Logic
-        # Check by exclusion of special types
-        special_groups = ["Special", "Jail", "FreeParking", "GoToJail", "Chance", "Tax"]
-        if not tile.owner_id and tile.group not in special_groups:
+        # 1. TAX (Handle if on Tax tile)
+        if tile.group == "Tax":
+            tax_amount = tile.rent[0] if tile.rent else 200
+            if game.turn_state.get("awaiting_payment"):
+                if player.money < tax_amount:
+                    self.bot_resolve_debt(game_id, player, tax_amount)
+                
+                tax_res = self.pay_tax(game_id, player_id)
+                if tax_res and tax_res.get("success"):
+                    actions.append({"type": "TAX_PAID", **tax_res})
+
+        # 2. PROPERTY (Owned by other) - RENT
+        elif tile.owner_id and tile.owner_id != player_id and not tile.is_mortgaged:
+            rent = self._calculate_rent(game, tile, game.dice, player)
+            if game.turn_state.get("awaiting_payment"):
+                if player.money < rent:
+                    self.bot_resolve_debt(game_id, player, rent)
+                
+                rent_result = self.pay_rent(game_id, player_id, player.position)
+                if not rent_result.get("error"):
+                    actions.append({"type": "RENT_PAID", **rent_result})
+                
+                if player.is_bankrupt:
+                    return {
+                        "type": "BOT_ACTIONS",
+                        "player_id": player_id,
+                        "actions": actions,
+                        "game_state": game.dict()
+                    }
+
+        # 3. PROPERTY (Free) - Logic
+        elif not tile.owner_id and tile.group not in ["Special", "Jail", "FreeParking", "GoToJail", "Chance", "Tax"]:
             should_buy = False
             
             # Check if buying completes a street (PRIORITY)
@@ -1767,53 +1817,17 @@ class GameEngine:
             completes_street = (owned_count == len(others_in_group))
             
             if completes_street and player.money >= tile.price:
-                # BUY OBLIGATORY
                 should_buy = True
                 game.logs.append(f"🤖 Bot {player.name} sees a MONOPOLY opportunity on {tile.group}!")
             elif (player.money - tile.price) > reserve_cash:
-                # Normal Buy if above reserve
                 should_buy = True
             
             if should_buy:
                 buy_result = self.buy_property(game_id, player_id, player.position)
                 if buy_result.get("success"):
                     actions.append({"type": "PROPERTY_BOUGHT", **buy_result})
-        
-        # 1.5. TAX (Handle automatically if on Tax tile)
-        if tile.group == "Tax":
-            # Check if just landed (roll_dice might have handled it if landed directly)
-            # But if bot was moved here by Chance, it hasn't paid.
-            # Since we can't easily track "did pay", and paying tax is usually mandatory upon landing...
-            # We can check game logs? No.
-            # For simplicity, we assume if we are in post_roll and on 'Tax', we should pay.
-            # BUT wait, if we landed directly, roll_dice handled it.
-            # Double payment risk.
-            
-            # Use a flag in turn_state?
-            # Or inspect last log?
-            pass # TODO: Risk of double payment. 
-            # Better approach: Fix roll_dice to handle recursive landings.
-            # But for now, let's assume we pay if we are here.
-            # OR we can check if the last log mentions "paid ... Taxes".
-            last_log = game.logs[-1] if game.logs else ""
-            if "paid" not in last_log and "Taxes" not in last_log:
-                tax_res = self.pay_tax(game_id, player_id)
-                if tax_res and tax_res.get("success"):
-                    actions.append({"type": "TAX_PAID", **tax_res})
 
-        # 2. PROPERTY (Owned by other)
-        if tile.owner_id and tile.owner_id != player_id and not tile.is_mortgaged:
-            rent = self._calculate_rent(game, tile, game.dice)
-            if player.money < rent:
-                # LIQUIDATION LOGIC
-                self._bot_liquidation_logic(game, player, rent)
-            
-            # Pay Rent
-            rent_result = self.pay_rent(game_id, player_id, player.position)
-            actions.append({"type": "RENT_PAID", **rent_result})
-
-        # 3. BUILD Logic (If owns monopoly)
-        # Check all monopolies owned by bot
+        # 4. BUILD Logic (If owns monopoly)
         owned_groups = set()
         for pid in player.properties:
             pr = game.board[pid]
@@ -1821,22 +1835,20 @@ class GameEngine:
                 owned_groups.add(pr.group)
         
         for grp in owned_groups:
-            # Try to build house
-            # Find eligible property (min houses)
             grp_props = [t for t in game.board if t.group == grp]
             min_h = min(t.houses for t in grp_props)
             candidates = [t for t in grp_props if t.houses == min_h and t.houses < 5]
             
             for c in candidates:
                 cost = (c.price // 2) + 50
-                if player.money > cost + reserve_cash: # Maintain reserve
+                if player.money > cost + reserve_cash:
                     build_res = self.build_house(game_id, player_id, c.id)
                     if build_res.get("success"):
                          actions.append({"type": "HOUSE_BUILT", **build_res})
-                         break # Build one per turn/check
-        
-        # 4. Abilities (Random)
-        if player.ability_cooldown == 0 and random.random() < 0.2:
+                         break
+
+        # 5. Abilities (Random)
+        if player.ability_cooldown == 0 and not player.ability_used_this_game and random.random() < 0.2:
              ability = CHARACTER_ABILITIES.get(player.character)
              if ability:
                 ab_res = self.execute_ability(game_id, player_id, ability["name"])

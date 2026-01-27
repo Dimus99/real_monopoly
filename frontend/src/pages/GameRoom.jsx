@@ -169,6 +169,11 @@ const GameRoom = () => {
         setRentDetails(null);
     }, [isMyTurn, rentDetails, currentPlayer?.position, sendAction]);
 
+    const handlePayBail = React.useCallback(() => {
+        if (!isMyTurn || !currentPlayer?.is_jailed) return;
+        sendAction('PAY_BAIL');
+    }, [isMyTurn, currentPlayer?.is_jailed, sendAction]);
+
     const checkMonopolyByPlayer = (tile) => {
         if (!tile || !tile.group || !gameState?.board) return false;
         if (['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax'].includes(tile.group)) return false;
@@ -402,6 +407,7 @@ const GameRoom = () => {
 
             case 'TURN_ENDED':
             case 'TURN_SKIPPED':
+            case 'PLAYER_DISQUALIFIED':
                 setHasRolled(false);
                 setShowDice(false);
                 setDiceRolling(false);
@@ -848,10 +854,13 @@ const GameRoom = () => {
                             isChatOpen={false}
                             isChanceOpen={!!chanceCard}
                             isDoubles={diceValues[0] === diceValues[1]}
+                            isJailed={currentPlayer?.is_jailed}
                             abilityCooldown={currentPlayer?.ability_cooldown}
+                            abilityUsed={currentPlayer?.ability_used_this_game}
                             onSurrender={() => sendAction('SURRENDER')}
                             rentDetails={rentDetails}
                             onPayRent={handlePayRent}
+                            onPayBail={handlePayBail}
                         />
                     </div>
                 </div>

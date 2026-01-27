@@ -240,7 +240,8 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                 const isMoving = prevPos && prevPos.position !== undefined && (prevPos.position !== pos.position);
 
                 // Calculate offset if multiple players are on the same tile
-                const playersOnTile = playersByTile[pos.position] || [];
+                // SORT by ID to ensure stable indexing and prevent "teleporting" jitter
+                const playersOnTile = (playersByTile[pos.position] || []).sort((a, b) => String(a.id).localeCompare(String(b.id)));
                 const indexOnTile = playersOnTile.findIndex(p => p.id === playerId);
                 const totalOnTile = playersOnTile.length;
 
@@ -248,7 +249,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                 let offsetY = 0;
 
                 if (totalOnTile > 1) {
-                    const radius = 22; // Increased radius for larger icons
+                    const radius = 22; // Relative to tile center
                     const angle = (2 * Math.PI * indexOnTile) / totalOnTile;
                     offsetX = Math.cos(angle) * radius;
                     offsetY = Math.sin(angle) * radius;
@@ -257,33 +258,37 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                 const pathCoords = animatedPaths[playerId];
                 const hasPath = pathCoords && pathCoords.length > 0;
 
+                // Center point adjustment (icon is 44x44)
+                const ICON_HALF_SIZE = 22;
+
                 return (
                     <motion.div
                         key={playerId}
                         initial={isMoving && prevPos ? {
-                            x: prevPos.x + offsetX,
-                            y: prevPos.y + offsetY
+                            x: prevPos.x + offsetX - ICON_HALF_SIZE,
+                            y: prevPos.y + offsetY - ICON_HALF_SIZE
                         } : {
-                            x: pos.x + offsetX,
-                            y: pos.y + offsetY
+                            x: pos.x + offsetX - ICON_HALF_SIZE,
+                            y: pos.y + offsetY - ICON_HALF_SIZE
                         }}
                         animate={hasPath ? {
-                            x: pathCoords.map(c => c.x + offsetX),
-                            y: pathCoords.map(c => c.y + offsetY)
+                            x: pathCoords.map(c => c.x + offsetX - ICON_HALF_SIZE),
+                            y: pathCoords.map(c => c.y + offsetY - ICON_HALF_SIZE)
                         } : {
-                            x: pos.x + offsetX,
-                            y: pos.y + offsetY
+                            x: pos.x + offsetX - ICON_HALF_SIZE,
+                            y: pos.y + offsetY - ICON_HALF_SIZE
                         }}
+                        whileHover={{ scale: 1.15, zIndex: 100 }}
                         transition={hasPath ? {
                             duration: pathCoords.length * 0.15,
                             ease: "linear",
                             times: pathCoords.map((_, i) => (i + 1) / pathCoords.length)
                         } : {
                             type: "spring",
-                            stiffness: 120,
-                            damping: 15
+                            stiffness: 150,
+                            damping: 20
                         }}
-                        className="absolute pointer-events-auto cursor-pointer flex items-center justify-center z-50 hover:scale-110"
+                        className="absolute pointer-events-auto cursor-pointer flex items-center justify-center z-50"
                         onClick={(e) => {
                             e.stopPropagation();
                             if (onAvatarClick) onAvatarClick(playerId);
@@ -293,10 +298,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                             top: 0,
                             width: '44px',
                             height: '44px',
-                            zIndex: 50 + indexOnTile,
-                            transform: 'translate(-50%, -50%)',
-                            maxWidth: '44px',
-                            maxHeight: '44px'
+                            zIndex: 50 + indexOnTile
                         }}
                     >
                         {/* Shadow/Glow effect */}
