@@ -220,7 +220,7 @@ export const NukeThreatAnimation = ({ isVisible, onComplete }) => {
                         className="absolute bottom-20 left-0 right-0 text-center"
                     >
                         <div className="text-2xl text-white">
-                            Neighbors pay tribute! 💰
+                            Property Blocked! ⛔
                         </div>
                     </motion.div>
                 </motion.div>

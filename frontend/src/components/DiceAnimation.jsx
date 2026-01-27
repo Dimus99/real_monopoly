@@ -1,40 +1,57 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 
 const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
-    // Local state to show rapid transforms during rolling
+    // Local state to track displayed values to avoid jumping
     const [displayValues, setDisplayValues] = useState([1, 1]);
 
     useEffect(() => {
-        if (!rolling && values) {
+        if (values) {
             setDisplayValues(values);
         }
-    }, [rolling, values]);
+    }, [values]);
 
     const getRotation = (val) => {
-        // Ensure standard rotations
         switch (val) {
-            case 1: return { rotateY: 0, rotateX: 0, rotateZ: 0 };
-            case 2: return { rotateY: -90, rotateX: 0, rotateZ: 0 };
-            case 3: return { rotateY: 0, rotateX: -90, rotateZ: 0 };
-            case 4: return { rotateY: 0, rotateX: 90, rotateZ: 0 };
-            case 5: return { rotateY: 90, rotateX: 0, rotateZ: 0 };
-            case 6: return { rotateY: 180, rotateX: 0, rotateZ: 0 };
-            default: return { rotateY: 0, rotateX: 0, rotateZ: 0 };
+            case 1: return { x: 0, y: 0 };
+            case 2: return { x: 0, y: -90 };
+            case 3: return { x: -90, y: 0 };
+            case 4: return { x: 90, y: 0 };
+            case 5: return { x: 0, y: 90 };
+            case 6: return { x: 0, y: 180 };
+            default: return { x: 0, y: 0 };
         }
     };
 
-    const Cube = ({ value, isRolling, isGlow }) => {
-        // Calculate a stable final rotation that includes multiple full spins
-        const finalRotation = useMemo(() => {
-            const rot = getRotation(value);
-            // Use direct rotation without extra spin to prevent jerk
-            return {
-                rotateX: rot.rotateX,
-                rotateY: rot.rotateY,
-                rotateZ: 0
-            };
-        }, [value]);
+    const Cube = ({ value, isRolling, index }) => {
+        const controls = useAnimation();
+        const prevValue = useRef(value);
+
+        // Sequence animation logic
+        useEffect(() => {
+            if (show && isRolling) {
+                const target = getRotation(value);
+                const randomX = (Math.random() - 0.5) * 400;
+                const randomY = -200 - Math.random() * 200;
+
+                // Throwing sequence
+                controls.start({
+                    x: [randomX, 0],
+                    y: [randomY, 0],
+                    z: [300, 0],
+                    rotateX: [0, 1080 + target.x],
+                    rotateY: [0, 1440 + target.y],
+                    rotateZ: [0, 360 + (index * 180)],
+                    scale: [0.4, 1.1, 1],
+                    opacity: [0, 1],
+                    filter: ["blur(4px)", "blur(0px)"],
+                    transition: {
+                        duration: 2.0,
+                        ease: [0.16, 1, 0.3, 1], // Power4 easeOut
+                    }
+                });
+            }
+        }, [show]); // Only trigger when the overlay appears
 
         const dots = (face) => {
             switch (face) {
@@ -55,29 +72,17 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
                         <div key={i} className={dots(n).includes(i) ? 'dice-dot' : ''} />
                     ))}
                 </div>
+                {/* Glossy overlay for face */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-black/10 via-transparent to-white/20 pointer-events-none" />
             </div>
         );
 
         return (
-            <div className="dice-container">
+            <div className="dice-container relative">
                 <motion.div
                     className="cube"
-                    animate={isRolling ? {
-                        rotateX: [0, 360, 720, 1080],
-                        rotateY: [0, 360, 720, 1080],
-                        rotateZ: [0, 180, 360, 540],
-                    } : {
-                        ...finalRotation
-                    }}
-                    transition={isRolling ? {
-                        duration: 2.0, // Slower spin
-                        repeat: Infinity,
-                        ease: "linear"
-                    } : {
-                        duration: 1.2, // Long deceleration for smooth stop
-                        type: "tween",
-                        ease: "easeOut"
-                    }}
+                    animate={controls}
+                    initial={{ opacity: 0, scale: 0.2 }}
                 >
                     <Face n={1} />
                     <Face n={2} />
@@ -86,21 +91,17 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
                     <Face n={5} />
                     <Face n={6} />
                 </motion.div>
-                {isGlow && !isRolling && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{
-                            opacity: [0.4, 0.7, 0.4],
-                            scale: [1, 1.4, 1]
-                        }}
-                        transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                        }}
-                        className="absolute inset-0 rounded-full bg-yellow-400/30 blur-3xl -z-10"
-                    />
-                )}
+
+                {/* Shadow */}
+                <motion.div
+                    className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-20 h-5 bg-black/60 blur-2xl rounded-full -z-10"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={show ? {
+                        scale: [0.5, 1.2, 1],
+                        opacity: [0.2, 0.6, 0.5],
+                        transition: { duration: 2, ease: "easeOut" }
+                    } : {}}
+                />
             </div>
         );
     };
@@ -109,37 +110,62 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
         <AnimatePresence>
             {show && (
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.5 }}
-                    className="fixed inset-0 z-[200] flex flex-col items-center justify-center pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0, transition: { duration: 0.5 } }}
+                    className="fixed inset-0 z-[200] flex flex-col items-center justify-center pointer-events-none bg-black/40 backdrop-blur-sm"
                 >
-                    <div className="flex gap-4 md:gap-12 relative p-12">
+                    <div className="flex gap-10 md:gap-32 relative p-20">
                         {/* Player Name Label */}
                         {playerName && (
                             <motion.div
-                                initial={{ opacity: 0, y: -20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap"
+                                initial={{ opacity: 0, y: -60, scale: 0.9 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ type: "spring", delay: 0.1 }}
+                                className="absolute -top-16 left-1/2 -translate-x-1/2 whitespace-nowrap"
                             >
-                                <span className="text-xl font-black text-white uppercase tracking-widest bg-black/50 px-4 py-1 rounded-full border border-white/20 backdrop-blur-md">
-                                    {playerName}
-                                </span>
+                                <div className="flex flex-col items-center">
+                                    <span className="text-[10px] font-black text-yellow-500/80 uppercase tracking-[0.5em] mb-1">
+                                        Ход Игрока
+                                    </span>
+                                    <span className="text-5xl font-black text-white uppercase tracking-tighter font-display drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                                        {playerName}
+                                    </span>
+                                </div>
                             </motion.div>
                         )}
-                        <Cube value={displayValues[0]} isRolling={rolling} isGlow={glow} />
-                        <Cube value={displayValues[1]} isRolling={rolling} isGlow={glow} />
+
+                        <Cube value={displayValues[0]} isRolling={rolling} index={0} />
+                        <Cube value={displayValues[1]} isRolling={rolling} index={1} />
                     </div>
 
                     {!rolling && (
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="mt-4 bg-white/10 backdrop-blur-xl px-10 py-3 rounded-2xl border border-white/20 shadow-2xl"
+                            initial={{ opacity: 0, scale: 0.5, y: 100 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                            className="mt-4 flex flex-col items-center gap-1"
                         >
-                            <span className="text-4xl font-black text-white font-game">
-                                {displayValues[0] + displayValues[1]}
-                            </span>
+                            <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-3xl px-16 py-6 rounded-[2.5rem] border border-white/20 shadow-2xl flex flex-col items-center relative overflow-hidden group">
+                                {/* Inner animated glow */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 via-transparent to-yellow-500/20 animate-pulse" />
+
+                                <span className="text-xs text-blue-300 uppercase font-black tracking-[0.3em] mb-2 z-10">Сумма Броска</span>
+                                <span className="text-8xl font-black text-white font-game drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] leading-none z-10 italic">
+                                    {displayValues[0] + displayValues[1]}
+                                </span>
+                            </div>
+
+                            {displayValues[0] === displayValues[1] && (
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: [1, 1.2, 1] }}
+                                    transition={{ repeat: Infinity, duration: 1.5 }}
+                                    className="text-yellow-400 font-black text-2xl uppercase tracking-[0.2em] drop-shadow-[0_0_15px_rgba(234,179,8,0.6)] mt-4"
+                                >
+                                    🚀 Двойной Шанс! 🚀
+                                </motion.div>
+                            )}
                         </motion.div>
                     )}
                 </motion.div>

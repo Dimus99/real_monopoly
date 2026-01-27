@@ -17,7 +17,8 @@ import ActionPanel from '../components/ActionPanel';
 import TradeModal from '../components/TradeModal';
 import TradeNotification from '../components/TradeNotification';
 import ChanceModal from '../components/ChanceModal';
-import { BuyoutAnimation, AidAnimation, NukeThreatAnimation } from '../components/AbilityAnimations';
+import CasinoModal from '../components/CasinoModal';
+import { BuyoutAnimation, AidAnimation, NukeThreatAnimation, SanctionsAnimation, BeltRoadAnimation } from '../components/AbilityAnimations';
 
 // Lazy load to avoid circular dependency/initialization issues
 const OreshnikAnimation = lazy(() => import('../components/OreshnikAnimation'));
@@ -118,6 +119,11 @@ const GameRoom = () => {
     const [showBuyout, setShowBuyout] = useState(false);
     const [showAid, setShowAid] = useState(false);
     const [showNuke, setShowNuke] = useState(false);
+    const [showSanctions, setShowSanctions] = useState(false);
+    const [showBeltRoad, setShowBeltRoad] = useState(false);
+    const [abilityBonus, setAbilityBonus] = useState(0); // For Belt Road
+    const [abilityTargetName, setAbilityTargetName] = useState('');
+    const [abilityAmount, setAbilityAmount] = useState(0);
     const [showVictory, setShowVictory] = useState(false);
     const boardRef = useRef(null);
 
@@ -136,6 +142,8 @@ const GameRoom = () => {
     const handleCloseBuyout = React.useCallback(() => setShowBuyout(false), []);
     const handleCloseAid = React.useCallback(() => setShowAid(false), []);
     const handleCloseNuke = React.useCallback(() => setShowNuke(false), []);
+    const handleCloseSanctions = React.useCallback(() => setShowSanctions(false), []);
+    const handleCloseBeltRoad = React.useCallback(() => setShowBeltRoad(false), []);
 
     const handleBuyProperty = () => {
         if (!isMyTurn || !currentPlayer) {
@@ -428,6 +436,7 @@ const GameRoom = () => {
     // Modals state
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [showChanceModal, setShowChanceModal] = useState(false);
+    const [showCasinoModal, setShowCasinoModal] = useState(false);
     const [chanceData, setChanceData] = useState(null);
 
     // Track processed actions to prevent loops/re-triggers
@@ -448,9 +457,20 @@ const GameRoom = () => {
                 setShowDice(false);
                 break;
             case 'ORESHNIK': setShowOreshnik(true); break;
-            case 'BUYOUT': setShowBuyout(true); break;
-            case 'AID': setShowAid(true); break;
-            case 'NUKE': setShowNuke(true); break;
+            case 'BUYOUT':
+                setAbilityTargetName(lastAction.target_name);
+                setShowBuyout(true);
+                break;
+            case 'AID':
+                setAbilityAmount(lastAction.amount_collected);
+                setShowAid(true);
+                break;
+            case 'ISOLATION': setShowNuke(true); break;
+            case 'SANCTIONS': setShowSanctions(true); break;
+            case 'BELT_ROAD':
+                if (lastAction.bonus) setAbilityBonus(lastAction.bonus);
+                setShowBeltRoad(true);
+                break;
             case 'DICE_ROLLED':
                 // Handle Skipped Turn (Sanctions)
                 if (lastAction.action === 'skipped_turn') {
@@ -473,58 +493,54 @@ const GameRoom = () => {
                     setIsRolling(true);
                 }
 
-                // SAFETY: Force clear rolling state after animation completes in case something breaks
+                // SAFETY: Force clear rolling state after a reasonable time
                 setTimeout(() => {
-                    setIsRolling(false);
+                    if (isRolling) setIsRolling(false);
                     setDiceRolling(false);
-                    setShowDice(false);
-                    // Re-check server state
-                    if (gameState?.turn_state) {
-                        setHasRolled(!!gameState.turn_state.has_rolled);
-                    }
-                }, 6000); // 2000ms spin + 3000ms display + 300ms fade + buffer
+                }, 8000);
 
-                // Immediately set hasRolled based on doubles to prevent UI hang
-                // Update: DO NOT change hasRolled here immediately if we want to wait for animation.
-                // But we must disable rolling again. isRolling=true handles that.
-                // We will sync hasRolled in the Final Phase.
-
-                // Phase 1: Rolling animation (2000ms spin - synced with DiceAnimation duration)
+                // Phase 1: Rolling animation (2000ms spin)
                 const rollTimeout = setTimeout(() => {
                     setDiceRolling(false); // Stop spinning (Freeze)
 
-                    // Phase 2: Show result for 3 seconds (Freeze phase - allows reading)
-                    const resultTimeout = setTimeout(() => {
-                        setShowDice(false);
+                    // Trigger movement immediately when dice stop
+                    if (gameState?.players) {
+                        setDelayedPlayers(gameState.players);
+                    }
 
-                        // Phase 3: Final state update after hide (300ms for fade out)
-                        const finalTimeout = setTimeout(() => {
-                            if (gameState?.players) {
-                                setDelayedPlayers(gameState.players);
-                            }
-                            setIsRolling(false);
+                    // Phase 2: Wait for movement (1000ms) then ENABLE BUTTONS
+                    const enableTimeout = setTimeout(() => {
+                        setIsRolling(false);
 
-                            // SYNC hasRolled accurately from the latest server state in case it changed
-                            // Only update this AFTER animation completes to prevent premature button changes.
-                            // CRITICAL: Only update if it was MY roll to avoid stale state from opponent turns.
-                            if (lastAction.player_id === playerId && gameState?.turn_state) {
-                                setHasRolled(!!gameState.turn_state.has_rolled);
-                            }
+                        // SYNC hasRolled accurately from the latest server state
+                        if (lastAction.player_id === playerId && gameState?.turn_state) {
+                            setHasRolled(!!gameState.turn_state.has_rolled);
+                        }
 
-                            if ((lastAction.action === 'pay_rent' || lastAction.action === 'tax') && lastAction.player_id === playerId) {
+                        // Handle rent/tax/chance after movement
+                        if (lastAction.player_id === playerId) {
+                            if (lastAction.action === 'pay_rent' || lastAction.action === 'tax') {
                                 setRentDetails({
                                     amount: lastAction.amount || lastAction.tax_paid,
                                     ownerId: lastAction.owner_id || 'BANK'
                                 });
                             }
-
-                            if (lastAction.chance_card && lastAction.player_id === playerId) {
+                            if (lastAction.chance_card) {
                                 setChanceCard(lastAction.chance_card);
                                 setChanceData({ chance_card: lastAction.chance_card });
                                 setShowChanceModal(true);
                             }
-                        }, 300);
-                    }, 3000);
+                            if (lastAction.action === 'casino_prompt') {
+                                setShowCasinoModal(true);
+                            }
+                        }
+
+                        // Phase 3: Wait more for visual "freeze" (2000ms) then HIDE DICE
+                        const hideTimeout = setTimeout(() => {
+                            setShowDice(false);
+                        }, 2000);
+
+                    }, 1000);
                 }, 2000);
                 break;
 
@@ -535,26 +551,24 @@ const GameRoom = () => {
                 break;
 
             case 'CHAT_MESSAGE':
-                // Removed setChanceCard from here to avoid blocking popups for other players' turns
                 break;
 
             case 'RENT_PAID':
             case 'TAX_PAID':
                 if (lastAction.player_id === playerId) {
-                    setShowRentModal(false); // Close rent modal if open
+                    setShowRentModal(false);
                 }
                 break;
 
             case 'TURN_ENDED':
             case 'TURN_SKIPPED':
             case 'PLAYER_DISQUALIFIED':
-                // Only reset states if it was MY turn that ended
-                // Otherwise bot/other player turns will incorrectly reset MY button states
                 if (lastAction.player_id === playerId) {
                     setHasRolled(false);
                     setShowDice(false);
                     setDiceRolling(false);
                     setIsRolling(false);
+                    setDiceValues([1, 2]); // Reset dice to non-doubles for next turn
                 }
                 break;
             case 'ERROR':
@@ -570,6 +584,22 @@ const GameRoom = () => {
                 if (lastAction.trade?.to_player_id === playerId) setIncomingTrade(lastAction.trade);
                 break;
             case 'TRADE_UPDATED': setIncomingTrade(null); break;
+            case 'CASINO_RESULT':
+                if (lastAction.player_id === playerId) {
+                    setShowCasinoModal(false);
+                    if (lastAction.win) {
+                        alert(`💰 КАЗИНО: Вы выиграли $${lastAction.amount}!`);
+                    } else {
+                        alert(`🔥 КАЗИНО: Вы проиграли! В стране произошла РЕВОЛЮЦИЯ.`);
+                    }
+                } else {
+                    // Notify others
+                    const pName = gameState.players[lastAction.player_id]?.name || 'Игрок';
+                    if (lastAction.win) {
+                        // Toast handled by logs usually, but we can add extra flare if needed
+                    }
+                }
+                break;
         }
     }, [lastAction]); // STRICT DEPENDENCY: Only lastAction. NO diceValues.
 
@@ -1157,9 +1187,11 @@ const GameRoom = () => {
                         boardRef={boardRef}
                     />
                 </Suspense>
-                <BuyoutAnimation isVisible={showBuyout} onComplete={handleCloseBuyout} />
-                <AidAnimation isVisible={showAid} onComplete={handleCloseAid} />
+                <BuyoutAnimation isVisible={showBuyout} onComplete={handleCloseBuyout} targetProperty={abilityTargetName} />
+                <AidAnimation isVisible={showAid} onComplete={handleCloseAid} amount={abilityAmount} />
                 <NukeThreatAnimation isVisible={showNuke} onComplete={handleCloseNuke} />
+                <SanctionsAnimation isVisible={showSanctions} onComplete={handleCloseSanctions} />
+                <BeltRoadAnimation isVisible={showBeltRoad} onComplete={handleCloseBeltRoad} bonus={abilityBonus} />
             </div>
 
 
@@ -1374,6 +1406,12 @@ const GameRoom = () => {
                 glow={diceValues[0] === diceValues[1]}
                 playerName={gameState?.players?.[rollingPlayerId]?.name || ''}
             />
+            {showCasinoModal && (
+                <CasinoModal
+                    onClose={() => setShowCasinoModal(false)}
+                    onBet={(numbers) => sendAction('CASINO_BET', { bet_numbers: numbers })}
+                />
+            )}
         </div>
     );
 };

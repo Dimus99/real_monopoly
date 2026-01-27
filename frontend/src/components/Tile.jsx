@@ -21,7 +21,10 @@ const GROUP_STYLES = {
     FreeParking: { gradient: 'linear-gradient(135deg, #2E8B57 0%, #1a5235 100%)', textColor: '#fff', icon: '🏛️' },
     Chance: { gradient: 'linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%)', textColor: '#fff', icon: '❓' },
     Tax: { gradient: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)', textColor: '#fff', icon: '💰' },
-    Cyan: { gradient: 'linear-gradient(135deg, #00FFFF 0%, #00CED1 100%)', textColor: '#1a1a2e' }
+    Cyan: { gradient: 'linear-gradient(135deg, #00FFFF 0%, #00CED1 100%)', textColor: '#1a1a2e' },
+    Negotiations: { gradient: 'linear-gradient(135deg, #7f8c8d 0%, #bdc3c7 100%)', textColor: '#fff', icon: '🕊️' },
+    Casino: { gradient: 'linear-gradient(135deg, #2c3e50 0%, #000000 100%)', textColor: '#fff', icon: '🎰' },
+    RaiseTax: { gradient: 'linear-gradient(135deg, #f1c40f 0%, #f39c12 100%)', textColor: '#000', icon: '📈' },
 };
 
 // Character to country flag mapping
@@ -59,7 +62,10 @@ const SPECIAL_ICONS = {
     'SUPER JACKPOT': '🏆',
     'POLICE': '👮',
     'PRISON': '⛓️',
-    'SafeIsland': '🏝️'
+    'SafeIsland': '🏝️',
+    'Казино': '🎰',
+    'Переговоры': '🕊️',
+    'Повысить налоги': '📈'
 };
 
 // Character data for avatars

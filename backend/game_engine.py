@@ -22,7 +22,9 @@ WORLD_MAP_DATA = [
     {"name": "Подоходный Налог", "group": "Tax", "price": 0, "rent": [200]},
     {"name": "Аэропорт Шереметьево", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},
     {"name": "Багдад", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
-    {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
+    {"name": "Багдад", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
+    {"name": "Переговоры", "group": "Negotiations", "price": 0, "rent": []},
+    {"name": "Кабул", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
     {"name": "Кабул", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},
     {"name": "Дамаск", "group": "LightBlue", "price": 120, "rent": [8, 40, 100, 300, 450, 600]},
     {"name": "Остров Эпштейна", "group": "Jail", "price": 0, "rent": []},
@@ -35,7 +37,7 @@ WORLD_MAP_DATA = [
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Иерусалим", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},
     {"name": "Мекка", "group": "Orange", "price": 200, "rent": [16, 80, 220, 600, 800, 1000]},
-    {"name": "Бесплатная Парковка", "group": "FreeParking", "price": 0, "rent": []},
+    {"name": "Казино", "group": "Casino", "price": 0, "rent": []},
     {"name": "Рио-де-Жанейро", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Дели", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},
@@ -51,7 +53,9 @@ WORLD_MAP_DATA = [
     {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
     {"name": "Вашингтон", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},
     {"name": "Аэропорт Хитроу", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},
-    {"name": "Шанс", "group": "Chance", "price": 0, "rent": []},
+    {"name": "Аэропорт Хитроу", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},
+    {"name": "Повысить налоги", "group": "RaiseTax", "price": 0, "rent": []},
+    {"name": "Гренландия", "group": "DarkBlue", "price": 400, "rent": [35, 175, 500, 1100, 1300, 1500]},
     {"name": "Гренландия", "group": "DarkBlue", "price": 400, "rent": [35, 175, 500, 1100, 1300, 1500]},
     {"name": "Налог на Роскошь", "group": "Tax", "price": 0, "rent": [100]},
     {"name": "Антарктида", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},
@@ -148,32 +152,32 @@ CHARACTER_ABILITIES = {
     "Putin": {
         "name": "ORESHNIK",
         "description": "Launch a missile to destroy any property. It becomes worthless ruins.",
-        "cooldown": 5  # turns
+        "cooldown": 20  # turns
     },
     "Trump": {
         "name": "BUYOUT",
         "description": "Hostile takeover: Buy any property even if owned (pay 150% to owner). 50% discount on Greenland.",
-        "cooldown": 4
+        "cooldown": 20
     },
     "Zelensky": {
         "name": "AID",
         "description": "Collect foreign aid: Take 10% of each opponent's cash.",
-        "cooldown": 4
+        "cooldown": 8
     },
     "Kim": {
         "name": "ISOLATION",
         "description": "Block a property: No one can buy or collect rent from it for 3 turns.",
-        "cooldown": 5
+        "cooldown": 8
     },
     "Biden": {
         "name": "SANCTIONS",
         "description": "Freeze an opponent: They skip their next turn.",
-        "cooldown": 4
+        "cooldown": 8
     },
     "Xi": {
         "name": "BELT_ROAD",
-        "description": "Claim infrastructure bonus: Collect $50 from each property you pass.",
-        "cooldown": 4
+        "description": " Infrastructure Investment: Collect $50 for each property you own.",
+        "cooldown": 20
     }
 }
 
@@ -206,7 +210,7 @@ def create_board(map_type: str = "World") -> List[Property]:
                 type_ = "transport"
             elif grp in ["Utility"]:
                 type_ = "utility"
-            elif grp in ["Start", "Jail", "FreeParking", "GoToJail", "Tax", "Chance", "Special"]:
+            elif grp in ["Start", "Jail", "FreeParking", "GoToJail", "Tax", "Chance", "Special", "Negotiations", "Casino", "RaiseTax"]:
                 type_ = "service"
                 
             # Actions
@@ -222,6 +226,12 @@ def create_board(map_type: str = "World") -> List[Property]:
                 action = "chance"
             elif grp == "FreeParking":
                 action = "parking"
+            elif grp == "Negotiations":
+                action = "negotiations"
+            elif grp == "Casino":
+                action = "casino"
+            elif grp == "RaiseTax":
+                action = "raise_tax"
                 
             properties.append(Property(
                 id=i,
@@ -544,6 +554,24 @@ class GameEngine:
                 if result.get("action") in [None, "safe"]:
                     result["action"] = "chance"
             
+        elif tile.group == "Negotiations":
+            result["action"] = "negotiations"
+            # Logic: Skip NEXT turn.
+            player.skipped_turns = 1
+            game.logs.append(f"🕊️ {player.name} sent to Negotiations. Will skip next turn.")
+            
+        elif tile.group == "RaiseTax":
+            result["action"] = "raise_tax"
+            amount = 300
+            player.money += amount
+            result["amount"] = amount
+            game.logs.append(f"💰 {player.name} raised taxes and collected ${amount}!")
+            
+        elif tile.group == "Casino":
+            # Just prompt, wait for user input
+            result["action"] = "casino_prompt"
+            game.logs.append(f"🎰 {player.name} entered the Casino. Place your bets!")
+            
         elif tile.group == "Jail": # Previously Tax block was here, now combined above
             result["action"] = "safe"
             game.logs.append(f"🏝️ {player.name} is just visiting Epstein Island. No questions asked.")
@@ -797,6 +825,129 @@ class GameEngine:
         
         if player.is_bankrupt:
             return {"error": "Already bankrupt"}
+            
+        return self._handle_bankruptcy(game, player, None, 0)
+
+    def play_casino(self, game_id: str, player_id: str, bet_numbers: List[int]) -> Dict[str, Any]:
+        """Handle Casino bet logic."""
+        game = self.games.get(game_id)
+        if not game: return {"error": "Game not found"}
+        
+        player = game.players.get(player_id)
+        if not player: return {"error": "Player not found"}
+        
+        # Validate bet
+        if not bet_numbers or len(bet_numbers) > 3:
+            return {"error": "Invalid bet. Choose 1-3 numbers."}
+        
+        for n in bet_numbers:
+            if not (1 <= n <= 6):
+                 return {"error": "Numbers must be 1-6"}
+                 
+        # Roll One Die (1-6)
+        roll = random.randint(1, 6)
+        won = roll in bet_numbers
+        
+        # Calculate prize
+        prize = 0
+        if won:
+            count = len(bet_numbers)
+            if count == 1: prize = 3000
+            elif count == 2: prize = 1500
+            elif count == 3: prize = 1000
+            
+            player.money += prize
+            game.logs.append(f"🎰 {player.name} rolled {roll} and WON ${prize} in the Casino!")
+            return {
+                "action": "casino_result",
+                "win": True,
+                "roll": roll,
+                "amount": prize,
+                "game_state": game.dict()
+            }
+        else:
+            game.logs.append(f"🎰 {player.name} rolled {roll} and LOST everything. Revolution!")
+            # ELIMINATE PLAYER (Revolution)
+            # Reset assets to unowned (active revolution returning fields to game)
+            # We can use handle_bankruptcy, but we need to ensure the creditor is None (Bank)
+            # bankruptcy normally auctions? Or just returns to bank.
+            # "his fields return to game" -> Become unowned.
+            
+            # Custom bankruptcy without auction logic if we want, or use standard.
+            # But standard bankruptcy usually auctions stuff if implied?
+            # Let's check _handle_bankruptcy... it's not fully visible, but usually it handles returning directly or auction.
+            # User said "fields return to game".
+            
+            # Proceed to elimination
+            res = self._handle_bankruptcy(game, player, None, 0)
+            
+            # Override message log?
+            game.logs.append(f"🔥 REVOLUTION! {player.name} was overthrown.")
+            
+            return {
+                "action": "casino_result",
+                "win": False,
+                "roll": roll,
+                "game_state": game.dict(),
+                "eliminated": True
+            }
+            
+    def _handle_bankruptcy(self, game: GameState, debtor: Player, creditor_id: Optional[str], amount: int) -> Dict[str, Any]:
+        """Handle player bankruptcy."""
+        debtor.is_bankrupt = True
+        debtor.money = 0
+        
+        # Release properties
+        for prop in game.board:
+            if prop.owner_id == debtor.id:
+                prop.owner_id = None
+                prop.houses = 0
+                prop.is_mortgaged = False
+                prop.is_monopoly = False
+                prop.is_destroyed = False
+                prop.isolation_turns = 0
+        
+        # Check game over condition
+        remaining = [p for p in game.players.values() if not p.is_bankrupt]
+        
+        result = {
+            "action": "bankrupt",
+            "player_id": debtor.id,
+            "game_state": game.dict()
+        }
+        
+        if len(remaining) <= 1:
+            winner = remaining[0] if remaining else None
+            game.game_status = "finished"
+            game.winner_id = winner.id if winner else None
+            game.finished_at = datetime.utcnow()
+            game.logs.append(f"🏆 GAME OVER! {winner.name if winner else 'No one'} wins!")
+            result["game_over"] = True
+            
+        return result
+
+    def _calculate_assets(self, game: GameState, player: Player) -> int:
+        """Calculate total value of assets (cash + houses + mortgage value of props)."""
+        total = player.money
+        for prop in game.board:
+            if prop.owner_id == player.id:
+                # Add mortgage value (half price)
+                if not prop.is_mortgaged:
+                    total += prop.price // 2
+                
+                # Add house sell value (half price)
+                # Assuming house price is roughly based on property group or standard.
+                # Standard house prices: Brown/LightBlue=50, etc.
+                # Simplified here:
+                house_price = 50
+                if prop.group in ["Station", "Utility"]: house_price = 0
+                elif prop.group in ["Brown", "LightBlue"]: house_price = 50
+                elif prop.group in ["Pink", "Orange"]: house_price = 100
+                elif prop.group in ["Red", "Yellow"]: house_price = 150
+                elif prop.group in ["Green", "DarkBlue"]: house_price = 200
+                
+                total += (prop.houses * house_price) // 2
+        return total
 
         # Voluntary bankruptcy (to Bank)
         self._handle_bankruptcy(game, player, None, 0)
@@ -1339,9 +1490,10 @@ class GameEngine:
         if not player:
             return {"error": "Player not found"}
         
-        # Check if already used (once per game)
-        if player.ability_used_this_game:
-            return {"error": "Ability already used! You can only use it once per game."}
+        # Check if already used (once per game) - DEPRECATED for Cooldown system, limiting only if cooldown is -1 or something.
+        # But for request: "User wants to improve/weak abilities". Let's make them reusable.
+        # if player.ability_used_this_game:
+        #    return {"error": "Ability already used! You can only use it once per game."}
         
         # Check cooldown (legacy support, though once per game makes this moot)
         if player.ability_cooldown > 0:
@@ -1384,7 +1536,15 @@ class GameEngine:
         
         if result.get("success"):
             player.ability_used_this_game = True
-            player.ability_cooldown = 999  # Visual indicator that it's gone
+            
+            # Set Cooldown
+            if game.game_mode == "oreshnik_all":
+                player.ability_cooldown = CHARACTER_ABILITIES["Putin"]["cooldown"]
+            else:
+                 # Find cooldown from config
+                 char_ability = CHARACTER_ABILITIES.get(player.character)
+                 player.ability_cooldown = char_ability.get("cooldown", 5) if char_ability else 5
+
             self._reset_timer(game)
         
         result["game_state"] = game.dict()
