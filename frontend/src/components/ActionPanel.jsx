@@ -45,7 +45,8 @@ const ActionPanel = ({
     // END button is shown if hasRolled && !doubles && !rentDetails
 
     const showRoll = true; // Always show roll button in dashboard
-    const disableRoll = isRolling; // Only disable while clearly rolling animation is playing
+    // Disable roll if: rolling animation OR (already rolled AND not doubles) OR jailed without bail option
+    const disableRoll = isRolling || (hasRolled && !isDoubles);
     // Forbid pressing Done if can roll (User Request)
     // If hasRolled is false, we definitely cannot end turn (unless special case logic changes, but for now strict).
     // If isDoubles is true, we can roll again, so cannot end turn.

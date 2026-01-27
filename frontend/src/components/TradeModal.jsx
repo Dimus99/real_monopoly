@@ -13,6 +13,19 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
     const fromProps = gameState.board.filter(t => t.owner_id === fromPlayer.id);
     const toProps = gameState.board.filter(t => t.owner_id === toPlayer.id);
 
+    // Calculate total values for offer and request
+    const offerPropsValue = selectedOfferProps.reduce((sum, propId) => {
+        const prop = gameState.board.find(t => t.id === propId);
+        return sum + (prop?.price || 0);
+    }, 0);
+    const offerTotal = (parseInt(offerMoney) || 0) + offerPropsValue;
+
+    const requestPropsValue = selectedRequestProps.reduce((sum, propId) => {
+        const prop = gameState.board.find(t => t.id === propId);
+        return sum + (prop?.price || 0);
+    }, 0);
+    const requestTotal = (parseInt(requestMoney) || 0) + requestPropsValue;
+
     const toggleProp = (id, list, setList) => {
         if (list.includes(id)) {
             setList(list.filter(item => item !== id));
@@ -52,12 +65,20 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
                     <div className="flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/10">
                         {/* LEFT: YOUR OFFER */}
                         <div className="p-6 flex flex-col overflow-hidden">
-                            <div className="flex items-center gap-3 mb-4">
-                                <img src={fromPlayer.avatar} className="w-10 h-10 rounded-full border-2 border-white/20" />
-                                <div>
-                                    <div className="text-sm text-gray-400 font-bold uppercase">Вы предлагаете</div>
-                                    <div className="text-white font-bold">{fromPlayer.name}</div>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <img src={fromPlayer.avatar} className="w-10 h-10 rounded-full border-2 border-white/20" />
+                                    <div>
+                                        <div className="text-sm text-gray-400 font-bold uppercase">Вы предлагаете</div>
+                                        <div className="text-white font-bold">{fromPlayer.name}</div>
+                                    </div>
                                 </div>
+                                {offerTotal > 0 && (
+                                    <div className="text-right">
+                                        <div className="text-xs text-gray-400 uppercase">Итого</div>
+                                        <div className="text-lg font-bold text-yellow-400">${offerTotal.toLocaleString()}</div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
@@ -111,12 +132,20 @@ const TradeModal = ({ isOpen, onClose, fromPlayer, toPlayer, gameState, onSendOf
 
                         {/* RIGHT: THEIR OFFER */}
                         <div className="p-6 flex flex-col overflow-hidden bg-black/20">
-                            <div className="flex items-center gap-3 mb-4">
-                                <img src={toPlayer.avatar} className="w-10 h-10 rounded-full border-2 border-white/20" />
-                                <div>
-                                    <div className="text-sm text-gray-400 font-bold uppercase">Вы получаете</div>
-                                    <div className="text-white font-bold">{toPlayer.name}</div>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <img src={toPlayer.avatar} className="w-10 h-10 rounded-full border-2 border-white/20" />
+                                    <div>
+                                        <div className="text-sm text-gray-400 font-bold uppercase">Вы получаете</div>
+                                        <div className="text-white font-bold">{toPlayer.name}</div>
+                                    </div>
                                 </div>
+                                {requestTotal > 0 && (
+                                    <div className="text-right">
+                                        <div className="text-xs text-gray-400 uppercase">Итого</div>
+                                        <div className="text-lg font-bold text-green-400">${requestTotal.toLocaleString()}</div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">

@@ -991,11 +991,11 @@ const GameRoom = () => {
             </motion.div>
 
             {/* MAIN BOARD AREA */}
-            <div className={`flex-1 relative bg-[#0c0c14] flex flex-col ${isMobile ? 'items-start overflow-auto pr-[50px] pb-24' : 'items-center overflow-hidden pr-16'}`}>
+            <div className={`flex-1 relative bg-[#0c0c14] flex flex-col ${isMobile ? 'items-start overflow-auto pr-[50px] pb-24' : 'items-center overflow-x-auto overflow-y-hidden pr-24'}`}>
                 {/* Background */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
-                <div className={`relative z-10 shadow-2xl transition-all duration-300 my-auto py-8 ${isMobile ? 'overflow-visible' : ''}`}
+                <div className={`relative z-10 shadow-2xl transition-all duration-300 my-auto py-8 ${isMobile ? 'overflow-visible' : 'mx-8'}`}
                     style={{
                         width: isMobile ? '800px' : '85%',
                         maxWidth: '1000px',
@@ -1007,7 +1007,8 @@ const GameRoom = () => {
                         // Mobile: Force min-width to allow scroll if parent is scrolling
                         minWidth: isMobile ? '800px' : 'auto',
                         paddingRight: isMobile ? '50px' : '0', // Allow scrolling extra to right
-                        paddingLeft: isMobile ? '50px' : '0'  // Allow scrolling extra to left (expose sidebar hint)
+                        paddingLeft: isMobile ? '50px' : '0',  // Allow scrolling extra to left (expose sidebar hint)
+                        marginRight: isMobile ? '0' : '100px' // Extra space for desktop scroll
                     }}
                 >
                     <Board

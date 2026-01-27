@@ -6,6 +6,14 @@ const TradeNotification = ({ trade, fromPlayer, onRespond, board }) => {
     if (!trade || !fromPlayer) return null;
 
     const getPropName = (id) => board?.find(t => t.id === id)?.name || `#${id}`;
+    const getPropPrice = (id) => board?.find(t => t.id === id)?.price || 0;
+
+    // Calculate totals
+    const offerPropsValue = trade.offer_properties.reduce((sum, pid) => sum + getPropPrice(pid), 0);
+    const offerTotal = (trade.offer_money || 0) + offerPropsValue;
+
+    const requestPropsValue = trade.request_properties.reduce((sum, pid) => sum + getPropPrice(pid), 0);
+    const requestTotal = (trade.request_money || 0) + requestPropsValue;
 
     return (
         <motion.div
@@ -27,7 +35,10 @@ const TradeNotification = ({ trade, fromPlayer, onRespond, board }) => {
             <div className="p-4 space-y-4">
                 {/* They Offer */}
                 <div>
-                    <div className="text-xs text-gray-400 font-bold uppercase mb-2">Предлагают:</div>
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="text-xs text-gray-400 font-bold uppercase">Предлагают:</div>
+                        {offerTotal > 0 && <div className="text-sm font-bold text-green-400">${offerTotal.toLocaleString()}</div>}
+                    </div>
                     <div className="bg-black/20 rounded-lg p-3 space-y-2">
                         {trade.offer_money > 0 && (
                             <div className="text-green-400 font-mono font-bold">+ ${trade.offer_money}</div>
@@ -49,7 +60,10 @@ const TradeNotification = ({ trade, fromPlayer, onRespond, board }) => {
 
                 {/* They Want */}
                 <div>
-                    <div className="text-xs text-gray-400 font-bold uppercase mb-2">Хотят получить:</div>
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="text-xs text-gray-400 font-bold uppercase">Хотят получить:</div>
+                        {requestTotal > 0 && <div className="text-sm font-bold text-red-400">${requestTotal.toLocaleString()}</div>}
+                    </div>
                     <div className="bg-black/20 rounded-lg p-3 space-y-2">
                         {trade.request_money > 0 && (
                             <div className="text-red-400 font-mono font-bold">- ${trade.request_money}</div>

@@ -69,14 +69,15 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
                     } : {
                         ...finalRotation
                     }}
+                    initial={false}
                     transition={isRolling ? {
                         duration: 1.5, // Slower spin
                         repeat: Infinity,
                         ease: "linear"
                     } : {
-                        duration: 0.3,
+                        duration: 0.4,
                         type: "tween",
-                        ease: [0.25, 0.1, 0.25, 1] // Custom cubic bezier for smooth stop
+                        ease: [0.22, 1, 0.36, 1] // Improved easing for smoother stop
                     }}
                 >
                     <Face n={1} />
