@@ -59,6 +59,7 @@ const Lobby = () => {
     // Friends State
     const [friends, setFriends] = useState([]);
     const [friendRequests, setFriendRequests] = useState([]);
+    const [gameInvites, setGameInvites] = useState([]);
     const [friendCodeInput, setFriendCodeInput] = useState('');
 
     const [isInitializing, setIsInitializing] = useState(true);
@@ -267,12 +268,17 @@ const Lobby = () => {
 
     const fetchFriendsData = async () => {
         try {
-            const [friendsRes, requestsRes] = await Promise.all([
+            const [friendsRes, requestsRes, invitesRes] = await Promise.all([
                 authFetch('/api/friends'),
-                authFetch('/api/friends/requests')
+                authFetch('/api/friends/requests'),
+                authFetch('/api/games/invites/pending')
             ]);
             if (friendsRes.ok) setFriends(await friendsRes.json());
             if (requestsRes.ok) setFriendRequests(await requestsRes.json());
+            if (invitesRes.ok) {
+                const data = await invitesRes.json();
+                setGameInvites(data.invites || []);
+            }
         } catch (e) { console.error(e); }
     };
 
@@ -574,9 +580,9 @@ const Lobby = () => {
                         </button>
 
                         <button onClick={() => setMode('friends')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-green-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
-                            {friendRequests.length > 0 && (
-                                <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-bounce">
-                                    {friendRequests.length}
+                            {(friendRequests.length > 0 || gameInvites.length > 0) && (
+                                <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-bounce shadow-lg shadow-red-500/50">
+                                    {friendRequests.length + gameInvites.length}
                                 </div>
                             )}
                             <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -800,9 +806,9 @@ const Lobby = () => {
                         <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
                             {friendRequests.length > 0 && (
                                 <div className="mb-4">
-                                    <h3 className="text-sm text-gray-400 uppercase tracking-widest mb-2">Запросы</h3>
+                                    <h3 className="text-sm text-gray-400 uppercase tracking-widest mb-2 font-bold text-[10px]">Запросы в друзья</h3>
                                     {friendRequests.map(req => (
-                                        <div key={req.id} className="bg-white/10 p-3 rounded-lg flex justify-between items-center border border-purple-500/30">
+                                        <div key={req.id} className="bg-white/10 p-3 rounded-lg flex justify-between items-center border border-purple-500/30 mb-2">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center font-bold text-xs overflow-hidden">
                                                     {req.from_user?.avatar_url && (req.from_user.avatar_url.startsWith('http') || req.from_user.avatar_url.startsWith('/')) ? (
@@ -818,6 +824,46 @@ const Lobby = () => {
                                             <div className="flex gap-2">
                                                 <button onClick={() => authFetch(`/api/friends/requests/${req.id}/accept`, { method: 'POST' }).then(fetchFriendsData)} className="p-1 bg-green-500 rounded hover:bg-green-600"><UserCheck size={16} /></button>
                                                 <button onClick={() => authFetch(`/api/friends/requests/${req.id}/reject`, { method: 'POST' }).then(fetchFriendsData)} className="p-1 bg-red-500 rounded hover:bg-red-600"><X size={16} /></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {gameInvites.length > 0 && (
+                                <div className="mb-4">
+                                    <h3 className="text-sm text-yellow-400 uppercase tracking-widest mb-2 font-bold text-[10px]">Приглашения в игру</h3>
+                                    {gameInvites.map(inv => (
+                                        <div key={inv.id} className="bg-yellow-500/10 p-4 rounded-lg flex justify-between items-center border border-yellow-500/30 mb-2 group">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center font-bold text-xs overflow-hidden">
+                                                    {inv.from_user?.avatar_url && (inv.from_user.avatar_url.startsWith('http') || inv.from_user.avatar_url.startsWith('/')) ? (
+                                                        <img src={inv.from_user.avatar_url} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Play className="text-yellow-500" size={20} />
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-white text-sm">{inv.from_user?.name} приглашает!</div>
+                                                    <div className="text-[10px] text-gray-400 font-mono">Карта: {inv.map_type} • {inv.player_count} чел.</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setGameIdInput(inv.game_id);
+                                                        setMode('join');
+                                                    }}
+                                                    className="btn-sm btn-primary bg-yellow-500 hover:bg-yellow-600 text-black border-none"
+                                                >
+                                                    Принять
+                                                </button>
+                                                <button
+                                                    onClick={() => authFetch(`/api/games/invites/${inv.id}/decline`, { method: 'POST' }).then(fetchFriendsData)}
+                                                    className="p-1.5 bg-red-500/20 text-red-500 rounded hover:bg-red-500 hover:text-white transition-colors"
+                                                >
+                                                    <X size={18} />
+                                                </button>
                                             </div>
                                         </div>
                                     ))}
