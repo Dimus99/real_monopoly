@@ -617,6 +617,17 @@ async def invite_friend(
     
     await db_service.create_game_invite(session, invite_data)
     
+    # Send Telegram notification if target has a linked account
+    if target.telegram_id:
+        from telegram_utils import send_telegram_game_invite
+        import asyncio
+        asyncio.create_task(send_telegram_game_invite(
+            to_telegram_id=target.telegram_id,
+            from_user_name=current_user.name,
+            game_id=game_id.upper(),
+            map_type=game.map_type
+        ))
+    
     return {
         "success": True,
         "invite_id": invite_id,
