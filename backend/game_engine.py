@@ -629,21 +629,23 @@ class GameEngine:
     def _draw_chance_card(self, game: GameState, player: Player) -> Dict[str, Any]:
         """Draw a random chance card effect."""
         cards = [
-            {"type": "money", "amount": 200, "text": "Получил откат 200 долларов! (+200)"},
-            {"type": "money", "amount": 400, "text": "Украл налогов на 400! (+400)"},
-            {"type": "money", "amount": -200, "text": "Сбил пешехода, нужно заплатить жертве 200 (-200)"},
-            {"type": "money", "amount": -300, "text": "Проиграл в казино 300! (-300)"},
+            {"type": "money", "amount": 200, "text": "Получил откат 200 долларов!"},
+            {"type": "money", "amount": 400, "text": "Украл налогов на 400!"},
+            {"type": "money", "amount": -200, "text": "Сбил пешехода, нужно заплатить жертве 200"},
+            {"type": "money", "amount": -300, "text": "Проиграл в казино 300!"},
             {"type": "move_random", "min": 3, "max": 12, "text": "Скрываешься от преследования! Перемещение вперед..."},
             {"type": "move_to", "position": 0, "text": "Срочный вызов в Штаб! Возвращайся на СТАРТ."},
             {"type": "move_to", "position": 25, "text": "Следственный комитет ждет тебя на Острове Эпштейна!"},
-            {"type": "money", "amount": 500, "text": "Нашел секретный офшор! (+500)"},
-            {"type": "money", "amount": 100, "text": "Выиграл тендер на поставку плитки! (+100)"},
-            {"type": "money", "amount": 150, "text": "Продал NFT с изображением лидера! (+150)"},
-            {"type": "money", "amount": -150, "text": "Оштрафован за дискредитацию валюты! (-150)"},
-            {"type": "money", "amount": -50, "text": "Купил 'синюю галочку' в соцсети! (-50)"},
+            {"type": "money", "amount": 500, "text": "Нашел секретный офшор!"},
+            {"type": "money", "amount": 100, "text": "Выиграл тендер на поставку плитки!"},
+            {"type": "money", "amount": 150, "text": "Продал NFT с изображением лидера!"},
+            {"type": "money", "amount": -150, "text": "Оштрафован за дискредитацию валюты!"},
+            {"type": "money", "amount": -50, "text": "Купил 'синюю галочку' в соцсети!"},
             {"type": "move_back", "steps": 3, "text": "Забыл выключить утюг. Вернись на 3 шага назад."},
             {"type": "pay_all", "amount": 50, "text": "День рождения Лидера! Скиньтесь по 50 каждому игроку."},
             {"type": "collect_all", "amount": 50, "text": "Вы - председатель колхоза. Соберите по 50 с каждого!"},
+            {"type": "collect_all", "amount": 100, "text": "Все тратят в твой стране на олимпийских играх по 100"},
+
         ]
         
         card = random.choice(cards)
