@@ -5,7 +5,7 @@ import {
     Copy, Users, Bot, Play, Check, Home, Clock, ArrowLeftRight,
     ArrowLeft, MessageSquare, Settings, Bell,
     Menu, UserPlus, X, MapPin, ChevronLeft, ChevronRight, Crosshair, Flag,
-    Map, Clock, Zap
+    Map, Zap
 } from 'lucide-react';
 import { CHARACTERS } from '../constants/characters';
 import useGameSocket from '../hooks/useGameSocket';
