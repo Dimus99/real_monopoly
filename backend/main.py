@@ -174,8 +174,7 @@ if os.path.exists(static_path):
         if os.path.exists(index_file):
             return FileResponse(index_file)
         return {"error": "Frontend not built", "static_path": static_path}
-else:
-# Telegram Webhook
+
 @app.post("/webhook/telegram")
 async def telegram_webhook(update: dict):
     """Handle incoming Telegram updates."""

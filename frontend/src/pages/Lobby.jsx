@@ -695,6 +695,27 @@ const Lobby = () => {
                     </div>
                 )}
 
+                {/* Telegram Bot Link (Browser Only) */}
+                {(!window.Telegram?.WebApp?.initData) && (
+                    <div className="mt-8 max-w-4xl w-full mx-auto px-4">
+                        <a
+                            href="https://t.me/monopoly_haha_bot"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block w-full bg-[#24A1DE]/20 hover:bg-[#24A1DE]/30 border border-[#24A1DE]/50 rounded-xl p-4 transition-all group relative overflow-hidden text-center"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                            <div className="flex flex-col items-center justify-center gap-2">
+                                <span className="text-2xl">✈️</span>
+                                <h3 className="text-[#24A1DE] font-bold text-lg uppercase tracking-wider">Открыть в Telegram</h3>
+                                <p className="text-gray-400 text-xs max-w-md">
+                                    Для полного погружения и уведомлений рекомендуем играть через нашего официального бота
+                                </p>
+                            </div>
+                        </a>
+                    </div>
+                )}
+
                 {/* Create Mode */}
                 {mode === 'create' && (
                     <div className="glass-card max-w-2xl w-full p-8 animate-in fade-in zoom-in duration-300">
