@@ -483,11 +483,11 @@ const GameRoom = () => {
                 // But we must disable rolling again. isRolling=true handles that.
                 // We will sync hasRolled in the Final Phase.
 
-                // Phase 1: Rolling animation (2000ms spin)
+                // Phase 1: Rolling animation (500ms spin - FAST)
                 const rollTimeout = setTimeout(() => {
                     setDiceRolling(false); // Stop spinning (Freeze)
 
-                    // Phase 2: Show result for 3 seconds (Freeze phase)
+                    // Phase 2: Show result for 2 seconds (Freeze phase - allows reading)
                     const resultTimeout = setTimeout(() => {
                         setShowDice(false);
 
@@ -516,9 +516,9 @@ const GameRoom = () => {
                                 setChanceData({ chance_card: lastAction.chance_card });
                                 setShowChanceModal(true);
                             }
-                        }, 500);
-                    }, 3000);
-                }, 2500);
+                        }, 100);
+                    }, 2000);
+                }, 500);
                 break;
 
             case 'PROPERTY_BOUGHT':
@@ -620,8 +620,15 @@ const GameRoom = () => {
             // This prevents the "Button Blocked" bug where server says hasRolled=true (immediately after roll),
             // but our animation hasn't finished, so we might get into a weird state.
             // We only trust the server sync when we are IDLE.
+            const serverHasRolled = !!gameState.turn_state.has_rolled;
             if (!isRolling && !diceRolling && !showDice) {
-                setHasRolled(!!gameState.turn_state.has_rolled);
+                setHasRolled(serverHasRolled);
+            } else {
+                // Critical Fix: If server says we have NOT rolled (e.g. Doubles reset), force client to false even if animating
+                // This prevents getting stuck in "Done" state when we should be able to roll again.
+                if (!serverHasRolled) {
+                    setHasRolled(false);
+                }
             }
         }
 
@@ -1003,8 +1010,6 @@ const GameRoom = () => {
                         onSellHouse={handleSellHouse}
                         onMortgage={handleMortgage}
                         onUnmortgage={handleUnmortgage}
-                        onMortgage={handleMortgage}
-                        onUnmortgage={handleUnmortgage}
                         canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && (selectedTile || currentTile)?.is_monopoly}
                         isMyTurn={isMyTurn}
                         lastAction={lastAction}
@@ -1042,20 +1047,12 @@ const GameRoom = () => {
                     </div>
                 )}
 
-                <div className="absolute inset-0 pointer-events-none z-[100] flex items-center justify-center">
-                    <AnimatePresence>
-                        {showDice && (
-                            <div className="pointer-events-auto transform scale-150">
-                                <DiceAnimation show={showDice} rolling={diceRolling} values={diceValues} glow={diceValues[0] === diceValues[1]} />
-                            </div>
-                        )}
-                    </AnimatePresence>
-                </div>
 
                 {/* Action Panel - CENTERED */}
                 <div className={`fixed left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-24 scale-90' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
                     <div className="bg-black/80 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/20 w-fit mx-auto">
                         <ActionPanel
+                            onToggleSidebar={isMobile ? () => setSidebarCollapsed(!sidebarCollapsed) : null}
                             isMyTurn={isMyTurn}
                             isRolling={isRolling}
                             hasRolled={hasRolled}
@@ -1342,6 +1339,9 @@ const GameRoom = () => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Global Dice Animation Overlay - Fixed to Viewport */}
+            <DiceAnimation show={showDice} rolling={diceRolling} values={diceValues} glow={diceValues[0] === diceValues[1]} />
         </div>
     );
 };

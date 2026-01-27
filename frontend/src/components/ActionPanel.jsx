@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, ShoppingCart, Check } from 'lucide-react';
+import { Zap, ShoppingCart, Check, Users } from 'lucide-react';
 import { ABILITIES } from '../constants/characters';
 
 const ActionPanel = ({
@@ -26,7 +26,8 @@ const ActionPanel = ({
     isChanceOpen = false,
     rentDetails = null,
     onPayRent = null,
-    onPayBail = null
+    onPayBail = null,
+    onToggleSidebar
 }) => {
 
     let ability = null;
@@ -64,6 +65,18 @@ const ActionPanel = ({
                 animate={{ y: 0, opacity: 1 }}
                 className="flex items-center gap-2 p-2 md:p-3 bg-gray-900/95 backdrop-blur-xl border border-white/20 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.7)] pointer-events-auto"
             >
+                {/* 0. Mobile Sidebar Toggle (Users) */}
+                {onToggleSidebar && (
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={onToggleSidebar}
+                        className="h-[56px] w-[56px] bg-white/10 hover:bg-white/20 text-white rounded-2xl flex items-center justify-center border border-white/20 shadow-lg"
+                    >
+                        <Users size={24} />
+                    </motion.button>
+                )}
+
                 {/* 1. Ability Button (Left) */}
                 {ability && (
                     <div className="relative group">

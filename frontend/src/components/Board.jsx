@@ -54,11 +54,11 @@ const getTileCoordinates = (tileId, boardRef, gap = 2) => {
 
     const gridStyle = getTileStyle(tileId);
 
-    // Grid configuration: Corners 1.5fr, others 1fr
-    // 1st col (index 1) and 11th col (index 11) are 1.5fr
+    // Grid configuration: Corners 1.8fr, others 1fr (Updated to match CSS)
+    // 1st col (index 1) and 11th col (index 11) are 1.8fr
     // Cols 2-10 are 1fr
-    // Total units = 1.5 + 9 + 1.5 = 12
-    const totalUnits = 12;
+    // Total units = 1.8 + 9 + 1.8 = 12.6
+    const totalUnits = 12.6;
 
     // Calculate unit size after subtracting gaps
     // 11 cells have 10 gaps
@@ -71,11 +71,11 @@ const getTileCoordinates = (tileId, boardRef, gap = 2) => {
     const getCoordinate = (index, unitSize) => {
         let pos = 0;
         for (let i = 1; i < index; i++) {
-            if (i === 1 || i === 11) pos += 1.5 * unitSize;
+            if (i === 1 || i === 11) pos += 1.8 * unitSize;
             else pos += 1 * unitSize;
             pos += gap;
         }
-        const currentSize = (index === 1 || index === 11) ? 1.5 : 1;
+        const currentSize = (index === 1 || index === 11) ? 1.8 : 1;
         pos += (currentSize * unitSize) / 2;
         return pos;
     };

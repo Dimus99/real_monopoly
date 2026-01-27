@@ -138,7 +138,11 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
     }
 
     // User requested NO TEXT ROTATION. All text must be upright.
-    // We keep the logic mostly simple now.
+    // User requested to save space on side airports (Stations) by putting icon to side
+    const isSideStation = property.group === 'Station' && (orientation === 'left-col' || orientation === 'right-col');
+    let contentLayoutClass = (!isPropertyTile && !isCorner) ? 'flex-row' : 'flex-col';
+    if (isSideStation) contentLayoutClass = 'flex-row'; // Force side layout
+
     let contentRotation = '';
 
     return (
@@ -183,10 +187,10 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
             )}
 
             {/* Tile Content */}
-            <div className={`flex-1 flex ${(!isPropertyTile && !isCorner) ? 'flex-row' : 'flex-col'} items-center justify-center gap-1.5 relative h-full ${contentPaddingClass} ${contentRotation}`}>
+            <div className={`flex-1 flex ${contentLayoutClass} items-center justify-center gap-1.5 relative h-full ${contentPaddingClass} ${contentRotation}`}>
                 {/* Special tile icon */}
                 {(specialIcon || groupStyle.icon) && (
-                    <div className={`${isCorner ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} drop-shadow-md`}>
+                    <div className={`${isCorner ? 'text-2xl md:text-3xl' : (isSideStation ? 'text-lg mr-1' : 'text-xl md:text-2xl')} drop-shadow-md`}>
                         {specialIcon || groupStyle.icon}
                     </div>
                 )}
