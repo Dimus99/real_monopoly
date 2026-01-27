@@ -74,6 +74,12 @@ class Database:
         users = await db_service.get_all_users(session)
         return [u.to_dict() for u in users]
     
+    async def increment_user_stats_async(self, user_id: str, is_winner: bool):
+        """Increment win/loss stats for a user."""
+        async with async_session() as session:
+            async with session.begin():
+                await db_service.increment_user_stats(session, user_id, is_winner)
+    
     # ============== Friend Request Methods (PostgreSQL) ==============
     
     async def create_friend_request_async(self, session: AsyncSession, request_data: dict) -> dict:

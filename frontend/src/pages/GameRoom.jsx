@@ -803,7 +803,7 @@ const GameRoom = () => {
     }
 
     return (
-        <div className="flex bg-[#0c0c14] h-screen w-full overflow-hidden font-sans selection:bg-purple-500/30">
+        <div className="flex bg-[#0c0c14] h-screen w-full overflow-hidden font-sans selection:bg-purple-500/30 fixed inset-0">
             {/* COLLAPSIBLE SIDEBAR */}
             <motion.div
                 animate={{
@@ -856,7 +856,7 @@ const GameRoom = () => {
                         <div className={`bg-black/40 p-2 rounded-lg border border-white/5 flex flex-col items-center ${sidebarCollapsed ? 'w-full' : 'flex-1'}`}>
                             <Clock size={12} className={(gameState?.turn_timer !== 0 && timeLeft <= 10) ? 'text-orange-500 animate-pulse' : 'text-gray-400'} />
                             <span className={`text-sm font-mono font-bold ${(gameState?.turn_timer !== 0 && timeLeft <= 10) ? 'text-orange-500 animate-pulse' : 'text-white'}`}>
-                                {gameState?.turn_timer === 0 ? '∞' : timeLeft}
+                                {gameState?.turn_timer === 0 || gameState?.game_status === 'finished' ? '∞' : timeLeft}
                             </span>
                         </div>
                         <div className={`bg-black/40 p-2 rounded-lg border border-white/5 flex flex-col items-center ${sidebarCollapsed ? 'w-full' : 'flex-1'}`}>
@@ -939,7 +939,7 @@ const GameRoom = () => {
                 {/* Background */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
-                <div className="relative z-10 shadow-2xl transition-all duration-300 my-auto py-8"
+                <div className={`relative z-10 shadow-2xl transition-all duration-300 my-auto py-8 ${isMobile ? 'overflow-auto' : ''}`}
                     style={{
                         width: isMobile ? '800px' : '85%', // Reduced by 5%
                         maxWidth: '1000px',
@@ -947,7 +947,9 @@ const GameRoom = () => {
                         minHeight: isMobile ? '800px' : 'auto',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        // Mobile: Allow touch scrolling in all directions if content overflows
+                        touchAction: isMobile ? 'pan-x pan-y' : 'auto'
                     }}
                 >
                     <Board
@@ -989,8 +991,8 @@ const GameRoom = () => {
                 </div>
 
                 {/* Action Panel - CENTERED */}
-                <div className="absolute top-[25%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md pointer-events-auto z-[140] px-4 flex justify-center items-center scale-90">
-                    <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-2 shadow-2xl border border-white/10">
+                <div className={`absolute left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-20 scale-100' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
+                    <div className="bg-black/80 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/20 w-fit mx-auto">
                         <ActionPanel
                             isMyTurn={isMyTurn}
                             isRolling={isRolling}
@@ -1198,6 +1200,77 @@ const GameRoom = () => {
                                     </div>
                                 )}
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* GAME OVER MODAL */}
+            <AnimatePresence>
+                {gameState?.game_status === 'finished' && gameState?.winner_id && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+                        <motion.div
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                            className="relative flex flex-col items-center justify-center w-full max-w-lg"
+                        >
+                            {/* Confetti Effect (Simple CSS or just visual vibes) */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 to-purple-500/20 blur-3xl animate-pulse" />
+
+                            {/* Avatar */}
+                            <div className="relative w-48 h-48 mb-8">
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                                    className="absolute inset-0 rounded-full border-4 border-dashed border-yellow-400"
+                                />
+                                <div className="absolute inset-2 rounded-full overflow-hidden border-4 border-yellow-500 shadow-[0_0_50px_rgba(234,179,8,0.6)] bg-black">
+                                    <img
+                                        src={CHARACTERS[gameState.players[gameState.winner_id]?.character]?.avatar}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                {/* Crown Icon */}
+                                <motion.div
+                                    initial={{ y: -50, opacity: 0 }}
+                                    animate={{ y: -70, opacity: 1 }}
+                                    transition={{ delay: 0.5 }}
+                                    className="absolute -top-4 left-1/2 -translate-x-1/2 text-6xl"
+                                >
+                                    👑
+                                </motion.div>
+                            </div>
+
+                            {/* Text */}
+                            <motion.h1
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-500 uppercase tracking-tighter mb-2 text-center drop-shadow-lg font-display"
+                            >
+                                ПОБЕДИТЕЛЬ!
+                            </motion.h1>
+
+                            <motion.div
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.5 }}
+                                className="text-3xl font-bold text-white mb-12 text-center"
+                            >
+                                {gameState.players[gameState.winner_id]?.name}
+                            </motion.div>
+
+                            <motion.button
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.8 }}
+                                onClick={() => navigate('/lobby')}
+                                className="px-12 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-black text-xl rounded-full shadow-xl hover:scale-105 transition-all uppercase tracking-widest"
+                            >
+                                В Лобби
+                            </motion.button>
+
                         </motion.div>
                     </div>
                 )}

@@ -6,8 +6,11 @@ from typing import List, Optional, Dict, Any, Union
 from datetime import datetime, timedelta
 import random
 import uuid
+import asyncio  # Added for async tasks
 
 from models import Property, GameState, Player, TradeOffer
+# Import global DB instance to update stats
+from database import db
 
 # ============== Board Data ==============
 
@@ -1271,14 +1274,38 @@ class GameEngine:
                 game.turn_state = {}
                 game.turn_expiry = datetime.utcnow() + timedelta(seconds=45)
         
-        # Check for winner
+        # Check for winner (Last man standing)
         active_players = [p for p in game.players.values() if not p.is_bankrupt]
-        if len(active_players) == 1:
-            game.game_status = "finished"
-            game.winner_id = active_players[0].id
-            game.finished_at = datetime.utcnow()
-            game.logs.append(f"{active_players[0].name} WINS THE GAME!")
         
+        # If only 1 player remains (and it's not a solo test game where only 1 started logic might differ, 
+        # but usually we need >1 player for a winner. Use game.max_players or just assume 
+        # if players dropped out... Classic Monopoly ends when 1 left.)
+        if len(active_players) == 1 and len(game.players) > 1:
+            winner = active_players[0]
+            game.game_status = "finished"
+            game.winner_id = winner.id
+            game.finished_at = datetime.utcnow()
+            game.logs.append(f"🏆 {winner.name} WINS THE GAME! 🏆")
+            
+            # --- UPDATE STATS ---
+            try:
+                # We need to run async DB update from sync code. 
+                # Since we are in a sync method, we can create a task on the running loop 
+                # OR just enqueue it if we had a background worker.
+                # For now, let's try to get the running loop.
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Update Winner
+                    if not winner.is_bot and winner.user_id:
+                         loop.create_task(db.increment_user_stats_async(winner.user_id, is_winner=True))
+                    
+                    # Update Losers (Bankrupt player)
+                    if not player.is_bot and player.user_id:
+                         loop.create_task(db.increment_user_stats_async(player.user_id, is_winner=False))
+            except Exception as e:
+                print(f"Error updating stats: {e}")
+            # --------------------
+
         return {
             "success": True,
             "bankrupt": True,
@@ -1528,7 +1555,7 @@ class GameEngine:
             "bonus": bonus
         }
     
-    
+
     # ============ Trading System ============
 
     def create_trade(self, game_id: str, offer: Dict[str, Any]) -> Dict[str, Any]:

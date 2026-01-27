@@ -27,7 +27,7 @@ const ToastNotification = ({ logs, onSendMessage }) => {
                 text
             }));
 
-            setRecentLogs(prev => [...prev.slice(-4), ...newEntries]);
+            setRecentLogs(prev => [...prev.slice(-1), ...newEntries]);
 
             // Auto remove toast after 5 seconds
             newEntries.forEach(entry => {

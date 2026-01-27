@@ -58,6 +58,21 @@ async def lifespan(app: FastAPI):
     
     # Database info
     db_url = os.getenv("DATABASE_URL", "not set")
+    
+    # Setup Telegram Webhook
+    if bot_token:
+        try:
+            import httpx
+            # Your Public URL (Railway)
+            PUBLIC_URL = os.getenv("VITE_API_URL", "https://realmonopoly-production.up.railway.app")
+            webhook_url = f"{PUBLIC_URL}/webhook/telegram"
+            
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(f"https://api.telegram.org/bot{bot_token}/setWebhook?url={webhook_url}")
+                print(f"✓ Telegram Webhook set: {resp.json()}")
+        except Exception as e:
+            print(f"⚠ Failed to set webhook: {e}")
+
     if "asyncpg" in db_url or "postgresql" in db_url:
         # Hide password in logs
         safe_url = db_url.split("@")[-1] if "@" in db_url else db_url
@@ -160,9 +175,61 @@ if os.path.exists(static_path):
             return FileResponse(index_file)
         return {"error": "Frontend not built", "static_path": static_path}
 else:
-    @app.get("/")
-    async def root_fallback():
-        return {"status": "ok", "message": "API is running, but static files are missing."}
+# Telegram Webhook
+@app.post("/webhook/telegram")
+async def telegram_webhook(update: dict):
+    """Handle incoming Telegram updates."""
+    try:
+        if "message" in update:
+            message = update["message"]
+            text = message.get("text", "")
+            chat_id = message.get("chat", {}).get("id")
+            
+            if text.startswith("/start") and chat_id:
+                # Send welcome message
+                import httpx
+                
+                bot_token = os.getenv("BOT_TOKEN")
+                bot_username = os.getenv("BOT_USERNAME", "monopoly_haha_bot")
+                app_name = os.getenv("TG_APP_NAME") or ""
+                
+                # Build correct Mini App URL
+                if app_name:
+                    web_app_url = f"https://t.me/{bot_username}/{app_name}"
+                else:
+                    web_app_url = f"https://t.me/{bot_username}"
+
+                welcome_text = (
+                    "👋 *Добро пожаловать в Политическую Монополию!*\n\n"
+                    "Здесь ты сможешь:\n"
+                    "🎩 Стать олигархом\n"
+                    "🚀 Запускать 'Орешник'\n"
+                    "🤝 Договариваться и предавать\n\n"
+                    "Жми кнопку ниже, чтобы начать игру! 👇"
+                )
+                
+                payload = {
+                    "chat_id": chat_id,
+                    "text": welcome_text,
+                    "parse_mode": "Markdown",
+                    "reply_markup": {
+                        "inline_keyboard": [[
+                            {"text": "🎮 ИГРАТЬ", "web_app": {"url": "https://realmonopoly-production.up.railway.app"}}
+                        ]]
+                    }
+                }
+                
+                async with httpx.AsyncClient() as client:
+                    await client.post(f"https://api.telegram.org/bot{bot_token}/sendMessage", json=payload)
+                    
+        return {"status": "ok"}
+    except Exception as e:
+        print(f"Webhook error: {e}")
+        return {"status": "error"}
+
+@app.get("/")
+async def root_fallback():
+    return {"status": "ok", "message": "API is running. Telegram Webhook Active."}
 
 
 # ============== Health Check ==============

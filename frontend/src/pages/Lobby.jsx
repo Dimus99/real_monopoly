@@ -650,9 +650,11 @@ const Lobby = () => {
                                     {activeGames.map(game => (
                                         <div key={game.game_id} className="bg-white/5 border border-white/10 p-4 rounded-xl hover:bg-white/10 transition-all flex justify-between items-center group relative overflow-hidden">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex-shrink-0">
-                                                    {game.host_avatar ? (
-                                                        <img src={game.host_avatar} className="w-full h-full object-cover" alt="Host" />
+                                                <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex-shrink-0 flex items-center justify-center relative">
+                                                    {game.host_avatar && (game.host_avatar.startsWith('http') || game.host_avatar.startsWith('/')) ? (
+                                                        <img src={game.host_avatar} className="w-full h-full object-cover" alt="Avatar" />
+                                                    ) : game.host_avatar ? (
+                                                        <span className="text-xl select-none">{game.host_avatar}</span>
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-white/20 text-xl select-none">👤</div>
                                                     )}
