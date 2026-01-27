@@ -69,7 +69,7 @@ const DiceAnimation = ({ show, rolling, values, glow }) => {
                         ...finalRotation
                     }}
                     transition={isRolling ? {
-                        duration: 1.5,
+                        duration: 2.5,
                         repeat: Infinity,
                         ease: "linear"
                     } : {

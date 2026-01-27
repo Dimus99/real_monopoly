@@ -463,11 +463,11 @@ const GameRoom = () => {
                     setHasRolled(true);
                 }
 
-                // Phase 1: Rolling animation (800ms)
+                // Phase 1: Rolling animation (1200ms - Slower spin)
                 const rollTimeout = setTimeout(() => {
                     setDiceRolling(false); // Show final result
 
-                    // Phase 2: Show result for 3 seconds (as requested, total +2s)
+                    // Phase 2: Show result for 3 seconds (as requested, total +3s)
                     const resultTimeout = setTimeout(() => {
                         setShowDice(false);
 
@@ -477,6 +477,11 @@ const GameRoom = () => {
                                 setDelayedPlayers(gameState.players);
                             }
                             setIsRolling(false);
+
+                            // SYNC hasRolled accurately from the latest server state in case it changed
+                            if (gameState?.turn_state) {
+                                setHasRolled(!!gameState.turn_state.has_rolled);
+                            }
 
                             if ((lastAction.action === 'pay_rent' || lastAction.action === 'tax') && lastAction.player_id === playerId) {
                                 setRentDetails({
@@ -492,7 +497,7 @@ const GameRoom = () => {
                             }
                         }, 500);
                     }, 3000);
-                }, 800);
+                }, 1200);
                 break;
 
             case 'PROPERTY_BOUGHT':
@@ -1022,7 +1027,7 @@ const GameRoom = () => {
                 </div>
 
                 {/* Chat / Toast Notification - Elevated to avoid overlap */}
-                <div className="absolute bottom-0 left-0 right-0 z-[150] w-full flex flex-col justify-end pointer-events-none pb-24 px-4">
+                <div className={`absolute left-0 right-0 z-[150] w-full flex flex-col justify-end pointer-events-none px-4 ${isMobile ? 'top-16 bottom-24' : 'bottom-0 pb-24'}`}>
                     <div className="pointer-events-auto w-full max-w-[600px] mx-auto">
                         <ToastNotification logs={displayedLogs} onSendMessage={handleSendMessage} />
                     </div>
@@ -1208,24 +1213,27 @@ const GameRoom = () => {
             {/* GAME OVER MODAL */}
             <AnimatePresence>
                 {gameState?.game_status === 'finished' && gameState?.winner_id && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+                    /* Changed: transparent background, pointer-events-none on container so clicks pass through to sides if needed, 
+                       but pointer-events-auto on content */
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none">
                         <motion.div
                             initial={{ scale: 0.5, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                            className="relative flex flex-col items-center justify-center w-full max-w-lg"
+                            className="relative flex flex-col items-center justify-center p-8 bg-black/80 backdrop-blur-md rounded-3xl border border-yellow-500/30 shadow-2xl pointer-events-auto"
+                            style={{ maxWidth: '90%', width: '400px' }}
                         >
-                            {/* Confetti Effect (Simple CSS or just visual vibes) */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 to-purple-500/20 blur-3xl animate-pulse" />
+                            {/* Confetti Effect inside the card */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-purple-500/10 rounded-3xl overflow-hidden" />
 
                             {/* Avatar */}
-                            <div className="relative w-48 h-48 mb-8">
+                            <div className="relative w-32 h-32 mb-6 z-10">
                                 <motion.div
                                     animate={{ rotate: 360 }}
                                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                                     className="absolute inset-0 rounded-full border-4 border-dashed border-yellow-400"
                                 />
-                                <div className="absolute inset-2 rounded-full overflow-hidden border-4 border-yellow-500 shadow-[0_0_50px_rgba(234,179,8,0.6)] bg-black">
+                                <div className="absolute inset-2 rounded-full overflow-hidden border-4 border-yellow-500 shadow-[0_0_30px_rgba(234,179,8,0.5)] bg-black">
                                     <img
                                         src={CHARACTERS[gameState.players[gameState.winner_id]?.character]?.avatar}
                                         className="w-full h-full object-cover"
@@ -1233,10 +1241,10 @@ const GameRoom = () => {
                                 </div>
                                 {/* Crown Icon */}
                                 <motion.div
-                                    initial={{ y: -50, opacity: 0 }}
-                                    animate={{ y: -70, opacity: 1 }}
+                                    initial={{ y: -40, opacity: 0 }}
+                                    animate={{ y: -55, opacity: 1 }}
                                     transition={{ delay: 0.5 }}
-                                    className="absolute -top-4 left-1/2 -translate-x-1/2 text-6xl"
+                                    className="absolute -top-2 left-1/2 -translate-x-1/2 text-4xl"
                                 >
                                     👑
                                 </motion.div>
@@ -1247,7 +1255,7 @@ const GameRoom = () => {
                                 initial={{ y: 20, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.3 }}
-                                className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-500 uppercase tracking-tighter mb-2 text-center drop-shadow-lg font-display"
+                                className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-500 uppercase tracking-tighter mb-2 text-center drop-shadow-lg font-display z-10"
                             >
                                 ПОБЕДИТЕЛЬ!
                             </motion.h1>
@@ -1256,7 +1264,7 @@ const GameRoom = () => {
                                 initial={{ y: 20, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.5 }}
-                                className="text-3xl font-bold text-white mb-12 text-center"
+                                className="text-xl font-bold text-white mb-8 text-center z-10"
                             >
                                 {gameState.players[gameState.winner_id]?.name}
                             </motion.div>
@@ -1265,8 +1273,12 @@ const GameRoom = () => {
                                 initial={{ y: 20, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.8 }}
-                                onClick={() => navigate('/lobby')}
-                                className="px-12 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-black text-xl rounded-full shadow-xl hover:scale-105 transition-all uppercase tracking-widest"
+                                onClick={(e) => {
+                                    e.stopPropagation(); // Prevent bubbling
+                                    console.log('Navigating to lobby...');
+                                    navigate('/lobby');
+                                }}
+                                className="px-8 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black text-lg rounded-full shadow-lg hover:scale-105 transition-all uppercase tracking-widest z-20 cursor-pointer pointer-events-auto"
                             >
                                 В Лобби
                             </motion.button>
