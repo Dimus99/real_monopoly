@@ -173,7 +173,8 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                 // Calculate path if moved
                 if (prevPosition !== position) {
                     const path = calculatePath(prevPosition, position, p.id);
-                    newPaths[p.id] = path.map(pos => getTileCoordinates(pos, boardRef, gap));
+                    // Store INDEXes instead of coordinates to remain reactive to board resize
+                    newPaths[p.id] = path;
                 }
 
                 const coords = getTileCoordinates(position, boardRef, gap);
@@ -278,8 +279,15 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                     offsetY = Math.sin(angle) * radius;
                 }
 
-                const pathCoords = animatedPaths[playerId];
-                const hasPath = pathCoords && pathCoords.length > 0;
+                const pathIndices = animatedPaths[playerId];
+                const hasPath = pathIndices && pathIndices.length > 0;
+
+                const isMobile = window.innerWidth < 768;
+                const gap = isMobile ? 1 : 2;
+
+                // Map indices to real-time pixel coordinates from current board size
+                // This makes movement reactive to sidebar toggles/window resize!
+                const pathCoords = hasPath ? pathIndices.map(pos => getTileCoordinates(pos, boardRef, gap)) : null;
 
                 // Center point adjustment (icon is 44x44)
                 const ICON_HALF_SIZE = 22;

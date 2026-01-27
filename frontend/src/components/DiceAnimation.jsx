@@ -69,15 +69,14 @@ const DiceAnimation = ({ show, rolling, values, glow, playerName }) => {
                     } : {
                         ...finalRotation
                     }}
-                    initial={false}
                     transition={isRolling ? {
-                        duration: 1.5, // Slower spin
+                        duration: 1.0, // Faster spin - synced with GameRoom timeout
                         repeat: Infinity,
                         ease: "linear"
                     } : {
-                        duration: 0.4,
+                        duration: 0.6,
                         type: "tween",
-                        ease: [0.22, 1, 0.36, 1] // Improved easing for smoother stop
+                        ease: "easeOut"
                     }}
                 >
                     <Face n={1} />

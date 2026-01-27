@@ -473,7 +473,7 @@ const GameRoom = () => {
                     setIsRolling(true);
                 }
 
-                // SAFETY: Force clear rolling state after 5 seconds in case something breaks
+                // SAFETY: Force clear rolling state after animation completes in case something breaks
                 setTimeout(() => {
                     setIsRolling(false);
                     setDiceRolling(false);
@@ -482,22 +482,22 @@ const GameRoom = () => {
                     if (gameState?.turn_state) {
                         setHasRolled(!!gameState.turn_state.has_rolled);
                     }
-                }, 6000);
+                }, 3500); // 1000ms spin + 1500ms display + 300ms fade + buffer
 
                 // Immediately set hasRolled based on doubles to prevent UI hang
                 // Update: DO NOT change hasRolled here immediately if we want to wait for animation.
                 // But we must disable rolling again. isRolling=true handles that.
                 // We will sync hasRolled in the Final Phase.
 
-                // Phase 1: Rolling animation (500ms spin - FAST)
+                // Phase 1: Rolling animation (1000ms spin - synced with DiceAnimation duration)
                 const rollTimeout = setTimeout(() => {
                     setDiceRolling(false); // Stop spinning (Freeze)
 
-                    // Phase 2: Show result for 2 seconds (Freeze phase - allows reading)
+                    // Phase 2: Show result for 1.5 seconds (Freeze phase - allows reading)
                     const resultTimeout = setTimeout(() => {
                         setShowDice(false);
 
-                        // Phase 3: Final state update after hide
+                        // Phase 3: Final state update after hide (300ms for fade out)
                         const finalTimeout = setTimeout(() => {
                             if (gameState?.players) {
                                 setDelayedPlayers(gameState.players);
@@ -523,9 +523,9 @@ const GameRoom = () => {
                                 setChanceData({ chance_card: lastAction.chance_card });
                                 setShowChanceModal(true);
                             }
-                        }, 100);
-                    }, 3500);
-                }, 500);
+                        }, 300);
+                    }, 1500);
+                }, 1000);
                 break;
 
             case 'PROPERTY_BOUGHT':
@@ -548,10 +548,14 @@ const GameRoom = () => {
             case 'TURN_ENDED':
             case 'TURN_SKIPPED':
             case 'PLAYER_DISQUALIFIED':
-                setHasRolled(false);
-                setShowDice(false);
-                setDiceRolling(false);
-                setIsRolling(false);
+                // Only reset states if it was MY turn that ended
+                // Otherwise bot/other player turns will incorrectly reset MY button states
+                if (lastAction.player_id === playerId) {
+                    setHasRolled(false);
+                    setShowDice(false);
+                    setDiceRolling(false);
+                    setIsRolling(false);
+                }
                 break;
             case 'ERROR':
                 setIsRolling(false);
@@ -995,7 +999,7 @@ const GameRoom = () => {
                 {/* Background */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
-                <div className={`relative z-10 shadow-2xl transition-all duration-300 my-auto py-8 ${isMobile ? 'overflow-visible' : 'mx-8'}`}
+                <div className={`relative z-10 shadow-2xl transition-all duration-300 my-auto py-8 ${isMobile ? 'overflow-visible' : 'mx-12'}`}
                     style={{
                         width: isMobile ? '800px' : '85%',
                         maxWidth: '1000px',
@@ -1008,7 +1012,7 @@ const GameRoom = () => {
                         minWidth: isMobile ? '800px' : 'auto',
                         paddingRight: isMobile ? '50px' : '0', // Allow scrolling extra to right
                         paddingLeft: isMobile ? '50px' : '0',  // Allow scrolling extra to left (expose sidebar hint)
-                        marginRight: isMobile ? '0' : '100px' // Extra space for desktop scroll
+                        marginRight: isMobile ? '0' : '150px' // Increased extra space for desktop scroll
                     }}
                 >
                     <Board
