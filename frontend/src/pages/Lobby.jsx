@@ -572,7 +572,7 @@ const Lobby = () => {
             {/* Main Content */}
             <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4">
                 {mode === 'menu' && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl">
                         <button onClick={() => setMode('create')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-purple-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
                             <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                             <div className="w-20 h-20 bg-purple-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(168,85,247,0.3)]">
@@ -611,8 +611,19 @@ const Lobby = () => {
                             </div>
                         </button>
 
+                        <button onClick={() => navigate('/hearthstone')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-yellow-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                            <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 to-orange-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="w-20 h-20 bg-yellow-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(234,179,8,0.3)]">
+                                <span className="text-4xl filter drop-shadow-lg">🐲</span>
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold mb-2">Hearthstone</h3>
+                                <p className="text-sm text-gray-400">Мини-игра</p>
+                            </div>
+                        </button>
+
                         {/* Open Lobbies Panel (New Feature) */}
-                        <div className="col-span-1 md:col-span-3 glass-card p-6 mt-4">
+                        <div className="col-span-1 md:col-span-2 lg:col-span-4 glass-card p-6 mt-4">
                             {/* My Active Games Section */}
                             {myGames.length > 0 && (
                                 <div className="mb-8 p-4 bg-purple-500/10 rounded-xl border border-purple-500/30">
