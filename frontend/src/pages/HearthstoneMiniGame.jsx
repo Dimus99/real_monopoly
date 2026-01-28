@@ -6,6 +6,8 @@ const HearthstoneMiniGame = () => {
     const navigate = useNavigate();
     const gameRef = useRef(null);
 
+    const DEBUG = true;
+
     useEffect(() => {
         // === ДАННЫЕ ===
         const HEROES = [
@@ -625,18 +627,29 @@ animation: triplePopup 2s ease - out forwards;
             // Render bots
             gameState.bots.forEach(bot => {
                 const el = document.createElement('div');
-                el.className = `opponent - item ${bot.eliminated ? 'eliminated' : ''} ${gameState.round > 0 && gameState.currentOpponent?.name === bot.name ? 'next-opponent' : ''} `;
+                el.className = `opponent-item ${bot.eliminated ? 'eliminated' : ''} ${gameState.round > 0 && gameState.currentOpponent?.name === bot.name ? 'next-opponent' : ''}`;
+
+                // Add hover details div
+                const hoverDetails = `
+                    <div class="opponent-details-hover">
+                       <div class="opponent-name">${bot.name}</div>
+                       <div class="opponent-power">${bot.hero.power}</div>
+                    </div>
+                `;
+
                 el.innerHTML = `
-    < div class="opponent-avatar" > ${bot.eliminated ? '💀' : '👤'}</div >
+                    <div class="opponent-avatar">${bot.eliminated ? '💀' : '👤'}</div>
+                    ${hoverDetails}
                     <div class="opponent-hp-bar">
                         <div class="opponent-hp-fill" style="width: ${(bot.health / 40) * 100}%"></div>
                     </div>
                     <div class="opponent-health">${bot.health}</div>
                     ${!bot.eliminated ? `<div class="opponent-tier">⭐${bot.tavernTier}</div>` : ''}
-`;
+                `;
                 // Tooltip logic can be added here
                 container.appendChild(el);
             });
+
         }
 
         function handleRefresh() {
@@ -707,6 +720,7 @@ animation: triplePopup 2s ease - out forwards;
         }
 
         function handleStartBattle() {
+            if (DEBUG) console.log('Starting battle...');
             clearInterval(gameState.timerInterval);
             startBattle();
         }
