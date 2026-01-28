@@ -454,41 +454,121 @@ const HearthstoneMiniGame = () => {
             const minion = gameState.draggedCard;
             const source = gameState.dragSource;
 
-            if (gameState.player.board.length >= 7) {
-                alert('Доска полна!');
-                gameState.draggedCard = null;
-                gameState.dragSource = null;
-                return;
+            // If dropped on another minion (handled by dragover on minion card, but if we drop on container...)
+            // Currently board container is drop target.
+
+            // SWAP LOGIC: If source is board, we are reordering
+            if (source === 'board') {
+                // Reordering is complex with just container drop. 
+                // Ideally we drop on a slot or on another minion.
+                // For now, if dropped on container, move to end?
+                // Let's rely on specific slot drops if possible or simply append.
+                // Actually, let's implement swap if we drop ON a minion.
             }
 
             if (source === 'shop') {
-                if (gameState.player.gold < minion.cost) {
-                    alert('Недостаточно золота!');
-                    gameState.draggedCard = null;
-                    gameState.dragSource = null;
-                    return;
-                }
-
-                gameState.player.gold -= minion.cost;
-                minion.sold = true;
-
-                const boardMinion = { ...minion, boardId: Math.random() };
-                gameState.player.board.push(boardMinion);
-
-                checkForTriple(boardMinion);
-            }
-            else if (source === 'hand') {
-                gameState.player.hand = gameState.player.hand.filter(m => m.id !== minion.id);
-
-                const boardMinion = { ...minion, boardId: Math.random() };
-                gameState.player.board.push(boardMinion);
-
-                checkForTriple(boardMinion);
+                buyMinion(minion);
+            } else if (source === 'hand') {
+                playMinion(minion);
             }
 
             gameState.draggedCard = null;
             gameState.dragSource = null;
             updateTavernUI();
+        }
+
+        function buyMinion(minion) {
+            if (gameState.player.gold < minion.cost) {
+                alert('Недостаточно золота!');
+                return;
+            }
+            if (minion.isSpell) {
+                if (gameState.player.hand.length >= 10) {
+                    alert('Рука полна!');
+                    return;
+                }
+                gameState.player.gold -= minion.cost;
+                minion.sold = true;
+                gameState.player.hand.push({ ...minion, id: Math.random() }); // New ID for hand instance
+                updateTavernUI();
+                return;
+            }
+
+            // Minion decision: Buy to Hand or Board?
+            // HS BG default: Buy to Hand.
+            if (gameState.player.hand.length >= 10) {
+                alert('Рука полна!');
+                return;
+            }
+
+            gameState.player.gold -= minion.cost;
+            minion.sold = true;
+            // Create a clear copy for hand
+            const handMinion = { ...minion, id: Math.random(), boardId: null };
+            gameState.player.hand.push(handMinion);
+
+            checkForTriple(handMinion); // Triples trigger from hand too in BG? Actually usually on play.
+            // But let's check triple on buy for simplicity or check on board? 
+            // Original HS BG checks on buy. If you have 3, they combine into 1 Golden in Hand.
+            checkForHandTriple(handMinion);
+        }
+
+        function playMinion(minion) {
+            if (minion.isSpell) {
+                alert('Используйте заклинание на существо!');
+                return;
+            }
+            if (gameState.player.board.length >= 7) {
+                alert('Доска полна!');
+                return;
+            }
+
+            gameState.player.hand = gameState.player.hand.filter(m => m.id !== minion.id);
+            const boardMinion = { ...minion, boardId: Math.random() };
+            gameState.player.board.push(boardMinion);
+
+            // Check triples on board? No, usually distinct.
+            // But if we didn't triple in hand (e.g. somehow), we check here.
+            // Our simplified logic: Check triple on PLAY if we want consistent auto-combine.
+            // But real BG combines in hand. Let's stick to hand combine.
+        }
+
+        function checkForHandTriple(minion) {
+            const sameCards = gameState.player.hand.filter(m =>
+                m.name === minion.name && m.tier === minion.tier && !m.isGolden
+            );
+
+            // Also include board? BG Rules: if you buy the 3rd, and 2 are on board, they return to hand and form golden.
+            // This is complex. Let's stick to: needs 3 in hand or mix.
+            // SIMPLIFIED: Only check hand for now.
+            if (sameCards.length >= 3) {
+                // Remove 3 from hand
+                let removed = 0;
+                gameState.player.hand = gameState.player.hand.filter(m => {
+                    if (m.name === minion.name && m.tier === minion.tier && !m.isGolden && removed < 3) {
+                        removed++;
+                        return false;
+                    }
+                    return true;
+                });
+
+                const golden = {
+                    ...minion,
+                    id: Math.random(),
+                    attack: minion.attack * 2,
+                    health: minion.health * 2,
+                    maxHealth: minion.maxHealth * 2,
+                    isGolden: true,
+                    name: '⭐ ' + minion.name,
+                    boardId: null
+                };
+                gameState.player.hand.push(golden);
+                showTripleNotification(minion.name);
+
+                // Reward spell? Or just golden unit.
+                // Discover card usually given when golden is PLAYED.
+                golden.rewardTier = minion.tier + 1;
+            }
         }
 
         // ТРИПЛЕТЫ
@@ -542,28 +622,28 @@ const HearthstoneMiniGame = () => {
         function showTripleNotification(minionName) {
             const notification = document.createElement('div');
             notification.style.cssText = `
-position: fixed;
-top: 50 %;
-left: 50 %;
-transform: translate(-50 %, -50 %);
-background: linear - gradient(135deg, #ffd700, #ffa500);
-border: 6px solid #ff8c00;
-border - radius: 25px;
-padding: 40px 60px;
-font - family: 'Cinzel', serif;
-font - size: 36px;
-font - weight: 900;
-color: #1a0e08;
-z - index: 10001;
-text - align: center;
-box - shadow: 0 25px 80px rgba(255, 215, 0, 1), inset 0 2px 0 rgba(255, 255, 255, 0.5);
-animation: triplePopup 2s ease - out forwards;
-`;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #ffd700, #ffa500);
+                border: 6px solid #ff8c00;
+                border-radius: 25px;
+                padding: 40px 60px;
+                font-family: 'Cinzel', serif;
+                font-size: 36px;
+                font-weight: 900;
+                color: #1a0e08;
+                z-index: 10001;
+                text-align: center;
+                box-shadow: 0 25px 80px rgba(255, 215, 0, 1), inset 0 2px 0 rgba(255, 255, 255, 0.5);
+                animation: triplePopup 2s ease-out forwards;
+            `;
             notification.innerHTML = `
-    < div style = "font-size: 56px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));" >⭐✨⭐</div >
-            <div style="text-shadow: 0 2px 4px rgba(255,255,255,0.5);">ЗОЛОТОЙ ТРИПЛЕТ!</div>
-            <div style="font-size: 22px; margin-top: 12px; color: #3d2810;">${minionName}</div>
-`;
+                <div style="font-size: 56px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));">⭐✨⭐</div>
+                <div style="text-shadow: 0 2px 4px rgba(255,255,255,0.5);">ЗОЛОТОЙ ТРИПЛЕТ!</div>
+                <div style="font-size: 22px; margin-top: 12px; color: #3d2810;">${minionName}</div>
+            `;
 
             document.body.appendChild(notification);
 
@@ -674,7 +754,92 @@ animation: triplePopup 2s ease - out forwards;
             }
         }
 
+        function buyMinion(minion) {
+            if (DEBUG) console.log('Buying minion:', minion.name);
+            if (gameState.player.gold < minion.cost) {
+                alert('Недостаточно золота!');
+                return;
+            }
+            if (minion.isSpell) {
+                if (gameState.player.hand.length >= 10) {
+                    alert('Рука полна!');
+                    return;
+                }
+                gameState.player.gold -= minion.cost;
+                minion.sold = true;
+                // Create copy for hand
+                gameState.player.hand.push({ ...minion, id: Math.random() });
+                updateTavernUI();
+                return;
+            }
+
+            // Minion decision: Buy to Hand
+            if (gameState.player.hand.length >= 10) {
+                alert('Рука полна!');
+                return;
+            }
+
+            gameState.player.gold -= minion.cost;
+            minion.sold = true;
+
+            const handMinion = { ...minion, id: Math.random(), boardId: null };
+            gameState.player.hand.push(handMinion);
+
+            checkForHandTriple(handMinion);
+        }
+
+        function playMinion(minion) {
+            if (DEBUG) console.log('Playing minion:', minion.name);
+            if (minion.isSpell) {
+                alert('Используйте заклинание на существо!');
+                return;
+            }
+            if (gameState.player.board.length >= 7) {
+                alert('Доска полна!');
+                return;
+            }
+
+            gameState.player.hand = gameState.player.hand.filter(m => m.id !== minion.id);
+            const boardMinion = { ...minion, boardId: Math.random() };
+            gameState.player.board.push(boardMinion);
+
+            checkForTriple(boardMinion);
+        }
+
+        function checkForHandTriple(minion) {
+            const sameCards = gameState.player.hand.filter(m =>
+                m.name === minion.name && m.tier === minion.tier && !m.isGolden
+            );
+
+            if (sameCards.length >= 3) {
+                let removed = 0;
+                gameState.player.hand = gameState.player.hand.filter(m => {
+                    if (m.name === minion.name && m.tier === minion.tier && !m.isGolden && removed < 3) {
+                        removed++;
+                        return false;
+                    }
+                    return true;
+                });
+
+                const golden = {
+                    ...minion,
+                    id: Math.random(),
+                    attack: minion.attack * 2,
+                    health: minion.health * 2,
+                    maxHealth: minion.maxHealth * 2,
+                    isGolden: true,
+                    name: '⭐ ' + minion.name,
+                    boardId: null
+                };
+                gameState.player.hand.push(golden);
+                showTripleNotification(minion.name);
+
+                golden.rewardTier = minion.tier + 1;
+            }
+        }
+
         function handleSlotClick() {
+            if (DEBUG) console.log('Slot clicked. Selected:', gameState.selectedCard?.name);
             if (!gameState.selectedCard) return;
 
             const minion = gameState.selectedCard;
@@ -685,37 +850,17 @@ animation: triplePopup 2s ease - out forwards;
                 return;
             }
 
-            // Logic same as drop
-            if (gameState.player.board.length >= 7) {
-                alert('Доска полна!');
-                return;
-            }
-
             if (source === 'shop') {
-                if (gameState.player.gold < minion.cost) {
-                    alert('Недостаточно золота!');
-                    return;
-                }
-
-                gameState.player.gold -= minion.cost;
-                minion.sold = true;
-
-                const boardMinion = { ...minion, boardId: Math.random() };
-                gameState.player.board.push(boardMinion);
-
-                checkForTriple(boardMinion);
+                buyMinion(minion);
             }
             else if (source === 'hand') {
-                gameState.player.hand = gameState.player.hand.filter(m => m.id !== minion.id);
-
-                const boardMinion = { ...minion, boardId: Math.random() };
-                gameState.player.board.push(boardMinion);
-
-                checkForTriple(boardMinion);
+                playMinion(minion);
             }
 
             gameState.selectedCard = null;
             gameState.selectedSource = null;
+            document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
+
             updateTavernUI();
         }
 

@@ -611,14 +611,14 @@ const Lobby = () => {
                             </div>
                         </button>
 
-                        <button onClick={() => navigate('/hearthstone')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-yellow-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
-                            <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 to-orange-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="w-20 h-20 bg-yellow-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(234,179,8,0.3)]">
-                                <span className="text-4xl filter drop-shadow-lg">🐲</span>
+                        <button onClick={() => setMode('pranks')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-pink-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                            <div className="absolute inset-0 bg-gradient-to-br from-pink-600/20 to-rose-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="w-20 h-20 bg-pink-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(236,72,153,0.3)]">
+                                <Smile size={40} className="text-pink-400" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold mb-2">Hearthstone</h3>
-                                <p className="text-sm text-gray-400">Мини-игра</p>
+                                <h3 className="text-2xl font-bold mb-2">Приколы</h3>
+                                <p className="text-sm text-gray-400">Мини-игры и развлечения</p>
                             </div>
                         </button>
 
@@ -788,6 +788,44 @@ const Lobby = () => {
                         <button onClick={createGame} disabled={isLoading} className="btn-primary w-full py-4 text-xl font-bold shadow-lg shadow-purple-900/20">
                             {isLoading ? 'Создание...' : 'Запустить игру'}
                         </button>
+                    </div>
+                )}
+
+                {/* Pranks Mode (Fun & Games) */}
+                {mode === 'pranks' && (
+                    <div className="glass-card max-w-4xl w-full p-8 animate-in fade-in zoom-in duration-300">
+                        <div className="flex justify-between items-center mb-8">
+                            <div className="space-y-1">
+                                <h2 className="text-3xl font-bold font-display">Приколы и Игры</h2>
+                                <p className="text-gray-400">Одиночные игры для расслабления</p>
+                            </div>
+                            <button onClick={() => setMode('menu')} className="btn-ghost p-2 rounded-full hover:bg-white/10"><X /></button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {/* Hearthstone Card moved here */}
+                            <button onClick={() => navigate('/hearthstone')} className="group relative h-64 glass-card bg-white/5 hover:bg-white/10 transition-all duration-300 rounded-2xl border border-white/10 hover:border-yellow-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                                <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 to-orange-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="w-20 h-20 bg-yellow-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(234,179,8,0.3)]">
+                                    <span className="text-4xl filter drop-shadow-lg">🐲</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-bold mb-2">Hearthstone</h3>
+                                    <p className="text-sm text-gray-400">Battlegrounds Lite</p>
+                                </div>
+                            </button>
+
+                            {/* Placeholder for future games */}
+                            <div className="group relative h-64 glass-card bg-white/5 opacity-50 rounded-2xl border border-white/5 border-dashed flex flex-col items-center justify-center gap-4 text-center p-6 cursor-not-allowed">
+                                <div className="w-20 h-20 bg-gray-500/20 rounded-2xl flex items-center justify-center">
+                                    <span className="text-2xl opacity-50">🔜</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold mb-1 text-gray-500">Скоро...</h3>
+                                    <p className="text-xs text-gray-600">Новые игры в разработке</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
 
