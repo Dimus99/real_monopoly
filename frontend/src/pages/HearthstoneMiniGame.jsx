@@ -948,10 +948,13 @@ const HearthstoneMiniGame = () => {
                     <div className="top-info-bar">
                         <div className="hero-stats">
                             <div className="hero-avatar small" id="player-avatar">🧙</div>
-                            <div className="hero-details">
-                                <div className="health-badge">❤️ <span id="player-health">40</span></div>
-                                <div className="gold-badge">🪙 <span id="player-gold">3</span></div>
-                                <div className="tier-badge">⭐ <span id="tavern-tier">1</span></div>
+                            <div className="hero-info-col">
+                                <div className="hero-name-display" id="player-name">Игрок</div>
+                                <div className="hero-details">
+                                    <div className="health-badge">❤️ <span id="player-health">40</span></div>
+                                    <div className="gold-badge">🪙 <span id="player-gold">3</span></div>
+                                    <div className="tier-badge">⭐ <span id="tavern-tier">1</span></div>
+                                </div>
                             </div>
                         </div>
                         <div className="tavern-controls-top">
@@ -980,17 +983,20 @@ const HearthstoneMiniGame = () => {
 
                     {/* ДОСКА ИГРОКА */}
                     <div className="player-board-zone">
+                        <div className="zone-label board-label">Стол (<span id="board-count">0</span>/7)</div>
                         <div className="board-minions" id="board-minions"></div>
                     </div>
 
                     {/* РУКА */}
                     <div className="hand-zone">
+                        <div className="zone-label hand-label">Рука (<span id="hand-count">0</span>/10)</div>
                         <div className="hand-cards" id="hand-cards"></div>
                     </div>
                 </div>
 
                 {/* ПРАВАЯ ПАНЕЛЬ - ДЕЙСТВИЯ */}
                 <div className="hs-sidebar-right">
+                    <div className="round-display">Раунд <span id="round-number">1</span></div>
                     <div className="turn-timer-container">
                         <svg className="timer-svg" viewBox="0 0 100 100">
                             <circle cx="50" cy="50" r="45" stroke="#333" strokeWidth="5" fill="none" />

@@ -359,15 +359,64 @@
     gap: 15px;
 }
 
+/* Upgraded Hero Stats */
+.hearthstone-page .hero-info-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.hearthstone-page .hero-name-display {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffd700;
+    font-family: 'Cinzel', serif;
+    text-shadow: 0 1px 2px black;
+}
+
 .hearthstone-page .hero-details div {
     background: rgba(0, 0, 0, 0.6);
-    padding: 5px 10px;
-    border-radius: 12px;
-    font-size: 16px;
+    padding: 3px 8px;
+    border-radius: 8px;
+    font-size: 14px;
     font-weight: 700;
     border: 1px solid rgba(255, 215, 0, 0.2);
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
+
+/* Zone Labels */
+.hearthstone-page .zone-label {
+    position: absolute;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.3);
+    text-transform: uppercase;
+    font-weight: 900;
+    pointer-events: none;
+}
+
+.hearthstone-page .board-label {
+    top: 5px;
+    left: 10px;
+}
+
+.hearthstone-page .hand-label {
+    top: 5px;
+    left: 10px;
+}
+
+/* Round Display */
+.hearthstone-page .round-display {
+    font-size: 14px;
+    color: #aaa;
+    margin-bottom: 0px;
+    font-family: 'Cinzel', serif;
+    text-align: center;
+}
+
 
 .hearthstone-page .tavern-controls-top {
     display: flex;
