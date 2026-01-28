@@ -307,47 +307,48 @@ const HearthstoneMiniGame = () => {
             <div class="minion-cost">${minion.cost || 0}🪙</div>
             <div class="minion-image">${minion.emoji}</div>
             <div class="minion-name">${minion.name}</div>
-            <div class="minion-description">${minion.desc || ''}</div>
+            `;
+
             if (!minion.isSpell) {
-               card.innerHTML += `
-                < div class="minion-stats" >
+                card.innerHTML += `
+                <div class="minion-stats">
                     <div class="minion-attack">${minion.attack}</div>
                     <div class="minion-health">${minion.health}</div>
-                </div > `;
+                </div>`;
             }
 
             card.addEventListener('mouseenter', () => showTooltip(minion));
             card.addEventListener('mouseleave', hideTooltip);
-            
+
             // CLICK TO PLAY HANDLER (Mobile Friendliness)
             card.addEventListener('click', (e) => {
                 if (location === 'shop') {
-                     // Select shop item
-                     if (minion.sold) return;
-                     if (gameState.selectedCard && gameState.selectedCard.id === minion.id) {
-                         // Deselect
-                         gameState.selectedCard = null;
-                         gameState.selectedSource = null;
-                         document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
-                     } else {
-                         // Select
-                         gameState.selectedCard = minion;
-                         gameState.selectedSource = 'shop';
-                         document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
-                         card.classList.add('selected');
-                         // Auto-buy if user taps twice or logic differs? No, select then tap board.
-                     }
+                    // Select shop item
+                    if (minion.sold) return;
+                    if (gameState.selectedCard && gameState.selectedCard.id === minion.id) {
+                        // Deselect
+                        gameState.selectedCard = null;
+                        gameState.selectedSource = null;
+                        document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
+                    } else {
+                        // Select
+                        gameState.selectedCard = minion;
+                        gameState.selectedSource = 'shop';
+                        document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
+                        card.classList.add('selected');
+                        // Auto-buy if user taps twice or logic differs? No, select then tap board.
+                    }
                 } else if (location === 'hand') {
-                     if (gameState.selectedCard && gameState.selectedCard.id === minion.id) {
-                         gameState.selectedCard = null;
-                         gameState.selectedSource = null;
-                         document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
-                     } else {
-                         gameState.selectedCard = minion;
-                         gameState.selectedSource = 'hand';
-                         document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
-                         card.classList.add('selected');
-                     }
+                    if (gameState.selectedCard && gameState.selectedCard.id === minion.id) {
+                        gameState.selectedCard = null;
+                        gameState.selectedSource = null;
+                        document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
+                    } else {
+                        gameState.selectedCard = minion;
+                        gameState.selectedSource = 'hand';
+                        document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
+                        card.classList.add('selected');
+                    }
                 } else if (location === 'board') {
                     // If we have a spell selected, apply it
                     if (gameState.selectedCard && gameState.selectedCard.isSpell && gameState.selectedSource === 'shop') {
@@ -378,34 +379,34 @@ const HearthstoneMiniGame = () => {
         }
 
         function buyAndCastSpell(spell, targetMinion) {
-             if (gameState.player.gold < spell.cost) {
-                 alert('Недостаточно золота!');
-                 return;
-             }
-             
-             // Effect
-             if (spell.id.includes('banana')) {
-                 targetMinion.attack += 2;
-                 targetMinion.health += 2;
-                 targetMinion.maxHealth += 2;
-             }
-             
-             gameState.player.gold -= spell.cost;
-             spell.sold = true;
-             
-             // Deselect
-             gameState.selectedCard = null;
-             gameState.selectedSource = null;
-             document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
-             
-             updateTavernUI();
+            if (gameState.player.gold < spell.cost) {
+                alert('Недостаточно золота!');
+                return;
+            }
+
+            // Effect
+            if (spell.id.includes('banana')) {
+                targetMinion.attack += 2;
+                targetMinion.health += 2;
+                targetMinion.maxHealth += 2;
+            }
+
+            gameState.player.gold -= spell.cost;
+            spell.sold = true;
+
+            // Deselect
+            gameState.selectedCard = null;
+            gameState.selectedSource = null;
+            document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
+
+            updateTavernUI();
         }
 
         function showTooltip(minion) {
             const tooltip = getEl('card-tooltip');
             if (!tooltip) return;
             getEl('tooltip-title').textContent = minion.name;
-            getEl('tooltip-type').textContent = `${ minion.type } • Уровень ${ minion.tier } `;
+            getEl('tooltip-type').textContent = `${minion.type} • Уровень ${minion.tier} `;
             getEl('tooltip-description').textContent = minion.desc || 'Обычный миньон';
             tooltip.classList.add('show');
         }
@@ -576,7 +577,7 @@ animation: triplePopup 2s ease - out forwards;
             getEl('footer-player-health').textContent = gameState.player.health;
             getEl('footer-player-gold').textContent = gameState.player.gold;
             getEl('footer-tavern-tier').textContent = gameState.player.tavernTier;
-            
+
             getEl('shop-tier').textContent = gameState.player.tavernTier;
             getEl('round-number').textContent = gameState.round;
             getEl('upgrade-cost').textContent = gameState.player.upgradeCost;
@@ -624,14 +625,14 @@ animation: triplePopup 2s ease - out forwards;
             // Render bots
             gameState.bots.forEach(bot => {
                 const el = document.createElement('div');
-                el.className = `opponent - item ${ bot.eliminated ? 'eliminated' : '' } ${ gameState.round > 0 && gameState.currentOpponent?.name === bot.name ? 'next-opponent' : '' } `;
+                el.className = `opponent - item ${bot.eliminated ? 'eliminated' : ''} ${gameState.round > 0 && gameState.currentOpponent?.name === bot.name ? 'next-opponent' : ''} `;
                 el.innerHTML = `
-    < div class="opponent-avatar" > ${ bot.eliminated ? '💀' : '👤' }</div >
+    < div class="opponent-avatar" > ${bot.eliminated ? '💀' : '👤'}</div >
                     <div class="opponent-hp-bar">
                         <div class="opponent-hp-fill" style="width: ${(bot.health / 40) * 100}%"></div>
                     </div>
                     <div class="opponent-health">${bot.health}</div>
-                    ${ !bot.eliminated ? `<div class="opponent-tier">⭐${bot.tavernTier}</div>` : '' }
+                    ${!bot.eliminated ? `<div class="opponent-tier">⭐${bot.tavernTier}</div>` : ''}
 `;
                 // Tooltip logic can be added here
                 container.appendChild(el);
@@ -661,18 +662,18 @@ animation: triplePopup 2s ease - out forwards;
         }
 
         function handleSlotClick() {
-             if (!gameState.selectedCard) return;
-             
-             const minion = gameState.selectedCard;
-             const source = gameState.selectedSource;
-             
-             if (minion.isSpell) {
-                 alert('Заклинание нужно применять на существо!');
-                 return;
-             }
+            if (!gameState.selectedCard) return;
 
-             // Logic same as drop
-             if (gameState.player.board.length >= 7) {
+            const minion = gameState.selectedCard;
+            const source = gameState.selectedSource;
+
+            if (minion.isSpell) {
+                alert('Заклинание нужно применять на существо!');
+                return;
+            }
+
+            // Logic same as drop
+            if (gameState.player.board.length >= 7) {
                 alert('Доска полна!');
                 return;
             }
@@ -718,7 +719,7 @@ animation: triplePopup 2s ease - out forwards;
             const circumference = 2 * Math.PI * 45; // r=45
 
             if (circle) {
-                circle.style.strokeDasharray = `${ circumference } ${ circumference } `;
+                circle.style.strokeDasharray = `${circumference} ${circumference} `;
                 circle.style.strokeDashoffset = 0;
                 circle.style.stroke = '#ffd700';
             }
@@ -772,7 +773,7 @@ animation: triplePopup 2s ease - out forwards;
             switchPhase('battle');
 
             getEl('vs-info').textContent =
-                `${ gameState.player.hero.name } VS ${ gameState.currentOpponent.name } `;
+                `${gameState.player.hero.name} VS ${gameState.currentOpponent.name} `;
 
             setTimeout(() => simulateBattle(), 1000);
         }
@@ -919,7 +920,7 @@ animation: triplePopup 2s ease - out forwards;
 
             let title = won === null ? 'Ничья!' : (won ? 'Победа!' : 'Поражение');
             let text = won === null ? 'Никто не получил урона' :
-                (won ? `Вы нанесли ${ damage } урона` : `Вы получили ${ damage } урона`);
+                (won ? `Вы нанесли ${damage} урона` : `Вы получили ${damage} урона`);
 
             modal.innerHTML = `
     < div class="modal-content" >
@@ -1084,9 +1085,9 @@ animation: triplePopup 2s ease - out forwards;
                 <div className="tavern-main-area">
                     {/* ВЕРХНЯЯ ИНФО ПАНЕЛЬ: Только лицо и Боб */}
                     <div className="top-info-bar">
-                         <div className="hero-stats">
+                        <div className="hero-stats">
                             <div className="hero-avatar small" id="player-avatar">🧙</div>
-                             <div className="hero-info-col">
+                            <div className="hero-info-col">
                                 <div className="hero-name-display" id="player-name">Игрок</div>
                             </div>
                         </div>
@@ -1141,7 +1142,7 @@ animation: triplePopup 2s ease - out forwards;
                     <button className="end-turn-btn" id="start-battle-btn">
                         <div className="btn-text">В БОЙ</div>
                     </button>
-                    
+
                     {/* PLAYER STATS FOOTER */}
                     <div className="player-stats-footer">
                         <div className="hero-details">
