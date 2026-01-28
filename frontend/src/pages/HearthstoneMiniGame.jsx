@@ -304,20 +304,33 @@ const HearthstoneMiniGame = () => {
                 card.style.background = 'linear-gradient(135deg, #4a3517, #3d2810)';
             }
 
+            // Premium Card Design
             card.innerHTML = `
-            <div class="minion-tier">${minion.tier}</div>
-            <div class="minion-cost">${minion.cost || 0}🪙</div>
-            <div class="minion-image">${minion.emoji}</div>
-            <div class="minion-name">${minion.name}</div>
+                <div class="card-inner">
+                    <div class="card-frame"></div>
+                    <div class="minion-tier">${minion.tier}</div>
+                    <div class="minion-cost">${minion.cost || 3}🪙</div>
+                    <div class="minion-image-container">
+                        <div class="minion-image">${minion.emoji}</div>
+                    </div>
+                    <div class="minion-name-plate">
+                        <div class="minion-name">${minion.name}</div>
+                    </div>
+                    ${!minion.isSpell ? `
+                        <div class="minion-stats">
+                            <div class="stat-circle attack-circle">
+                                <span class="minion-attack">${minion.attack}</span>
+                            </div>
+                            <div class="stat-circle health-circle">
+                                <span class="minion-health">${minion.health}</span>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="spell-tag">Заклинание</div>
+                    `}
+                    ${minion.isGolden ? '<div class="golden-sparkle"></div>' : ''}
+                </div>
             `;
-
-            if (!minion.isSpell) {
-                card.innerHTML += `
-                <div class="minion-stats">
-                    <div class="minion-attack">${minion.attack}</div>
-                    <div class="minion-health">${minion.health}</div>
-                </div>`;
-            }
 
             card.addEventListener('mouseenter', () => showTooltip(minion));
             card.addEventListener('mouseleave', hideTooltip);
@@ -671,6 +684,21 @@ const HearthstoneMiniGame = () => {
                     handContainer.appendChild(createMinionCard(minion, 'hand'));
                 });
                 getEl('hand-count').textContent = gameState.player.hand.length;
+
+                // Make hand zone clickable for buying
+                const handZone = getEl('hand-zone');
+                if (handZone && !handZone.dataset.listener) {
+                    handZone.dataset.listener = 'true';
+                    handZone.addEventListener('click', () => {
+                        if (gameState.selectedCard && gameState.selectedSource === 'shop') {
+                            buyMinion(gameState.selectedCard);
+                            gameState.selectedCard = null;
+                            gameState.selectedSource = null;
+                            document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
+                            updateTavernUI();
+                        }
+                    });
+                }
             }
 
             const boardContainer = getEl('board-minions');
@@ -938,105 +966,56 @@ const HearthstoneMiniGame = () => {
         }
 
         function simulateBattle() {
-            const playerBoard = gameState.player.board.map(m => ({ ...m }));
-            const enemyBoard = gameState.currentOpponent.board.map(m => ({ ...m }));
+            if (DEBUG) console.log('Simulating battle...');
+            const playerBoard = [...gameState.player.board.map(m => ({ ...m }))];
+            const enemyBoard = [...gameState.currentOpponent.board.map(m => ({ ...m }))];
 
             const playerContainer = getEl('player-battle-board');
             const enemyContainer = getEl('enemy-battle-board');
 
             if (!playerContainer || !enemyContainer) return;
 
-            playerContainer.innerHTML = '';
-            enemyContainer.innerHTML = '';
+            const updateVisuals = () => {
+                playerContainer.innerHTML = '';
+                enemyContainer.innerHTML = '';
+                playerBoard.forEach(m => playerContainer.appendChild(createMinionCard(m, 'battle')));
+                enemyBoard.forEach(m => enemyContainer.appendChild(createMinionCard(m, 'battle')));
+            };
 
-            const playerCards = [];
-            const enemyCards = [];
-
-            playerBoard.forEach(minion => {
-                const card = createMinionCard(minion, 'battle');
-                playerContainer.appendChild(card);
-                playerCards.push({ minion, element: card });
-            });
-
-            enemyBoard.forEach(minion => {
-                const card = createMinionCard(minion, 'battle');
-                enemyContainer.appendChild(card);
-                enemyCards.push({ minion, element: card });
-            });
+            updateVisuals();
 
             let turn = 0;
-            const maxTurns = 30;
+            const maxTurns = 50;
 
-            // We use a local variable for interval to avoid collisions
-            const battleInterval = setInterval(() => {
-                // Safety check in case component unmounted
-                if (!getEl('battle-phase')) {
-                    clearInterval(battleInterval);
-                    return;
-                }
-
+            const step = () => {
                 if (playerBoard.length === 0 || enemyBoard.length === 0 || turn >= maxTurns) {
-                    clearInterval(battleInterval);
                     setTimeout(() => resolveBattle(playerBoard, enemyBoard), 1000);
                     return;
                 }
 
-                if (playerBoard.length > 0 && enemyBoard.length > 0) {
-                    const attacker = playerBoard[0];
-                    const defender = enemyBoard[0];
+                const attacker = playerBoard[0];
+                const defender = enemyBoard[0];
 
-                    const attackerCard = playerCards.find(c => c.minion.id === attacker.id);
-                    const defenderCard = enemyCards.find(c => c.minion.id === defender.id);
+                // Visual effect: simple flash or movement
+                const playerEls = playerContainer.querySelectorAll('.minion-card');
+                const enemyEls = enemyContainer.querySelectorAll('.minion-card');
 
-                    if (attackerCard) {
-                        attackerCard.element.classList.add('attacking');
-                        setTimeout(() => attackerCard.element.classList.remove('attacking'), 700);
-                    }
+                if (playerEls[0]) playerEls[0].classList.add('attacking');
+                if (enemyEls[0]) enemyEls[0].classList.add('hit');
 
-                    if (defenderCard) {
-                        const rect = defenderCard.element.getBoundingClientRect();
-                        createAttackEffect(rect.left + rect.width / 2, rect.top + rect.height / 2);
+                attacker.health -= defender.attack;
+                defender.health -= attacker.attack;
 
-                        defenderCard.element.classList.add('hit');
-                        setTimeout(() => defenderCard.element.classList.remove('hit'), 500);
-                    }
+                setTimeout(() => {
+                    if (attacker.health <= 0) playerBoard.shift();
+                    if (defender.health <= 0) enemyBoard.shift();
+                    updateVisuals();
+                    turn++;
+                    setTimeout(step, 800);
+                }, 600);
+            };
 
-                    defender.health -= attacker.attack;
-                    attacker.health -= defender.attack;
-
-                    setTimeout(() => {
-                        if (defender.health <= 0) {
-                            if (defenderCard) {
-                                defenderCard.element.classList.add('dying');
-                                setTimeout(() => {
-                                    enemyBoard.shift();
-                                    const index = enemyCards.indexOf(defenderCard);
-                                    if (index > -1) enemyCards.splice(index, 1);
-                                    defenderCard.element.remove();
-                                }, 1000);
-                            }
-                        } else {
-                            updateCardStats(defenderCard.element, defender);
-                        }
-
-                        if (attacker.health <= 0) {
-                            if (attackerCard) {
-                                attackerCard.element.classList.add('dying');
-                                setTimeout(() => {
-                                    playerBoard.shift();
-                                    const index = playerCards.indexOf(attackerCard);
-                                    if (index > -1) playerCards.splice(index, 1);
-                                    attackerCard.element.remove();
-                                }, 1000);
-                            }
-                        } else {
-                            updateCardStats(attackerCard.element, attacker);
-                        }
-                    }, 600);
-                }
-
-                turn++;
-            }, 2200);
+            setTimeout(step, 1000);
         }
 
         function createAttackEffect(x, y) {
@@ -1082,12 +1061,12 @@ const HearthstoneMiniGame = () => {
                 (won ? `Вы нанесли ${damage} урона` : `Вы получили ${damage} урона`);
 
             modal.innerHTML = `
-    < div class="modal-content" >
-                <h2 class="modal-title">${title}</h2>
-                <p class="modal-text">${text}</p>
-                <button class="modal-button" id="continue-btn">Продолжить</button>
-            </div >
-    `;
+                <div class="modal-content">
+                    <h2 class="modal-title">${title}</h2>
+                    <p class="modal-text">${text}</p>
+                    <button class="modal-button" id="continue-btn">Продолжить</button>
+                </div>
+            `;
 
             document.body.appendChild(modal);
 
@@ -1172,20 +1151,20 @@ const HearthstoneMiniGame = () => {
             modal.className = 'modal';
 
             const content = won ? `
-    < div class="modal-content" >
-                <h2 class="modal-title">🏆 ПОБЕДА! 🏆</h2>
-                <p class="modal-text">Вы заняли 1 место!</p>
-                <p class="modal-text">Раундов: ${gameState.round}</p>
-                <button class="modal-button" id="restart-btn">Новая игра</button>
-            </div >
-    ` : `
-    < div class="modal-content" >
-                <h2 class="modal-title">Игра окончена</h2>
-                <p class="modal-text">Место: ${gameState.bots.filter(b => !b.eliminated).length + 1}</p>
-                <p class="modal-text">Раундов: ${gameState.round}</p>
-                <button class="modal-button" id="restart-btn">Новая игра</button>
-            </div >
-    `;
+                <div class="modal-content">
+                    <h2 class="modal-title">🏆 ПОБЕДА! 🏆</h2>
+                    <p class="modal-text">Вы заняли 1 место!</p>
+                    <p class="modal-text">Раундов: ${gameState.round}</p>
+                    <button class="modal-button" id="restart-btn">Новая игра</button>
+                </div>
+            ` : `
+                <div class="modal-content">
+                    <h2 class="modal-title">Игра окончена</h2>
+                    <p class="modal-text">Место: ${gameState.bots.filter(b => !b.eliminated).length + 1}</p>
+                    <p class="modal-text">Раундов: ${gameState.round}</p>
+                    <button class="modal-button" id="restart-btn">Новая игра</button>
+                </div>
+            `;
 
             modal.innerHTML = content;
             document.body.appendChild(modal);

@@ -1,78 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Belwe+Bold&family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:wght@300;400;600;700&display=swap');
 
-.hearthstone-page {
-    width: 100vw;
-    height: 100vh;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    font-family: 'Crimson Pro', serif;
-    background:
-        linear-gradient(135deg, rgba(10, 6, 4, 0.9), rgba(45, 24, 16, 0.9)),
-        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23000" width="100" height="100"/><circle cx="50" cy="50" r="40" fill="none" stroke="%23ffd700" stroke-width="0.5" opacity="0.1"/></svg>');
-    background-size: cover, 100px 100px;
-    color: #fff;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 50;
-    display: flex;
-    flex-direction: column;
-}
-
-.hearthstone-page .hand-zone {
-    flex-grow: 1;
-    /* Allow to take available space */
-    background: rgba(0, 0, 0, 0.4);
-    border-top: 2px solid #3d2810;
-    border-radius: 12px 12px 0 0;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    min-height: 180px;
-    /* Ensure minimum height for cards */
-    margin: 10px 15px 0 15px;
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
-    position: relative;
-}
-
-.hearthstone-page .hand-cards {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    /* Allow wrapping if many cards */
-    justify-content: center;
-    align-items: center;
-    min-height: 150px;
-    /* Space for dropping */
-    transition: background 0.3s;
-    width: 100%;
-}
-
-.hearthstone-page .hand-cards.drag-over {
-    background: rgba(0, 255, 0, 0.1);
-    border-radius: 10px;
-    box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.2);
-}
-
-.hearthstone-page .zone-label {
-    font-size: 11px;
-    color: #ffd700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-    text-shadow: 0 1px 2px black;
-    opacity: 0.8;
-    position: absolute;
-    top: 10px;
-    left: 15px;
-}
-
-.hearthstone-page * {
-    box-sizing: border-box;
-}
-
-.hearthstone-page :root {
+:root {
     --gold: #ffd700;
     --dark-gold: #b8860b;
     --bronze: #cd7f32;
@@ -84,6 +12,52 @@
     --magic-purple: #7b1fa2;
 }
 
+.hearthstone-page {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: 'Crimson Pro', serif;
+    background: #0a0604;
+    color: #fff;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+}
+
+.hearthstone-page * {
+    box-sizing: border-box;
+}
+
+/* UI Elements */
+.hearthstone-exit-btn {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 10005;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #ffd700;
+    color: #ffd700;
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.hearthstone-exit-btn:hover {
+    background: #ffd700;
+    color: black;
+}
+
+/* Background Effect */
 .hearthstone-page::before {
     content: '';
     position: fixed;
@@ -92,11 +66,11 @@
     width: 100%;
     height: 100%;
     background: radial-gradient(ellipse at center, rgba(255, 215, 0, 0.05) 0%, transparent 70%);
-    animation: pulse 8s ease-in-out infinite;
+    animation: hspulse 8s ease-in-out infinite;
     pointer-events: none;
 }
 
-@keyframes pulse {
+@keyframes hspulse {
 
     0%,
     100% {
@@ -108,10 +82,7 @@
     }
 }
 
-.hearthstone-page button {
-    outline: none;
-}
-
+/* Phases */
 .hearthstone-page .phase {
     display: none;
     width: 100%;
@@ -122,47 +93,9 @@
 
 .hearthstone-page .phase.active {
     display: flex;
-    /* Ensure it overrides display: none */
 }
 
-/* Specific Phase Overrides */
-.hearthstone-page .battle-phase {
-    z-index: 2000 !important;
-    /* Force on top of everything including sidebars */
-    background: rgba(0, 0, 0, 0.95);
-    /* Darker background */
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.hearthstone-page .battle-main {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-    margin-top: 20px;
-    width: 100%;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-}
-
-.hearthstone-page .battle-side {
-    display: flex;
-    gap: 10px;
-    min-height: 140px;
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.05);
-    /* Slight visibility for area */
-    border-radius: 12px;
-    justify-content: center;
-    width: 90%;
-    max-width: 900px;
-    border: 1px dashed rgba(255, 255, 255, 0.2);
-    flex-wrap: wrap;
-    /* Wrap if many minions */
-}
-
+/* HERO SELECT */
 .hearthstone-page .hero-select-phase {
     flex-direction: column;
     align-items: center;
@@ -172,203 +105,87 @@
 
 .hearthstone-page .hero-select-title {
     font-family: 'Cinzel', serif;
-    font-size: 56px;
+    font-size: 48px;
     font-weight: 900;
-    background: linear-gradient(180deg, #ffd700 0%, #ff8c00 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 50px;
+    color: #ffd700;
+    margin-bottom: 40px;
     text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-    letter-spacing: 3px;
 }
 
 .hearthstone-page .heroes-container {
     display: flex;
-    gap: 35px;
-    flex-wrap: wrap;
+    gap: 20px;
     justify-content: center;
-    max-width: 1100px;
+    flex-wrap: wrap;
+    max-width: 1200px;
 }
 
 .hearthstone-page .hero-card {
-    width: 220px;
-    background:
-        linear-gradient(135deg, rgba(61, 40, 23, 0.95), rgba(26, 14, 8, 0.95)),
-        repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 215, 0, 0.02) 10px, rgba(255, 215, 0, 0.02) 20px);
-    border: 4px solid transparent;
-    background-clip: padding-box;
-    position: relative;
-    border-radius: 16px;
-    padding: 22px;
+    width: 200px;
+    background: #2d1810;
+    border: 3px solid #3d2810;
+    border-radius: 12px;
+    padding: 20px;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow:
-        0 8px 25px rgba(0, 0, 0, 0.6),
-        inset 0 1px 0 rgba(255, 215, 0, 0.2);
-}
-
-.hearthstone-page .minion-card {
-    width: 120px;
-    height: 160px;
-    background:
-        linear-gradient(135deg, rgba(61, 40, 23, 0.95), rgba(26, 14, 8, 0.95)),
-        repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 215, 0, 0.02) 10px, rgba(255, 215, 0, 0.02) 20px);
-    border: 4px solid transparent;
-    background-clip: padding-box;
+    transition: all 0.2s;
     position: relative;
-    border-radius: 14px;
-    padding: 6px;
-    cursor: grab;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    position: relative;
-    user-select: none;
-    box-shadow:
-        0 4px 15px rgba(0, 0, 0, 0.6),
-        inset 0 1px 0 rgba(255, 215, 0, 0.15);
-    display: flex;
-    flex-direction: column;
-}
-
-/* Base Mobile Landscape Scaling */
-@media (max-height: 500px) and (orientation: landscape) {
-    .hearthstone-page .tavern-phase {
-        transform: scale(0.85);
-        /* Zoom out slightly */
-        transform-origin: center center;
-        width: 117.6%;
-        /* Compensate for scale(0.85) -> 1/0.85 approx */
-        height: 117.6%;
-        position: absolute;
-        top: -8.8%;
-        left: -8.8%;
-    }
-
-    .hearthstone-page .hs-sidebar-left {
-        width: 120px;
-    }
-
-    .hearthstone-page .hs-sidebar-right {
-        width: 110px;
-    }
-
-    .hearthstone-page .minion-card {
-        width: 90px !important;
-        font-size: 0.8em;
-    }
-
-    .hearthstone-page .minion-image {
-        height: 45px !important;
-        font-size: 28px !important;
-    }
-}
-
-.hearthstone-page .hero-card::before {
-    content: '';
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    right: -4px;
-    bottom: -4px;
-    background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
-    border-radius: 16px;
-    z-index: -1;
+    text-align: center;
 }
 
 .hearthstone-page .hero-card:hover {
-    transform: translateY(-15px) scale(1.08);
-    box-shadow:
-        0 20px 60px rgba(255, 215, 0, 0.6),
-        inset 0 1px 0 rgba(255, 215, 0, 0.4);
+    transform: scale(1.05);
+    border-color: #ffd700;
 }
 
 .hearthstone-page .hero-portrait {
-    width: 100%;
-    height: 130px;
-    background: linear-gradient(135deg, #7b1fa2, #4a148c, #311b92);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 75px;
-    margin-bottom: 16px;
-    border: 3px solid rgba(255, 215, 0, 0.3);
-    box-shadow:
-        inset 0 2px 8px rgba(0, 0, 0, 0.5),
-        0 4px 12px rgba(123, 31, 162, 0.4);
+    font-size: 60px;
+    margin-bottom: 10px;
 }
 
 .hearthstone-page .hero-name {
     font-family: 'Cinzel', serif;
-    font-size: 19px;
-    font-weight: 700;
+    font-weight: bold;
     color: #ffd700;
-    text-align: center;
-    margin-bottom: 12px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-}
-
-.hearthstone-page .hero-power {
-    font-size: 14px;
-    color: #ccc;
-    text-align: center;
-    line-height: 1.5;
+    margin-bottom: 5px;
 }
 
 .hearthstone-page .hero-health {
     position: absolute;
-    top: -18px;
-    right: -18px;
-    width: 50px;
-    height: 50px;
-    background: radial-gradient(circle at 30% 30%, #ff5252, #e53935, #c62828);
-    border: 4px solid #7f0000;
+    bottom: -10px;
+    right: -10px;
+    background: #e53935;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 900;
-    font-size: 22px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    border: 2px solid #fff;
 }
 
-/* === TAVERN LAYOUT (NEW) === */
+/* TAVERN PHASE */
 .hearthstone-page .tavern-phase {
     display: flex;
     flex-direction: row;
-    width: 100%;
     height: 100%;
-    overflow: hidden;
-    background: #2b1d12;
-    /* Fallback */
-    position: relative;
 }
 
-/* --- LEFT SIDEBAR: OPPONENTS --- */
 .hearthstone-page .hs-sidebar-left {
     width: 65px;
-    /* Slimmer by default */
-    height: 100%;
-    background: linear-gradient(to right, #1a1008, #2a1a10);
-    border-right: 4px solid #3d2810;
-    display: flex;
-    flex-direction: column;
-    padding: 10px 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    z-index: 20;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
-    flex-shrink: 0;
-    transition: width 0.3s ease;
+    background: #1a1008;
+    border-right: 3px solid #3d2810;
+    transition: width 0.3s;
+    overflow: hidden;
+    z-index: 10;
 }
 
 .hearthstone-page .hs-sidebar-left:hover {
-    width: 180px;
-    /* Expand on hover */
+    width: 200px;
 }
 
 .hearthstone-page .opponents-list {
+    padding: 10px;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -377,401 +194,249 @@
 .hearthstone-page .opponent-item {
     display: flex;
     align-items: center;
-    padding: 8px 5px;
-    cursor: pointer;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.05);
-    transition: all 0.2s;
+    gap: 10px;
+    padding: 5px;
     position: relative;
-    white-space: nowrap;
-}
-
-.hearthstone-page .opponent-item.next-opponent {
-    background: rgba(255, 80, 80, 0.2);
-    border-color: #ff5252;
-    box-shadow: 0 0 10px rgba(255, 82, 82, 0.3);
-}
-
-.hearthstone-page .opponent-item.next-opponent::after {
-    content: 'VS';
-    position: absolute;
-    right: 5px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-weight: 900;
-    font-size: 10px;
-    color: #ff5252;
-    font-family: 'Cinzel', serif;
-}
-
-.hearthstone-page .minion-card.dragging {
-    opacity: 0.6;
-    cursor: grabbing;
-    transform: rotate(8deg) scale(1.15);
-}
-
-.hearthstone-page .minion-card.selected {
-    box-shadow: 0 0 0 4px #00e5ff, 0 10px 30px rgba(0, 229, 255, 0.6);
-    transform: scale(1.1);
-    z-index: 200;
-}
-
-.hearthstone-page .opponent-item.eliminated {
-    opacity: 0.5;
-    filter: grayscale(1);
-}
-
-.hearthstone-page .opponent-avatar {
-    width: 40px;
-    font-size: 28px;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-.hearthstone-page .opponent-details-hover {
-    opacity: 0;
-    transition: opacity 0.2s;
-    display: flex;
-    flex-direction: column;
-    margin-left: 5px;
-}
-
-.hearthstone-page .hs-sidebar-left:hover .opponent-details-hover {
-    opacity: 1;
-}
-
-.hearthstone-page .opponent-hp-bar {
-    flex: 1;
-    height: 8px;
-    background: #111;
-    border-radius: 4px;
-    position: relative;
-    overflow: hidden;
-    border: 1px solid #333;
-}
-
-.hearthstone-page .opponent-hp-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #ff5252, #d32f2f);
-    transition: width 0.5s ease;
-}
-
-.hearthstone-page .opponent-health {
-    font-size: 14px;
-    font-weight: bold;
-    color: #fff;
-    min-width: 25px;
-    text-align: right;
-    text-shadow: 0 1px 2px black;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
 }
 
 .hearthstone-page .opponent-tier {
     position: absolute;
     top: -5px;
     left: -5px;
-    font-size: 10px;
     background: #00bcd4;
     color: #fff;
-    padding: 1px 4px;
+    font-size: 10px;
+    padding: 2px 5px;
     border-radius: 4px;
-    border: 1px solid #00acc1;
     font-weight: bold;
 }
 
-/* --- CENTER AREA: GAME --- */
-.hearthstone-page .tavern-main-area {
-    flex: 1;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    /* Wood texture background */
-    background:
-        linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
-        repeating-linear-gradient(45deg, #3e2723 0, #3e2723 20px, #2d1b15 20px, #2d1b15 40px);
-    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8);
+.hearthstone-page .opponent-avatar {
+    font-size: 24px;
 }
 
-/* Top Stats Bar */
+.hearthstone-page .opponent-hp-bar {
+    flex: 1;
+    height: 6px;
+    background: #333;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.hearthstone-page .opponent-hp-fill {
+    height: 100%;
+    background: #e53935;
+    transition: width 0.3s;
+}
+
+/* MAIN AREA */
+.hearthstone-page .tavern-main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #1a1008;
+    background-image: radial-gradient(circle at 50% 50%, #3d2810, #1a1008);
+}
+
 .hearthstone-page .top-info-bar {
-    height: 80px;
+    height: 60px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
-    background: rgba(0, 0, 0, 0.4);
-    border-bottom: 2px solid rgba(255, 215, 0, 0.1);
+    background: rgba(0, 0, 0, 0.3);
 }
 
-.hearthstone-page .hero-stats {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.hearthstone-page .hero-avatar.small {
-    width: 60px;
-    height: 60px;
-    font-size: 32px;
-    background: linear-gradient(135deg, #4a148c, #311b92);
-    border: 3px solid #ffd700;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-}
-
-.hearthstone-page .hero-details {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-/* Upgraded Hero Stats */
-.hearthstone-page .hero-info-col {
+.hearthstone-page .shop-zone,
+.hearthstone-page .player-board-zone {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 4px;
-}
-
-.hearthstone-page .hero-name-display {
-    font-size: 16px;
-    font-weight: 700;
-    color: #ffd700;
-    font-family: 'Cinzel', serif;
-    text-shadow: 0 1px 2px black;
-}
-
-.hearthstone-page .hero-details div {
-    background: rgba(0, 0, 0, 0.6);
-    padding: 3px 8px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 700;
-    border: 1px solid rgba(255, 215, 0, 0.2);
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
-    display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    position: relative;
+    padding: 10px;
 }
 
-/* Zone Labels */
 .hearthstone-page .zone-label {
     position: absolute;
+    top: 5px;
+    left: 15px;
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 215, 0, 0.5);
     text-transform: uppercase;
-    font-weight: 900;
-    pointer-events: none;
+    letter-spacing: 2px;
 }
 
-.hearthstone-page .board-label {
-    top: 5px;
-    left: 10px;
-}
-
-.hearthstone-page .hand-label {
-    top: 5px;
-    left: 10px;
-}
-
-/* Round Display */
-.hearthstone-page .round-display {
-    font-size: 14px;
-    color: #aaa;
-    margin-bottom: 0px;
-    font-family: 'Cinzel', serif;
-    text-align: center;
-}
-
-
-.hearthstone-page .tavern-controls-top {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(30, 30, 30, 0.8);
-    padding: 5px 15px;
-    border-radius: 30px;
-    border: 2px solid #5a3a22;
-}
-
-.hearthstone-page .bob-face {
-    font-size: 30px;
-    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
-}
-
-.hearthstone-page .bob-speech {
-    text-align: center;
-}
-
-.hearthstone-page .shop-title {
-    font-size: 14px;
-    color: #ffd700;
-    font-family: 'Cinzel', serif;
-    font-weight: 700;
-}
-
-.hearthstone-page .reroll-cost {
-    font-size: 10px;
-    color: #aaa;
-}
-
-/* Shop Zone */
-.hearthstone-page .shop-zone {
-    flex: 1;
-    /* Takes available space */
-    min-height: 140px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px;
-    perspective: 1000px;
-}
-
-.hearthstone-page .shop-minions {
+.hearthstone-page .shop-minions,
+.hearthstone-page .board-minions,
+.hearthstone-page .hand-cards {
     display: flex;
     gap: 10px;
     justify-content: center;
-    padding: 10px;
+    align-items: center;
+    width: 100%;
+    min-height: 150px;
 }
 
-/* Mid Controls (Upgrade, etc) */
 .hearthstone-page .mid-controls {
-    height: 60px;
+    height: 50px;
     display: flex;
-    align-items: center;
+    gap: 20px;
     justify-content: center;
-    gap: 15px;
-    position: relative;
-    z-index: 5;
+    align-items: center;
 }
 
 .hearthstone-page .hs-btn {
-    background: linear-gradient(to bottom, #4a90e2, #007bb5);
-    border: 2px solid #005c87;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
+    border-radius: 20px;
+    border: 2px solid #8b6b08;
+    background: linear-gradient(to bottom, #ffd700, #ff8c00);
+    color: #000;
+    font-family: 'Cinzel', serif;
+    font-weight: bold;
     cursor: pointer;
-    box-shadow: 0 4px 0 #004ba0, 0 5px 10px rgba(0, 0, 0, 0.4);
-    transition: all 0.1s;
-    color: white;
+    padding: 4px 12px;
 }
 
 .hearthstone-page .hs-btn:active {
-    transform: translateY(4px);
-    box-shadow: 0 0 0 #004ba0, 0 2px 5px rgba(0, 0, 0, 0.4);
+    transform: scale(0.95);
 }
 
-.hearthstone-page .refresh-btn {
-    background: linear-gradient(to bottom, #ffd700, #ff8c00);
-    border-color: #b8860b;
-    box-shadow: 0 4px 0 #8b6b08, 0 5px 10px rgba(0, 0, 0, 0.4);
-}
-
-.hearthstone-page .refresh-btn:active {
-    box-shadow: 0 0 0 #8b6b08, 0 2px 5px rgba(0, 0, 0, 0.4);
-}
-
-.hearthstone-page .freeze-btn {
-    background: linear-gradient(to bottom, #00e5ff, #00bcd4);
-    border-color: #00838f;
-    box-shadow: 0 4px 0 #006064, 0 5px 10px rgba(0, 0, 0, 0.4);
-}
-
-.hearthstone-page .freeze-btn:active {
-    box-shadow: 0 0 0 #006064, 0 2px 5px rgba(0, 0, 0, 0.4);
-}
-
-.hearthstone-page .upgrade-btn {
-    width: auto;
-    height: 50px;
-    padding: 0 20px;
-    border-radius: 25px;
-    background: linear-gradient(to bottom, #66bb6a, #43a047);
-    border-color: #2e7d32;
-    box-shadow: 0 4px 0 #1b5e20, 0 5px 10px rgba(0, 0, 0, 0.4);
-    gap: 8px;
-}
-
-.hearthstone-page .upgrade-btn:active {
-    box-shadow: 0 0 0 #1b5e20;
-}
-
-.hearthstone-page .upgrade-icon {
-    font-size: 20px;
-}
-
-.hearthstone-page .upgrade-val {
-    font-weight: 900;
-    font-family: 'Cinzel', serif;
-    font-size: 18px;
-    color: #ffd700;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-}
-
-/* Player Board Zone */
-.hearthstone-page .player-board-zone {
-    flex: 1;
-    min-height: 140px;
-    background: rgba(0, 0, 0, 0.2);
-    border-top: 2px solid rgba(255, 255, 255, 0.05);
-    border-bottom: 2px solid rgba(255, 255, 255, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 5px;
-}
-
-/* Hand Zone */
 .hearthstone-page .hand-zone {
     height: 130px;
-    background: rgba(10, 6, 4, 0.8);
+    background: rgba(0, 0, 0, 0.4);
+    border-top: 2px solid #3d2810;
+    position: relative;
+}
+
+/* PREMIUM CARD STYLES */
+.hearthstone-page .minion-card {
+    width: 110px;
+    height: 155px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.hearthstone-page .card-inner {
+    width: 100%;
+    height: 100%;
+    background: #2d1810;
+    border-radius: 10px;
+    border: 2px solid #3d2810;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.hearthstone-page .minion-tier {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    width: 20px;
+    height: 20px;
+    background: #ffd700;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px;
-    box-shadow: inset 0 10px 20px rgba(0, 0, 0, 0.5);
+    font-size: 11px;
+    font-weight: 900;
+    color: #000;
+    z-index: 5;
+    border: 1px solid #b8860b;
 }
 
-.hearthstone-page .hand-cards {
+.hearthstone-page .minion-cost {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #311b92;
+    color: #fff;
+    font-size: 9px;
+    padding: 1px 4px;
+    border-radius: 8px;
+    z-index: 5;
+}
+
+.hearthstone-page .minion-image-container {
+    height: 55%;
     display: flex;
-    gap: -15px;
-    /* Overlap effect */
-    padding: 0 20px;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle, #5a3a22, #1a1008);
 }
 
-.hearthstone-page .hand-cards .minion-card {
-    transform-origin: center bottom;
-    transition: transform 0.2s;
+.hearthstone-page .minion-image {
+    font-size: 40px;
 }
 
-.hearthstone-page .hand-cards .minion-card:hover {
-    transform: translateY(-30px) scale(1.2) !important;
-    z-index: 100;
-    margin: 0 20px;
+.hearthstone-page .minion-name-plate {
+    height: 20%;
+    background: #3d2810;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
 }
 
-/* --- RIGHT SIDEBAR: ACTIONS --- */
+.hearthstone-page .minion-name {
+    font-size: 10px;
+    font-weight: bold;
+    color: #ffd700;
+    text-align: center;
+    line-height: 1;
+}
+
+.hearthstone-page .minion-stats {
+    height: 25%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 8px;
+    align-items: center;
+}
+
+.hearthstone-page .stat-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 13px;
+    color: #fff;
+    text-shadow: 0 1px 1px black;
+}
+
+.hearthstone-page .attack-circle {
+    background: #ff6f00;
+}
+
+.hearthstone-page .health-circle {
+    background: #e53935;
+}
+
+.hearthstone-page .minion-card.selected .card-inner {
+    outline: 3px solid #00bcd4;
+    box-shadow: 0 0 15px #00bcd4;
+}
+
+/* SIDEBAR RIGHT */
 .hearthstone-page .hs-sidebar-right {
     width: 140px;
-    height: 100%;
-    background: linear-gradient(to left, #1a1008, #2a1a10);
-    border-left: 4px solid #3d2810;
+    background: #1a1008;
+    border-left: 3px solid #3d2810;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 40px;
-    padding: 20px 10px;
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
-    flex-shrink: 0;
-    z-index: 20;
+    justify-content: space-around;
+    padding: 20px 0;
 }
 
 .hearthstone-page .turn-timer-container {
@@ -780,502 +445,178 @@
     height: 80px;
 }
 
-.hearthstone-page .timer-svg {
-    transform: rotate(-90deg);
-}
-
 .hearthstone-page .timer-value {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 28px;
-    font-weight: 900;
-    color: #fff;
-    font-family: 'Cinzel', serif;
-    text-shadow: 0 2px 4px black;
+    font-size: 24px;
+    font-weight: bold;
+    color: #ffd700;
 }
 
 .hearthstone-page .end-turn-btn {
     width: 100px;
-    height: 60px;
+    height: 50px;
     background: linear-gradient(to bottom, #4caf50, #2e7d32);
     border: none;
     border-radius: 8px;
-    box-shadow:
-        0 6px 0 #1b5e20,
-        0 10px 20px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.4);
-    cursor: pointer;
-    font-family: 'Cinzel', serif;
-    font-weight: 900;
-    font-size: 16px;
     color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    transition: all 0.1s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #1b5e20;
 }
 
-.hearthstone-page .end-turn-btn:hover {
-    filter: brightness(1.1);
-    transform: translateY(-2px);
-    box-shadow:
-        0 8px 0 #1b5e20,
-        0 12px 25px rgba(0, 0, 0, 0.5),
-        inset 0 1px 0 rgba(255, 255, 255, 0.4);
-}
-
-.hearthstone-page .end-turn-btn:active {
-    transform: translateY(4px);
-    box-shadow:
-        0 2px 0 #1b5e20,
-        inset 0 2px 5px rgba(0, 0, 0, 0.4);
-}
-
-.hearthstone-page .history-log {
-    width: 60px;
-    height: 120px;
-    background: #e0e0e0;
-    border: 4px solid #5a3a22;
-    border-radius: 4px;
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    opacity: 0.8;
-}
-
-
-.hearthstone-page .player-info {
-    display: flex;
-    align-items: center;
-    gap: 22px;
-}
-
-.hearthstone-page .player-avatar {
-    width: 70px;
-    height: 70px;
-    background: linear-gradient(135deg, #ffd700, #ff8c00);
-    border: 4px solid #b8860b;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 38px;
-    box-shadow:
-        0 4px 15px rgba(255, 215, 0, 0.5),
-        inset 0 2px 5px rgba(255, 255, 255, 0.3);
-}
-
-.hearthstone-page .player-stats {
+.hearthstone-page .player-stats-footer {
+    width: 100%;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 5px;
 }
 
-.hearthstone-page .player-name {
-    font-family: 'Cinzel', serif;
-    font-size: 22px;
-    font-weight: 700;
-    background: linear-gradient(180deg, #ffd700, #ff8c00);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.hearthstone-page .stat-row {
-    display: flex;
-    gap: 18px;
-}
-
-.hearthstone-page .stat {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 19px;
-    font-weight: 700;
-    padding: 6px 12px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.4);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.hearthstone-page .health-stat {
-    color: #ff5252;
-}
-
-.hearthstone-page .tier-stat {
-    color: #00bcd4;
-}
-
-.hearthstone-page .timer-container {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.hearthstone-page .timer {
-    font-family: 'Cinzel', serif;
-    font-size: 56px;
-    font-weight: 900;
-    background: linear-gradient(180deg, #ffd700, #ff8c00);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
-    min-width: 110px;
-    text-align: center;
-}
-
-.hearthstone-page .timer.warning {
-    animation: timerPulse 0.5s ease-in-out infinite;
-}
-
-@keyframes timerPulse {
-
-    0%,
-    100% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.15);
-        filter: drop-shadow(0 0 30px rgba(255, 82, 82, 1));
-    }
-}
-
-.hearthstone-page .round-number {
-    font-family: 'Cinzel', serif;
-    font-size: 26px;
-    font-weight: 700;
-    color: #ffd700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-}
-
-/* Clean up removed styles by replacing with valid new ones or empty blocks if needed */
-/* We replaced the entire structure, so most old selectors are invalid. 
-   We will ensure the Minion Cards styles remain valid. */
-
-.hearthstone-page .minion-card {
-    /* Slightly smaller for the new layout */
-    width: 100px !important;
-    font-size: 0.9em;
-}
-
-.hearthstone-page .minion-image {
-    height: 55px !important;
-    font-size: 32px !important;
-}
-
-.hearthstone-page .minion-stats div {
-    width: 24px !important;
-    height: 24px !important;
-    font-size: 12px !important;
-}
-
-
-
+/* BATTLE PHASE */
 .hearthstone-page .battle-phase {
+    background: rgba(0, 0, 0, 0.95);
     flex-direction: column;
-}
-
-.hearthstone-page .battle-header {
-    background: rgba(0, 0, 0, 0.9);
-    padding: 25px;
-    text-align: center;
-    border-bottom: 4px solid #ff5252;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
-}
-
-.hearthstone-page .battle-title {
-    font-family: 'Cinzel', serif;
-    font-size: 42px;
-    font-weight: 900;
-    background: linear-gradient(180deg, #ffd700, #ff8c00);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 4px 10px rgba(255, 215, 0, 0.8));
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
 }
 
 .hearthstone-page .battle-main {
-    flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 25px;
-    gap: 25px;
-    justify-content: center;
+    gap: 40px;
+    width: 100%;
+    align-items: center;
 }
 
 .hearthstone-page .battle-side {
     display: flex;
-    gap: 16px;
-    padding: 25px;
-    border-radius: 16px;
-    position: relative;
-    min-height: 230px;
-    flex-wrap: wrap;
+    gap: 15px;
+    min-height: 160px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
     justify-content: center;
-    align-items: center;
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+    width: 90%;
 }
 
-.hearthstone-page .enemy-side {
-    background:
-        linear-gradient(135deg, rgba(231, 76, 60, 0.25), rgba(192, 57, 43, 0.25)),
-        repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 82, 82, 0.05) 10px, rgba(255, 82, 82, 0.05) 20px);
-    border: 3px solid #ff5252;
-}
-
-.hearthstone-page .player-side {
-    background:
-        linear-gradient(135deg, rgba(79, 195, 247, 0.25), rgba(41, 182, 246, 0.25)),
-        repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(0, 188, 212, 0.05) 10px, rgba(0, 188, 212, 0.05) 20px);
-    border: 3px solid #00bcd4;
-}
-
-.hearthstone-page .battle-minion {
-    position: relative;
-}
-
-.hearthstone-page .battle-minion.attacking {
-    animation: attackJump 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes attackJump {
-    0% {
-        transform: translateY(0) scale(1);
-    }
-
-    30% {
-        transform: translateY(-40px) scale(1.15);
-    }
-
-    60% {
-        transform: translateY(-60px) scale(1.2);
-    }
-
-    80% {
-        transform: translateY(-35px) scale(1.1);
-    }
-
-    100% {
-        transform: translateY(0) scale(1);
-    }
-}
-
-.hearthstone-page .battle-minion.hit {
-    animation: hitShake 0.5s ease-in-out;
-}
-
-@keyframes hitShake {
-
-    0%,
-    100% {
-        transform: translateX(0);
-        filter: brightness(1);
-    }
-
-    20% {
-        transform: translateX(-18px);
-        filter: brightness(1.8) hue-rotate(30deg);
-    }
-
-    40% {
-        transform: translateX(18px);
-        filter: brightness(1.8) hue-rotate(-30deg);
-    }
-
-    60% {
-        transform: translateX(-12px);
-        filter: brightness(1.5);
-    }
-
-    80% {
-        transform: translateX(12px);
-        filter: brightness(1.3);
-    }
-}
-
-.hearthstone-page .battle-minion.dying {
-    animation: deathFade 1s ease-out forwards;
-}
-
-@keyframes deathFade {
-    0% {
-        opacity: 1;
-        transform: scale(1) rotate(0deg);
-        filter: brightness(1);
-    }
-
-    40% {
-        opacity: 0.7;
-        transform: scale(1.3) rotate(15deg);
-        filter: brightness(2);
-    }
-
-    100% {
-        opacity: 0;
-        transform: scale(0.3) rotate(90deg);
-        filter: brightness(0);
-    }
-}
-
-.hearthstone-page .attack-effect {
-    position: fixed;
-    width: 100px;
-    height: 100px;
-    background: radial-gradient(circle, rgba(255, 107, 53, 1) 0%, rgba(255, 82, 82, 0.8) 30%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9999;
-    animation: attackBurst 0.7s ease-out forwards;
-    box-shadow: 0 0 30px rgba(255, 107, 53, 0.8);
-}
-
-@keyframes attackBurst {
-    0% {
-        transform: scale(0);
-        opacity: 1;
-    }
-
-    50% {
-        transform: scale(2.5);
-        opacity: 0.8;
-    }
-
-    100% {
-        transform: scale(5);
-        opacity: 0;
-    }
-}
-
+/* MODALS */
 .hearthstone-page .modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.92);
+    background: rgba(0, 0, 0, 0.8);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    animation: fadeIn 0.3s ease;
 }
 
 .hearthstone-page .modal-content {
-    background:
-        linear-gradient(135deg, rgba(61, 40, 23, 0.98), rgba(26, 14, 8, 0.98)),
-        repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 215, 0, 0.03) 10px, rgba(255, 215, 0, 0.03) 20px);
-    border: 6px solid;
-    border-image: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700) 1;
+    background: #2d1810;
+    border: 4px solid #ffd700;
     border-radius: 20px;
-    padding: 50px;
+    padding: 30px;
     text-align: center;
-    max-width: 550px;
-    box-shadow:
-        0 25px 80px rgba(0, 0, 0, 0.9),
-        inset 0 2px 0 rgba(255, 215, 0, 0.2);
-    animation: modalSlide 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes modalSlide {
-    from {
-        transform: translateY(-100px) scale(0.7);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
+    max-width: 400px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 1);
 }
 
 .hearthstone-page .modal-title {
     font-family: 'Cinzel', serif;
-    font-size: 48px;
-    font-weight: 900;
-    background: linear-gradient(180deg, #ffd700, #ff8c00);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 25px;
-    filter: drop-shadow(0 4px 10px rgba(255, 215, 0, 0.8));
-}
-
-.hearthstone-page .modal-text {
-    font-size: 22px;
-    color: #ccc;
-    margin-bottom: 30px;
+    color: #ffd700;
+    margin-bottom: 20px;
 }
 
 .hearthstone-page .modal-button {
-    background: linear-gradient(135deg, #ffd700, #ff8c00);
-    border: 4px solid #b8860b;
-    padding: 14px 40px;
-    border-radius: 12px;
-    font-family: 'Cinzel', serif;
-    font-weight: 900;
-    font-size: 20px;
-    color: #1a0e08;
+    background: #ffd700;
+    color: #000;
+    border: none;
+    padding: 10px 30px;
+    border-radius: 10px;
+    font-weight: bold;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow:
-        0 6px 20px rgba(255, 215, 0, 0.5),
-        inset 0 2px 0 rgba(255, 255, 255, 0.4);
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+    margin-top: 20px;
 }
 
-.hearthstone-page .modal-button:hover {
-    transform: scale(1.1);
-    box-shadow:
-        0 10px 30px rgba(255, 215, 0, 0.7),
-        inset 0 2px 0 rgba(255, 255, 255, 0.4);
+/* Tooltip */
+.hearthstone-page .card-tooltip {
+    display: none;
+    position: fixed;
+    z-index: 11000;
+    background: #1a1008;
+    border: 2px solid #ffd700;
+    border-radius: 12px;
+    padding: 15px;
+    width: 200px;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
 }
 
-@keyframes triplePopup {
-    0% {
-        transform: translate(-50%, -50%) scale(0);
-        opacity: 0;
+.hearthstone-page .card-tooltip.show {
+    display: flex;
+    flex-direction: column;
+}
+
+.hearthstone-page .tooltip-title {
+    color: #ffd700;
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.hearthstone-page .tooltip-type {
+    color: #aaa;
+    font-size: 11px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.hearthstone-page .tooltip-description {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* Animations */
+.hearthstone-page .minion-card.attacking {
+    animation: hsattack 0.6s ease-in-out;
+}
+
+.hearthstone-page .minion-card.hit {
+    animation: hshit 0.3s;
+}
+
+@keyframes hsattack {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-40px) scale(1.1);
+    }
+}
+
+@keyframes hshit {
+
+    0%,
+    100% {
+        transform: translateX(0);
     }
 
     25% {
-        transform: translate(-50%, -50%) scale(1.3);
-        opacity: 1;
+        transform: translateX(-5px);
     }
 
     75% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
+        transform: translateX(5px);
     }
-
-    100% {
-        transform: translate(-50%, -50%) scale(0.8);
-        opacity: 0;
-    }
-}
-
-.hearthstone-exit-btn {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 20000;
-    background: rgba(0, 0, 0, 0.5);
-    border: 2px solid white;
-    color: white;
-    font-family: sans-serif;
-    padding: 8px 16px;
-    cursor: pointer;
-    border-radius: 8px;
-    font-weight: bold;
-}
-
-.hearthstone-exit-btn:hover {
-    background: rgba(255, 0, 0, 0.5);
 }
