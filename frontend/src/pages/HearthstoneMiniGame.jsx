@@ -182,6 +182,10 @@ const HearthstoneMiniGame = () => {
             document.querySelectorAll('.hearthstone-page .phase').forEach(p => p.classList.remove('active'));
             const phaseEl = getEl(`${phase}-phase`);
             if (phaseEl) phaseEl.classList.add('active');
+
+            if (phase === 'tavern') {
+                updateOpponentsPanel();
+            }
         }
 
         // === ТАВЕРНА ===
@@ -201,6 +205,17 @@ const HearthstoneMiniGame = () => {
                 refreshShop();
             }
             gameState.player.frozenShop = false;
+
+            // ВЫБОР ОППОНЕНТА
+            const available = gameState.bots.filter(b => !b.eliminated);
+            if (available.length === 0 && gameState.round > 0) {
+                endGame(true);
+                return;
+            }
+            if (available.length > 0) {
+                // Simple random for now, but ensure we fight someone alive
+                gameState.currentOpponent = available[Math.floor(Math.random() * available.length)];
+            }
 
             updateTavernUI();
             startTimer();
@@ -505,6 +520,29 @@ const HearthstoneMiniGame = () => {
             getEl('freeze-btn')?.classList.toggle('frozen', gameState.player.frozenShop);
 
             displayShop();
+            updateOpponentsPanel();
+        }
+
+        function updateOpponentsPanel() {
+            const container = getEl('opponents-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // Render bots
+            gameState.bots.forEach(bot => {
+                const el = document.createElement('div');
+                el.className = `opponent-item ${bot.eliminated ? 'eliminated' : ''} ${gameState.round > 0 && gameState.currentOpponent?.name === bot.name ? 'next-opponent' : ''}`;
+                el.innerHTML = `
+                    <div class="opponent-avatar">${bot.eliminated ? '💀' : '👤'}</div>
+                    <div class="opponent-hp-bar">
+                        <div class="opponent-hp-fill" style="width: ${(bot.health / 40) * 100}%"></div>
+                    </div>
+                    <div class="opponent-health">${bot.health}</div>
+                    ${!bot.eliminated ? `<div class="opponent-tier">⭐${bot.tavernTier}</div>` : ''}
+                `;
+                // Tooltip logic can be added here
+                container.appendChild(el);
+            });
         }
 
         function handleRefresh() {
@@ -536,6 +574,17 @@ const HearthstoneMiniGame = () => {
 
         function startTimer() {
             clearInterval(gameState.timerInterval);
+            const maxTime = 60;
+
+            const circle = getEl('timer-circle');
+            const circumference = 2 * Math.PI * 45; // r=45
+
+            if (circle) {
+                circle.style.strokeDasharray = `${circumference} ${circumference}`;
+                circle.style.strokeDashoffset = 0;
+                circle.style.stroke = '#ffd700';
+            }
+
             gameState.timerInterval = setInterval(() => {
                 if (!getEl('timer')) {
                     clearInterval(gameState.timerInterval);
@@ -543,7 +592,17 @@ const HearthstoneMiniGame = () => {
                 }
                 gameState.timer--;
                 getEl('timer').textContent = gameState.timer;
-                getEl('timer').classList.toggle('warning', gameState.timer <= 10);
+
+                // Update SVG circle
+                if (circle) {
+                    const offset = circumference - (gameState.timer / maxTime) * circumference;
+                    circle.style.strokeDashoffset = offset;
+
+                    if (gameState.timer <= 10) {
+                        circle.style.stroke = '#ff5252';
+                        // Add pulsing effect via class?
+                    }
+                }
 
                 if (gameState.timer <= 0) {
                     clearInterval(gameState.timerInterval);
@@ -553,14 +612,25 @@ const HearthstoneMiniGame = () => {
         }
 
         // === БОЙ ===
+        // === БОЙ ===
         function startBattle() {
+            if (!gameState.currentOpponent) {
+                // Fallback if something went wrong
+                const available = gameState.bots.filter(b => !b.eliminated);
+                if (available.length === 0) {
+                    endGame(true);
+                    return;
+                }
+                gameState.currentOpponent = available[Math.floor(Math.random() * available.length)];
+            }
+
+            // Check if game is over (all eliminated)
             const available = gameState.bots.filter(b => !b.eliminated);
-            if (available.length === 0) {
+            if (available.length === 0 && !gameState.currentOpponent) { // If undefined and no bots
                 endGame(true);
                 return;
             }
 
-            gameState.currentOpponent = available[Math.floor(Math.random() * available.length)];
             switchPhase('battle');
 
             getEl('vs-info').textContent =
@@ -864,51 +934,78 @@ const HearthstoneMiniGame = () => {
 
             {/* ТАВЕРНА */}
             <div className="phase tavern-phase" id="tavern-phase">
-                <div className="tavern-header">
-                    <div className="player-info">
-                        <div className="player-avatar" id="player-avatar">🧙</div>
-                        <div className="player-stats">
-                            <div className="player-name" id="player-name">Игрок</div>
-                            <div className="stat-row">
-                                <div className="stat health-stat">❤️ <span id="player-health">40</span></div>
-                                <div className="stat tier-stat">⭐ <span id="tavern-tier">1</span></div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div className="timer-container">
-                        <div className="round-number">Раунд <span id="round-number">1</span></div>
-                        <div className="timer" id="timer">60</div>
+                {/* ЛЕВАЯ ПАНЕЛЬ - ОППОНЕНТЫ */}
+                <div className="hs-sidebar-left">
+                    <div className="opponents-list" id="opponents-list">
+                        {/* Filled by JS */}
                     </div>
                 </div>
 
-                <div className="tavern-main">
-                    <div className="shop-section">
-                        <div className="shop-header">
-                            <div className="shop-title">Таверна Боба (Ур. <span id="shop-tier">1</span>)</div>
-                            <div className="shop-controls">
-                                <button className="tavern-btn" id="refresh-btn">🔄 Обновить (1🪙)</button>
-                                <button className="tavern-btn" id="freeze-btn">❄️ Заморозить</button>
-                                <button className="tavern-btn" id="upgrade-btn">⬆️ Улучшить (<span id="upgrade-cost">5</span>🪙)</button>
+                {/* ЦЕНТРАЛЬНАЯ ПАНЕЛЬ - ИГРА */}
+                <div className="tavern-main-area">
+                    {/* ВЕРХНЯЯ ИНФО ПАНЕЛЬ */}
+                    <div className="top-info-bar">
+                        <div className="hero-stats">
+                            <div className="hero-avatar small" id="player-avatar">🧙</div>
+                            <div className="hero-details">
+                                <div className="health-badge">❤️ <span id="player-health">40</span></div>
+                                <div className="gold-badge">🪙 <span id="player-gold">3</span></div>
+                                <div className="tier-badge">⭐ <span id="tavern-tier">1</span></div>
                             </div>
                         </div>
+                        <div className="tavern-controls-top">
+                            <div className="bob-face">👨🏻‍🦰</div>
+                            <div className="bob-speech">
+                                <div className="shop-title">Таверна (Ур. <span id="shop-tier">1</span>)</div>
+                                <div className="reroll-cost">Обновить: 1🪙</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* МАГАЗИН */}
+                    <div className="shop-zone">
                         <div className="shop-minions" id="shop-minions"></div>
                     </div>
 
-                    <div className="board-section">
-                        <div className="board-title">Поле боя (<span id="board-count">0</span>/7)</div>
+                    {/* СРЕДНЯЯ ЛИНИЯ - УПРАВЛЕНИЕ МАГАЗИНОМ */}
+                    <div className="mid-controls">
+                        <button className="hs-btn refresh-btn" id="refresh-btn">🔄</button>
+                        <button className="hs-btn freeze-btn" id="freeze-btn">❄️</button>
+                        <button className="hs-btn upgrade-btn" id="upgrade-btn">
+                            <span className="upgrade-icon">⬆️</span>
+                            <span className="upgrade-val" id="upgrade-cost">5</span>
+                        </button>
+                    </div>
+
+                    {/* ДОСКА ИГРОКА */}
+                    <div className="player-board-zone">
                         <div className="board-minions" id="board-minions"></div>
+                    </div>
+
+                    {/* РУКА */}
+                    <div className="hand-zone">
+                        <div className="hand-cards" id="hand-cards"></div>
                     </div>
                 </div>
 
-                <div className="hand-section">
-                    <div className="hand-info">
-                        <div className="hand-title">Рука: <span id="hand-count">0</span>/10</div>
-                        <div className="gold-display">🪙 <span id="player-gold">3</span></div>
+                {/* ПРАВАЯ ПАНЕЛЬ - ДЕЙСТВИЯ */}
+                <div className="hs-sidebar-right">
+                    <div className="turn-timer-container">
+                        <svg className="timer-svg" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" stroke="#333" strokeWidth="5" fill="none" />
+                            <circle cx="50" cy="50" r="45" stroke="#ffd700" strokeWidth="5" fill="none" strokeDasharray="283" strokeDashoffset="0" id="timer-circle" />
+                        </svg>
+                        <div className="timer-value" id="timer">60</div>
                     </div>
-                    <div className="hand-cards" id="hand-cards"></div>
-                    <div className="action-buttons">
-                        <button className="action-btn" id="start-battle-btn">⚔️ В БОЙ!</button>
+
+                    <button className="end-turn-btn" id="start-battle-btn">
+                        <div className="btn-text">В БОЙ</div>
+                    </button>
+
+                    <div className="history-log">
+                        {/* Placeholder for history */}
+                        📜
                     </div>
                 </div>
             </div>
