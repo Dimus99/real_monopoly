@@ -89,6 +89,7 @@ const HearthstoneMiniGame = () => {
 
             bots: [],
             currentOpponent: null,
+            phase: 'hero-select', // Track current phase
         };
 
         // Helper to get element by ID safely
@@ -191,7 +192,7 @@ const HearthstoneMiniGame = () => {
         }
 
         function switchPhase(phase) {
-            // Need to scope this better if possible, but document.querySelectorAll is fine for now
+            gameState.phase = phase; // Update state tracking
             document.querySelectorAll('.hearthstone-page .phase').forEach(p => p.classList.remove('active'));
             const phaseEl = getEl(`${phase}-phase`);
             if (phaseEl) phaseEl.classList.add('active');
@@ -893,6 +894,7 @@ const HearthstoneMiniGame = () => {
         }
 
         function handleStartBattle() {
+            if (gameState.phase === 'battle') return; // Prevent double trigger
             if (DEBUG) console.log('Starting battle...');
             clearInterval(gameState.timerInterval);
             startBattle();
@@ -940,6 +942,7 @@ const HearthstoneMiniGame = () => {
         // === БОЙ ===
         // === БОЙ ===
         function startBattle() {
+            if (gameState.phase === 'battle') return; // Prevent double trigger
             if (!gameState.currentOpponent) {
                 // Fallback if something went wrong
                 const available = gameState.bots.filter(b => !b.eliminated);
@@ -988,8 +991,11 @@ const HearthstoneMiniGame = () => {
             const maxTurns = 50;
 
             const step = () => {
+                if (gameState.phase !== 'battle') return; // Safety break
                 if (playerBoard.length === 0 || enemyBoard.length === 0 || turn >= maxTurns) {
-                    setTimeout(() => resolveBattle(playerBoard, enemyBoard), 1000);
+                    setTimeout(() => {
+                        if (gameState.phase === 'battle') resolveBattle(playerBoard, enemyBoard);
+                    }, 1000);
                     return;
                 }
 
@@ -1074,6 +1080,10 @@ const HearthstoneMiniGame = () => {
             if (btn) {
                 btn.addEventListener('click', () => {
                     modal.remove();
+                    // Clear battle boards
+                    getEl('player-battle-board').innerHTML = '';
+                    getEl('enemy-battle-board').innerHTML = '';
+
                     if (gameState.player.health <= 0) {
                         endGame(false);
                     } else if (gameState.bots.filter(b => !b.eliminated).length === 0) {
@@ -1104,6 +1114,12 @@ const HearthstoneMiniGame = () => {
             });
 
             switchPhase('tavern');
+            // Ensure battle boards are clear
+            const pbb = getEl('player-battle-board');
+            const ebb = getEl('enemy-battle-board');
+            if (pbb) pbb.innerHTML = '';
+            if (ebb) ebb.innerHTML = '';
+
             startTavernPhase();
         }
 

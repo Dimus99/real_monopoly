@@ -29,6 +29,14 @@
     flex-direction: column;
 }
 
+.hearthstone-page .minion-image-container {
+    height: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle, #5a3a22, #1a1008);
+}
+
 .hearthstone-page * {
     box-sizing: border-box;
 }
@@ -105,11 +113,12 @@
 
 .hearthstone-page .hero-select-title {
     font-family: 'Cinzel', serif;
-    font-size: 48px;
+    font-size: 42px;
     font-weight: 900;
     color: #ffd700;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
     text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    text-align: center;
 }
 
 .hearthstone-page .heroes-container {
@@ -166,9 +175,8 @@
 
 /* TAVERN PHASE */
 .hearthstone-page .tavern-phase {
-    display: flex;
     flex-direction: row;
-    height: 100%;
+    height: 100vh;
 }
 
 .hearthstone-page .hs-sidebar-left {
@@ -246,7 +254,8 @@
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.4);
+    flex-shrink: 0;
 }
 
 .hearthstone-page .shop-zone,
@@ -306,9 +315,10 @@
 
 .hearthstone-page .hand-zone {
     height: 130px;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.5);
     border-top: 2px solid #3d2810;
     position: relative;
+    flex-shrink: 0;
 }
 
 /* PREMIUM CARD STYLES */
@@ -479,11 +489,19 @@
 
 /* BATTLE PHASE */
 .hearthstone-page .battle-phase {
-    background: rgba(0, 0, 0, 0.95);
+    background: rgba(0, 0, 0, 0.98);
     flex-direction: column;
     align-items: center;
     justify-content: center;
     z-index: 2000;
+    width: 100%;
+    height: 100vh;
+}
+
+.hearthstone-page .battle-header {
+    text-align: center;
+    margin-bottom: 20px;
+    z-index: 2001;
 }
 
 .hearthstone-page .battle-main {
