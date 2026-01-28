@@ -17,6 +17,10 @@ const HearthstoneMiniGame = () => {
             { id: 6, name: 'Финли', emoji: '🐟', power: 'Перестановка', health: 45 },
         ];
 
+        const SPELLS = [
+            { id: 'spell_banana', name: 'Банан', cost: 1, type: 'Заклинание', desc: 'Дает существу +2/+2', emoji: '🍌' }
+        ];
+
         const MINION_POOL = {
             1: [
                 { name: 'Драконёнок', tier: 1, attack: 2, health: 1, emoji: '🐉', type: 'Дракон', desc: 'Боевой клич: +1 Атаки всем драконам' },
@@ -62,8 +66,12 @@ const HearthstoneMiniGame = () => {
             round: 1,
             timer: 60,
             timerInterval: null,
+            timer: 60,
+            timerInterval: null,
             draggedCard: null,
             dragSource: null,
+            selectedCard: null, // For click-to-play on mobile
+            selectedSource: null,
 
             player: {
                 hero: null,
@@ -151,7 +159,10 @@ const HearthstoneMiniGame = () => {
 
             getEl('player-avatar').textContent = hero.emoji;
             getEl('player-name').textContent = hero.name;
-            getEl('player-health').textContent = hero.health;
+            getEl('player-avatar').textContent = hero.emoji;
+            getEl('player-name').textContent = hero.name;
+            // Initial UI update clears textContent anyway, so rely on updateTavernUI except init checks
+
 
             createBots();
             switchPhase('tavern');
@@ -224,11 +235,26 @@ const HearthstoneMiniGame = () => {
 
         function refreshShop() {
             const tier = gameState.player.tavernTier;
-            const shopSize = 3 + (tier > 1 ? 1 : 0) + (tier > 3 ? 1 : 0);
+            let shopSize = 3 + (tier > 1 ? 1 : 0) + (tier > 3 ? 1 : 0);
+
+            // Limit shop size to prevent overflow on mobile
+            if (shopSize > 5) shopSize = 5;
 
             gameState.player.shop = [];
 
+            // Add spell chance 
+            const SPELL_CHANCE = 0.3; // 30% chance for a spell slot
+
             for (let i = 0; i < shopSize; i++) {
+                if (i === 0 && Math.random() < SPELL_CHANCE) {
+                    // Add spell
+                    const spell = { ...SPELLS[0] }; // Only banana for now
+                    spell.id = Math.random();
+                    spell.isSpell = true;
+                    gameState.player.shop.push(spell);
+                    continue;
+                }
+
                 const pool = [];
                 for (let t = 1; t <= tier; t++) {
                     if (MINION_POOL[t]) pool.push(...MINION_POOL[t]);
@@ -282,14 +308,54 @@ const HearthstoneMiniGame = () => {
             <div class="minion-image">${minion.emoji}</div>
             <div class="minion-name">${minion.name}</div>
             <div class="minion-description">${minion.desc || ''}</div>
-            <div class="minion-stats">
-                <div class="minion-attack">${minion.attack}</div>
-                <div class="minion-health">${minion.health}</div>
-            </div>
-        `;
+            if (!minion.isSpell) {
+               card.innerHTML += `
+                < div class="minion-stats" >
+                    <div class="minion-attack">${minion.attack}</div>
+                    <div class="minion-health">${minion.health}</div>
+                </div > `;
+            }
 
             card.addEventListener('mouseenter', () => showTooltip(minion));
             card.addEventListener('mouseleave', hideTooltip);
+            
+            // CLICK TO PLAY HANDLER (Mobile Friendliness)
+            card.addEventListener('click', (e) => {
+                if (location === 'shop') {
+                     // Select shop item
+                     if (minion.sold) return;
+                     if (gameState.selectedCard && gameState.selectedCard.id === minion.id) {
+                         // Deselect
+                         gameState.selectedCard = null;
+                         gameState.selectedSource = null;
+                         document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
+                     } else {
+                         // Select
+                         gameState.selectedCard = minion;
+                         gameState.selectedSource = 'shop';
+                         document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
+                         card.classList.add('selected');
+                         // Auto-buy if user taps twice or logic differs? No, select then tap board.
+                     }
+                } else if (location === 'hand') {
+                     if (gameState.selectedCard && gameState.selectedCard.id === minion.id) {
+                         gameState.selectedCard = null;
+                         gameState.selectedSource = null;
+                         document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
+                     } else {
+                         gameState.selectedCard = minion;
+                         gameState.selectedSource = 'hand';
+                         document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
+                         card.classList.add('selected');
+                     }
+                } else if (location === 'board') {
+                    // If we have a spell selected, apply it
+                    if (gameState.selectedCard && gameState.selectedCard.isSpell && gameState.selectedSource === 'shop') {
+                        buyAndCastSpell(gameState.selectedCard, minion);
+                        return;
+                    }
+                }
+            });
 
             if (location === 'shop' || location === 'hand') {
                 card.draggable = true;
@@ -311,11 +377,35 @@ const HearthstoneMiniGame = () => {
             return card;
         }
 
+        function buyAndCastSpell(spell, targetMinion) {
+             if (gameState.player.gold < spell.cost) {
+                 alert('Недостаточно золота!');
+                 return;
+             }
+             
+             // Effect
+             if (spell.id.includes('banana')) {
+                 targetMinion.attack += 2;
+                 targetMinion.health += 2;
+                 targetMinion.maxHealth += 2;
+             }
+             
+             gameState.player.gold -= spell.cost;
+             spell.sold = true;
+             
+             // Deselect
+             gameState.selectedCard = null;
+             gameState.selectedSource = null;
+             document.querySelectorAll('.minion-card').forEach(c => c.classList.remove('selected'));
+             
+             updateTavernUI();
+        }
+
         function showTooltip(minion) {
             const tooltip = getEl('card-tooltip');
             if (!tooltip) return;
             getEl('tooltip-title').textContent = minion.name;
-            getEl('tooltip-type').textContent = `${minion.type} • Уровень ${minion.tier}`;
+            getEl('tooltip-type').textContent = `${ minion.type } • Уровень ${ minion.tier } `;
             getEl('tooltip-description').textContent = minion.desc || 'Обычный миньон';
             tooltip.classList.add('show');
         }
@@ -449,28 +539,28 @@ const HearthstoneMiniGame = () => {
         function showTripleNotification(minionName) {
             const notification = document.createElement('div');
             notification.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #ffd700, #ffa500);
-            border: 6px solid #ff8c00;
-            border-radius: 25px;
-            padding: 40px 60px;
-            font-family: 'Cinzel', serif;
-            font-size: 36px;
-            font-weight: 900;
-            color: #1a0e08;
-            z-index: 10001;
-            text-align: center;
-            box-shadow: 0 25px 80px rgba(255,215,0,1), inset 0 2px 0 rgba(255,255,255,0.5);
-            animation: triplePopup 2s ease-out forwards;
-        `;
+position: fixed;
+top: 50 %;
+left: 50 %;
+transform: translate(-50 %, -50 %);
+background: linear - gradient(135deg, #ffd700, #ffa500);
+border: 6px solid #ff8c00;
+border - radius: 25px;
+padding: 40px 60px;
+font - family: 'Cinzel', serif;
+font - size: 36px;
+font - weight: 900;
+color: #1a0e08;
+z - index: 10001;
+text - align: center;
+box - shadow: 0 25px 80px rgba(255, 215, 0, 1), inset 0 2px 0 rgba(255, 255, 255, 0.5);
+animation: triplePopup 2s ease - out forwards;
+`;
             notification.innerHTML = `
-            <div style="font-size: 56px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));">⭐✨⭐</div>
+    < div style = "font-size: 56px; margin-bottom: 15px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));" >⭐✨⭐</div >
             <div style="text-shadow: 0 2px 4px rgba(255,255,255,0.5);">ЗОЛОТОЙ ТРИПЛЕТ!</div>
             <div style="font-size: 22px; margin-top: 12px; color: #3d2810;">${minionName}</div>
-        `;
+`;
 
             document.body.appendChild(notification);
 
@@ -481,11 +571,12 @@ const HearthstoneMiniGame = () => {
         }
 
         function updateTavernUI() {
-            if (!getEl('player-health')) return; // Check if mounted
+            if (!getEl('footer-player-health')) return; // Check if mounted
 
-            getEl('player-health').textContent = gameState.player.health;
-            getEl('player-gold').textContent = gameState.player.gold;
-            getEl('tavern-tier').textContent = gameState.player.tavernTier;
+            getEl('footer-player-health').textContent = gameState.player.health;
+            getEl('footer-player-gold').textContent = gameState.player.gold;
+            getEl('footer-tavern-tier').textContent = gameState.player.tavernTier;
+            
             getEl('shop-tier').textContent = gameState.player.tavernTier;
             getEl('round-number').textContent = gameState.round;
             getEl('upgrade-cost').textContent = gameState.player.upgradeCost;
@@ -509,6 +600,8 @@ const HearthstoneMiniGame = () => {
                     const slot = document.createElement('div');
                     slot.className = 'board-slot';
                     slot.textContent = '+';
+                    slot.addEventListener('click', () => handleSlotClick());
+                    // Drag logic already on container
                     boardContainer.appendChild(slot);
                 }
                 getEl('board-count').textContent = gameState.player.board.length;
@@ -531,15 +624,15 @@ const HearthstoneMiniGame = () => {
             // Render bots
             gameState.bots.forEach(bot => {
                 const el = document.createElement('div');
-                el.className = `opponent-item ${bot.eliminated ? 'eliminated' : ''} ${gameState.round > 0 && gameState.currentOpponent?.name === bot.name ? 'next-opponent' : ''}`;
+                el.className = `opponent - item ${ bot.eliminated ? 'eliminated' : '' } ${ gameState.round > 0 && gameState.currentOpponent?.name === bot.name ? 'next-opponent' : '' } `;
                 el.innerHTML = `
-                    <div class="opponent-avatar">${bot.eliminated ? '💀' : '👤'}</div>
+    < div class="opponent-avatar" > ${ bot.eliminated ? '💀' : '👤' }</div >
                     <div class="opponent-hp-bar">
                         <div class="opponent-hp-fill" style="width: ${(bot.health / 40) * 100}%"></div>
                     </div>
                     <div class="opponent-health">${bot.health}</div>
-                    ${!bot.eliminated ? `<div class="opponent-tier">⭐${bot.tavernTier}</div>` : ''}
-                `;
+                    ${ !bot.eliminated ? `<div class="opponent-tier">⭐${bot.tavernTier}</div>` : '' }
+`;
                 // Tooltip logic can be added here
                 container.appendChild(el);
             });
@@ -567,6 +660,51 @@ const HearthstoneMiniGame = () => {
             }
         }
 
+        function handleSlotClick() {
+             if (!gameState.selectedCard) return;
+             
+             const minion = gameState.selectedCard;
+             const source = gameState.selectedSource;
+             
+             if (minion.isSpell) {
+                 alert('Заклинание нужно применять на существо!');
+                 return;
+             }
+
+             // Logic same as drop
+             if (gameState.player.board.length >= 7) {
+                alert('Доска полна!');
+                return;
+            }
+
+            if (source === 'shop') {
+                if (gameState.player.gold < minion.cost) {
+                    alert('Недостаточно золота!');
+                    return;
+                }
+
+                gameState.player.gold -= minion.cost;
+                minion.sold = true;
+
+                const boardMinion = { ...minion, boardId: Math.random() };
+                gameState.player.board.push(boardMinion);
+
+                checkForTriple(boardMinion);
+            }
+            else if (source === 'hand') {
+                gameState.player.hand = gameState.player.hand.filter(m => m.id !== minion.id);
+
+                const boardMinion = { ...minion, boardId: Math.random() };
+                gameState.player.board.push(boardMinion);
+
+                checkForTriple(boardMinion);
+            }
+
+            gameState.selectedCard = null;
+            gameState.selectedSource = null;
+            updateTavernUI();
+        }
+
         function handleStartBattle() {
             clearInterval(gameState.timerInterval);
             startBattle();
@@ -580,7 +718,7 @@ const HearthstoneMiniGame = () => {
             const circumference = 2 * Math.PI * 45; // r=45
 
             if (circle) {
-                circle.style.strokeDasharray = `${circumference} ${circumference}`;
+                circle.style.strokeDasharray = `${ circumference } ${ circumference } `;
                 circle.style.strokeDashoffset = 0;
                 circle.style.stroke = '#ffd700';
             }
@@ -634,7 +772,7 @@ const HearthstoneMiniGame = () => {
             switchPhase('battle');
 
             getEl('vs-info').textContent =
-                `${gameState.player.hero.name} VS ${gameState.currentOpponent.name}`;
+                `${ gameState.player.hero.name } VS ${ gameState.currentOpponent.name } `;
 
             setTimeout(() => simulateBattle(), 1000);
         }
@@ -781,15 +919,15 @@ const HearthstoneMiniGame = () => {
 
             let title = won === null ? 'Ничья!' : (won ? 'Победа!' : 'Поражение');
             let text = won === null ? 'Никто не получил урона' :
-                (won ? `Вы нанесли ${damage} урона` : `Вы получили ${damage} урона`);
+                (won ? `Вы нанесли ${ damage } урона` : `Вы получили ${ damage } урона`);
 
             modal.innerHTML = `
-            <div class="modal-content">
+    < div class="modal-content" >
                 <h2 class="modal-title">${title}</h2>
                 <p class="modal-text">${text}</p>
                 <button class="modal-button" id="continue-btn">Продолжить</button>
-            </div>
-        `;
+            </div >
+    `;
 
             document.body.appendChild(modal);
 
@@ -874,20 +1012,20 @@ const HearthstoneMiniGame = () => {
             modal.className = 'modal';
 
             const content = won ? `
-            <div class="modal-content">
+    < div class="modal-content" >
                 <h2 class="modal-title">🏆 ПОБЕДА! 🏆</h2>
                 <p class="modal-text">Вы заняли 1 место!</p>
                 <p class="modal-text">Раундов: ${gameState.round}</p>
                 <button class="modal-button" id="restart-btn">Новая игра</button>
-            </div>
-        ` : `
-            <div class="modal-content">
+            </div >
+    ` : `
+    < div class="modal-content" >
                 <h2 class="modal-title">Игра окончена</h2>
                 <p class="modal-text">Место: ${gameState.bots.filter(b => !b.eliminated).length + 1}</p>
                 <p class="modal-text">Раундов: ${gameState.round}</p>
                 <button class="modal-button" id="restart-btn">Новая игра</button>
-            </div>
-        `;
+            </div >
+    `;
 
             modal.innerHTML = content;
             document.body.appendChild(modal);
@@ -944,17 +1082,12 @@ const HearthstoneMiniGame = () => {
 
                 {/* ЦЕНТРАЛЬНАЯ ПАНЕЛЬ - ИГРА */}
                 <div className="tavern-main-area">
-                    {/* ВЕРХНЯЯ ИНФО ПАНЕЛЬ */}
+                    {/* ВЕРХНЯЯ ИНФО ПАНЕЛЬ: Только лицо и Боб */}
                     <div className="top-info-bar">
-                        <div className="hero-stats">
+                         <div className="hero-stats">
                             <div className="hero-avatar small" id="player-avatar">🧙</div>
-                            <div className="hero-info-col">
+                             <div className="hero-info-col">
                                 <div className="hero-name-display" id="player-name">Игрок</div>
-                                <div className="hero-details">
-                                    <div className="health-badge">❤️ <span id="player-health">40</span></div>
-                                    <div className="gold-badge">🪙 <span id="player-gold">3</span></div>
-                                    <div className="tier-badge">⭐ <span id="tavern-tier">1</span></div>
-                                </div>
                             </div>
                         </div>
                         <div className="tavern-controls-top">
@@ -1008,10 +1141,14 @@ const HearthstoneMiniGame = () => {
                     <button className="end-turn-btn" id="start-battle-btn">
                         <div className="btn-text">В БОЙ</div>
                     </button>
-
-                    <div className="history-log">
-                        {/* Placeholder for history */}
-                        📜
+                    
+                    {/* PLAYER STATS FOOTER */}
+                    <div className="player-stats-footer">
+                        <div className="hero-details">
+                            <div className="health-badge">❤️ <span id="footer-player-health">40</span></div>
+                            <div className="gold-badge">🪙 <span id="footer-player-gold">3</span></div>
+                            <div className="tier-badge">⭐ <span id="footer-tavern-tier">1</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
