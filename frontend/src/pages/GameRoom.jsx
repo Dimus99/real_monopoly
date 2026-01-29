@@ -1023,10 +1023,10 @@ const GameRoom = () => {
                     <button
                         onClick={() => setShowPranksMenu(!showPranksMenu)}
                         className={`btn-ghost text-xs py-2 px-2 flex items-center gap-2 border border-white/10 hover:bg-white/5 ${sidebarCollapsed ? 'justify-center' : 'w-full pl-3'}`}
-                        title="Предсказания"
+                        title="Дополнительно"
                     >
-                        <Zap size={20} className="text-yellow-400 group-hover:scale-110 transition-transform" />
-                        {!sidebarCollapsed && <span className="font-bold text-gray-300">ПРЕДСКАЗАНИЯ</span>}
+                        <Folder size={16} className="text-yellow-400" />
+                        {!sidebarCollapsed && <span className="font-bold text-gray-300">ДОПОЛНИТЕЛЬНО</span>}
                         {!sidebarCollapsed && <span className="ml-auto text-[10px]">{showPranksMenu ? '▼' : '▶'}</span>}
                     </button>
 

@@ -614,13 +614,13 @@ const Lobby = () => {
                             </div>
                         </button>
 
-                        <button onClick={() => setMode('pranks')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-pink-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                        <button onClick={() => setMode('additional')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-pink-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
                             <div className="absolute inset-0 bg-gradient-to-br from-pink-600/20 to-rose-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                             <div className="w-20 h-20 bg-pink-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(236,72,153,0.3)]">
                                 <Smile size={40} className="text-pink-400" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold mb-2">Предсказания</h3>
+                                <h3 className="text-2xl font-bold mb-2">Дополнительно</h3>
                                 <p className="text-sm text-gray-400">Мини-игры и развлечения</p>
                             </div>
                         </button>
@@ -794,12 +794,12 @@ const Lobby = () => {
                     </div>
                 )}
 
-                {/* Pranks Mode (Fun & Games) */}
-                {mode === 'pranks' && (
+                {/* Additional Mode (Fun & Games) */}
+                {mode === 'additional' && (
                     <div className="glass-card max-w-4xl w-full p-8 animate-in fade-in zoom-in duration-300">
                         <div className="flex justify-between items-center mb-8">
                             <div className="space-y-1">
-                                <h2 className="text-3xl font-bold font-display">Предсказания и Игры</h2>
+                                <h2 className="text-3xl font-bold font-display">Приколы и Игры</h2>
                                 <p className="text-gray-400">Одиночные игры для расслабления</p>
                             </div>
                             <button onClick={() => setMode('menu')} className="btn-ghost p-2 rounded-full hover:bg-white/10"><X /></button>
