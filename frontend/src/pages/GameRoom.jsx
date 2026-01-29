@@ -547,7 +547,7 @@ const GameRoom = () => {
                 setTimeout(() => {
                     setDiceRolling(false); // Stop spinning (Freeze on result)
 
-                    // Phase 1.5: Pause to show dice result (1.0s) BEFORE moving/logs
+                    // Phase 1.5: Short Pause to show dice result (0.8s) BEFORE moving
                     setTimeout(() => {
                         // Release logs now that dice have settled!
                         if (lastAction.game_state?.logs) {
@@ -561,19 +561,19 @@ const GameRoom = () => {
                             setDelayedPlayers(gameState.players);
                         }
 
-                        // Phase 2: Wait for movement (1.0s) then Land Events
+                        // Phase 2: Movement time (1.0s) then Land Events & Unlock UI
                         setTimeout(() => {
+                            // UNLOCK UI: Movement is done, let them click 'Done' or other actions
                             setIsRolling(false);
 
-                            // SYNC hasRolled accurately 
-                            if (lastAction.player_id === playerId) {
-                                // If we are here, the server has already processed the roll. 
-                                // We trust the game_state provided in the action or the main gameState if it says we are done.
-                                const serverHasRolled = lastAction.game_state?.turn_state?.has_rolled ?? gameState?.turn_state?.has_rolled;
-                                setHasRolled(!!serverHasRolled);
+                            // SYNC from the MOST UP TO DATE state we have
+                            const serverState = lastAction.game_state?.turn_state || gameState?.turn_state;
+                            if (lastAction.player_id === playerId && serverState) {
+                                setHasRolled(!!serverState.has_rolled);
+                                setIsDoubles(!!serverState.is_doubles);
                             }
 
-                            // Handle land events
+                            // Handle land events (Modals)
                             if (lastAction.player_id === playerId) {
                                 if (lastAction.action === 'pay_rent' || lastAction.action === 'tax') {
                                     setRentDetails({
@@ -595,20 +595,21 @@ const GameRoom = () => {
                                 if (lastAction.can_buy && !showBuyModal) {
                                     setShowBuyModal(true);
                                     const landedPos = lastAction.game_state?.players?.[playerId]?.position;
-                                    if (landedPos !== undefined && gameState.board[landedPos]) {
-                                        setSelectedTile(gameState.board[landedPos]);
+                                    if (landedPos !== undefined && (lastAction.game_state?.board || gameState?.board)) {
+                                        const board = lastAction.game_state?.board || gameState.board;
+                                        setSelectedTile(board[landedPos]);
                                     }
                                 }
                             }
 
-                            // Phase 3: Display dice for a bit longer (1.5s) then hide
+                            // Phase 3: Display dice for a bit longer (1.2s) then hide
                             setTimeout(() => {
                                 setShowDice(false);
-                            }, 1500);
+                            }, 1200);
 
-                        }, 1000);
-                    }, 1000);
-                }, 4000); // 4 seconds total tumble
+                        }, 1000); // 1.0s movement
+                    }, 800); // 0.8s pause to read dice
+                }, 3500); // 3.5s total tumble
                 break;
 
             case 'PROPERTY_BOUGHT':
@@ -717,9 +718,8 @@ const GameRoom = () => {
 
         // Sync basic flags that don't interfere with animations
         if (gameState.turn_state) {
-            // CRITICAL: Do NOT sync interaction states (rent, etc) while dice are rolling/showing
-            // The DICE_ROLLED timeout sequence will handle triggering these at the right visual moment.
-            if (!showDice && !diceRolling && !isRolling) {
+            // CRITICAL: Prevent sync from overwriting DURING a dice roll animation
+            if (!diceRolling && !isRolling) {
                 // Sync rent pending state
                 if (gameState.turn_state.awaiting_payment && isMyTurn) {
                     setRentDetails({
@@ -733,14 +733,15 @@ const GameRoom = () => {
                 // Sync roll status
                 if (isMyTurn) {
                     const serverHasRolled = !!gameState.turn_state.has_rolled;
-                    // If server says we have rolled, but client thinks we haven't, 
-                    // we should sync it after a small buffer if no animation is blocking.
+                    const serverIsDoubles = !!gameState.turn_state.is_doubles;
+
                     setHasRolled(serverHasRolled);
+                    setIsDoubles(serverIsDoubles);
                 }
             } else {
-                // If we ARE rolling, but server says we haven't rolled (e.g. state reset), 
-                // we should still allow the 'false' state to propagate to prevent being stuck.
-                if (isMyTurn && !gameState.turn_state.has_rolled) {
+                // If we ARE rolling, but server says we haven't rolled (e.g. doubles re-roll or state reset), 
+                // we should allow 'false' to propagate to reset the UI button state.
+                if (isMyTurn && !gameState.turn_state.has_rolled && !diceRolling) {
                     setHasRolled(false);
                 }
             }

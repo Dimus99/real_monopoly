@@ -143,20 +143,6 @@ const Cube = ({ value, isRolling, index, show, isMine }) => {
             >
                 <div className="w-full h-full" style={{ perspective: '800px', transformStyle: 'preserve-3d' }}>
                     <motion.div
-                        className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-24 h-6 bg-black/40 blur-xl rounded-full"
-                        animate={isRolling ? {
-                            scale: [0.4, 1.4, 1],
-                            opacity: [0, 0.5, 0.3],
-                            y: [0, 15, 0]
-                        } : {
-                            scale: 1,
-                            opacity: 0.3,
-                            y: 0
-                        }}
-                        transition={{ duration: 2.2, ease: "easeOut" }}
-                    />
-
-                    <motion.div
                         className="w-full h-full relative"
                         style={{ transformStyle: 'preserve-3d', willChange: 'transform' }}
                         animate={controls}
