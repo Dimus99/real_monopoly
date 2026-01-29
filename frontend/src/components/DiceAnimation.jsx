@@ -108,7 +108,8 @@ const Cube = ({ value, isRolling, index, show }) => {
 
         if (isRolling) {
             const target = getRotation(value);
-            // Dynamic "thrown" animation with explicit 3D keyframes
+            // Dynamic "thrown" animation - SINGLE CONTINUOUS MOTION
+            // We animate directly to the final target rotation with a physics-like ease.
             controls.start({
                 x: [index === 0 ? -400 : 400, index === 0 ? -150 : 150, 0],
                 y: [300, -100, 0],
@@ -117,22 +118,16 @@ const Cube = ({ value, isRolling, index, show }) => {
                 rotateY: [20, index === 0 ? -1060 : 1100, (360 * 5) + target.y],
                 rotateZ: [10, index === 0 ? 190 : -170, 0],
                 transition: {
-                    duration: 2.2,
-                    ease: "easeOut",
+                    duration: 3, // Slower, more deliberate
+                    ease: [0.25, 0.1, 0.25, 1], // Cubic bezier for natural slowdown
                     times: [0, 0.4, 1]
                 }
             });
-        } else {
-            const target = getRotation(value);
-            controls.set({
-                x: 0,
-                y: 0,
-                z: 0,
-                rotateX: target.x,
-                rotateY: target.y,
-                rotateZ: 0
-            });
         }
+        // We REMOVED the else { controls.set(...) } block. 
+        // This prevents the dice from snapping/teleporting if the parent component 
+        // sets isRolling=false slightly before the animation finishes.
+        // The animation will naturally complete to the final keyframe (the target).
     }, [show, isRolling, value, index, controls]);
 
     return (

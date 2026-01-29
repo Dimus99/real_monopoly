@@ -63,6 +63,7 @@ const GameRoom = () => {
     const [showRequestsModal, setShowRequestsModal] = useState(false);
     const [isLoadingProfile, setIsLoadingProfile] = useState(false);
     const [myUser, setMyUser] = useState(null);
+    const [hoveredAbility, setHoveredAbility] = useState(null);
 
     useEffect(() => {
         const handleResize = () => {
@@ -545,7 +546,7 @@ const GameRoom = () => {
                         }, 2000);
 
                     }, 1000);
-                }, 2000);
+                }, 3000);
                 break;
 
             case 'PROPERTY_BOUGHT':
@@ -1026,25 +1027,26 @@ const GameRoom = () => {
                                             {/* Ability Status */}
                                             {p.character && ABILITIES[p.character] && (
                                                 <div className="mt-1.5 relative group/ability">
-                                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold transition-colors cursor-help ${p.ability_cooldown > 0
-                                                        ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
-                                                        : 'bg-green-500/10 border-green-500/30 text-green-400'
-                                                        }`}>
+                                                    <div
+                                                        className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold transition-colors cursor-help ${p.ability_cooldown > 0
+                                                            ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                                                            : 'bg-green-500/10 border-green-500/30 text-green-400'
+                                                            }`}
+                                                        onMouseEnter={(e) => {
+                                                            const rect = e.currentTarget.getBoundingClientRect();
+                                                            setHoveredAbility({
+                                                                x: rect.right + 10, // 10px to the right of the badge
+                                                                y: rect.top,
+                                                                charName: p.character,
+                                                                name: ABILITIES[p.character].name,
+                                                                desc: ABILITIES[p.character].desc,
+                                                                cooldown: p.ability_cooldown
+                                                            });
+                                                        }}
+                                                        onMouseLeave={() => setHoveredAbility(null)}
+                                                    >
                                                         <span>{ABILITIES[p.character].icon}</span>
                                                         <span>{p.ability_cooldown > 0 ? `${p.ability_cooldown} Х` : 'ГОТОВО'}</span>
-                                                    </div>
-
-                                                    {/* Custom Tooltip - Positioned to the RIGHT of the sidebar to avoid clipping */}
-                                                    <div className="absolute top-0 left-full ml-4 w-64 p-3 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl opacity-0 scale-95 group-hover/ability:opacity-100 group-hover/ability:scale-100 transition-all pointer-events-none z-[1000] origin-left invisible group-hover/ability:visible">
-                                                        <div className="text-xs font-black text-white/40 uppercase tracking-widest mb-1 pb-1 border-b border-white/5 flex justify-between">
-                                                            <span>{p.character}: {ABILITIES[p.character].name}</span>
-                                                            {p.ability_cooldown > 0 && <span className="text-orange-400">⏳ {p.ability_cooldown}</span>}
-                                                        </div>
-                                                        <p className="text-[11px] text-white/90 leading-normal font-medium whitespace-normal">
-                                                            {ABILITIES[p.character].desc}
-                                                        </p>
-                                                        {/* Tooltip Arrow (Pointing Left) */}
-                                                        <div className="absolute top-4 -left-1.5 w-3 h-3 bg-gray-900 border-l border-b border-white/10 rotate-45" />
                                                     </div>
                                                 </div>
                                             )}
@@ -1067,17 +1069,18 @@ const GameRoom = () => {
                                             )}
                                         </div>
                                     </div>
-                                )}
+                                )
+                                }
                             </motion.div>
                         );
                     })}
                 </div>
-            </motion.div>
+            </motion.div >
 
             {/* MAIN BOARD AREA */}
-            <div className={`flex-1 relative bg-[#0c0c14] flex flex-col ${isMobile ? 'items-start overflow-auto pr-[50px] pb-24' : 'items-center overflow-x-auto overflow-y-hidden pr-24'}`}>
+            < div className={`flex-1 relative bg-[#0c0c14] flex flex-col ${isMobile ? 'items-start overflow-auto pr-[50px] pb-24' : 'items-center overflow-x-auto overflow-y-hidden pr-24'}`}>
                 {/* Background */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
+                < div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
                 <div className={`relative z-10 shadow-2xl transition-all duration-300 my-auto py-8 ${isMobile ? 'overflow-visible' : 'mx-12'}`}
                     style={{
@@ -1129,66 +1132,70 @@ const GameRoom = () => {
                 </div>
 
                 {/* Property Modal - Ensure High Z-Index & Centering */}
-                {gameState?.board && (
-                    <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none">
-                        <div className="pointer-events-auto">
-                            <PropertyModal
-                                isOpen={!!selectedTile}
-                                onClose={() => setSelectedTile(null)}
-                                property={selectedTile}
-                                players={gameState.players}
-                                currentPlayerId={playerId}
-                                onBuy={handleBuyProperty}
-                                canBuy={canBuy && (selectedTile?.id === currentTile?.id)}
-                                canBuild={isMyTurn && !(gameState.turn_state?.build_counts?.[selectedTile?.group] >= 1)}
-                                onBuild={handleBuildHouse}
-                                onSellHouse={handleSellHouse}
-                                onMortgage={handleMortgage}
-                                onUnmortgage={handleUnmortgage}
-                                tiles={gameState.board}
-                            />
+                {
+                    gameState?.board && (
+                        <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none">
+                            <div className="pointer-events-auto">
+                                <PropertyModal
+                                    isOpen={!!selectedTile}
+                                    onClose={() => setSelectedTile(null)}
+                                    property={selectedTile}
+                                    players={gameState.players}
+                                    currentPlayerId={playerId}
+                                    onBuy={handleBuyProperty}
+                                    canBuy={canBuy && (selectedTile?.id === currentTile?.id)}
+                                    canBuild={isMyTurn && !(gameState.turn_state?.build_counts?.[selectedTile?.group] >= 1)}
+                                    onBuild={handleBuildHouse}
+                                    onSellHouse={handleSellHouse}
+                                    onMortgage={handleMortgage}
+                                    onUnmortgage={handleUnmortgage}
+                                    tiles={gameState.board}
+                                />
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
 
                 {/* Action Panel - CENTERED - Hide when TradeModal or CasinoModal is open */}
-                {!showTradeModal && !showCasinoModal && (
-                    <div className={`fixed left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-24 scale-90' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
-                        <div className="bg-black/80 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/20 w-fit mx-auto">
-                            <ActionPanel
-                                onToggleSidebar={isMobile ? () => setSidebarCollapsed(!sidebarCollapsed) : null}
-                                isMyTurn={isMyTurn}
-                                isRolling={isRolling}
-                                hasRolled={hasRolled}
-                                onRoll={handleRoll}
-                                canBuy={canBuy}
-                                onBuy={handleBuyProperty}
-                                onEndTurn={handleEndTurn}
-                                character={currentPlayer?.character}
-                                onAbility={handleAbility}
-                                currentTilePrice={currentTile?.price}
-                                currentTileName={currentTile?.name}
+                {
+                    !showTradeModal && !showCasinoModal && (
+                        <div className={`fixed left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-24 scale-90' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
+                            <div className="bg-black/80 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/20 w-fit mx-auto">
+                                <ActionPanel
+                                    onToggleSidebar={isMobile ? () => setSidebarCollapsed(!sidebarCollapsed) : null}
+                                    isMyTurn={isMyTurn}
+                                    isRolling={isRolling}
+                                    hasRolled={hasRolled}
+                                    onRoll={handleRoll}
+                                    canBuy={canBuy}
+                                    onBuy={handleBuyProperty}
+                                    onEndTurn={handleEndTurn}
+                                    character={currentPlayer?.character}
+                                    onAbility={handleAbility}
+                                    currentTilePrice={currentTile?.price}
+                                    currentTileName={currentTile?.name}
 
-                                gameMode={gameState.game_mode}
-                                isChatOpen={false}
-                                isChanceOpen={!!chanceCard}
-                                isDoubles={diceValues[0] === diceValues[1]}
-                                isJailed={currentPlayer?.is_jailed}
-                                abilityCooldown={currentPlayer?.ability_cooldown}
-                                abilityUsed={currentPlayer?.ability_used_this_game}
-                                onSurrender={() => sendAction('SURRENDER')}
-                                rentDetails={rentDetails}
-                                onPayRent={handlePayRent}
-                                onPayBail={handlePayBail}
-                            />
+                                    gameMode={gameState.game_mode}
+                                    isChatOpen={false}
+                                    isChanceOpen={!!chanceCard}
+                                    isDoubles={diceValues[0] === diceValues[1]}
+                                    isJailed={currentPlayer?.is_jailed}
+                                    abilityCooldown={currentPlayer?.ability_cooldown}
+                                    abilityUsed={currentPlayer?.ability_used_this_game}
+                                    onSurrender={() => sendAction('SURRENDER')}
+                                    rentDetails={rentDetails}
+                                    onPayRent={handlePayRent}
+                                    onPayBail={handlePayBail}
+                                />
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* Chat / Toast Notification - Elevated to avoid overlap */}
                 {/* Chat / Toast Notification - Removed fixed position here, moved inside Board container */}
-            </div>
+            </div >
 
             {/* Fancy Newspaper Chance Modal */}
             {/* Fancy Newspaper Chance Modal - High Z-Index */}
@@ -1456,13 +1463,43 @@ const GameRoom = () => {
                 glow={diceValues[0] === diceValues[1]}
                 playerName={gameState?.players?.[rollingPlayerId]?.name || ''}
             />
-            {showCasinoModal && (
-                <CasinoModal
-                    onClose={() => setShowCasinoModal(false)}
-                    onBet={(numbers) => sendAction('CASINO_BET', { bet_numbers: numbers })}
-                />
-            )}
-        </div>
+            {
+                showCasinoModal && (
+                    <CasinoModal
+                        onClose={() => setShowCasinoModal(false)}
+                        onBet={(numbers) => sendAction('CASINO_BET', { bet_numbers: numbers })}
+                    />
+                )
+            }
+
+            {/* Global Tooltip Portal (rendered outside overflow containers) */}
+            <AnimatePresence>
+                {hoveredAbility && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1, y: -20 }} // Center vertically
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        style={{
+                            position: 'fixed',
+                            top: hoveredAbility.y,
+                            left: hoveredAbility.x, // Already offset in handler
+                            zIndex: 9999
+                        }}
+                        className="w-64 p-3 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl pointer-events-none origin-left"
+                    >
+                        <div className="text-xs font-black text-white/40 uppercase tracking-widest mb-1 pb-1 border-b border-white/5 flex justify-between">
+                            <span>{hoveredAbility.charName}: {hoveredAbility.name}</span>
+                            {hoveredAbility.cooldown > 0 && <span className="text-orange-400">⏳ {hoveredAbility.cooldown}</span>}
+                        </div>
+                        <p className="text-[11px] text-white/90 leading-normal font-medium whitespace-normal">
+                            {hoveredAbility.desc}
+                        </p>
+                        {/* Arrow */}
+                        <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 bg-gray-900 border-l border-b border-white/10 rotate-45" />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div >
     );
 };
 
