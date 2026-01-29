@@ -620,7 +620,7 @@ const Lobby = () => {
                                 <Smile size={40} className="text-pink-400" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold mb-2">Приколы</h3>
+                                <h3 className="text-2xl font-bold mb-2">Предсказания</h3>
                                 <p className="text-sm text-gray-400">Мини-игры и развлечения</p>
                             </div>
                         </button>
@@ -799,7 +799,7 @@ const Lobby = () => {
                     <div className="glass-card max-w-4xl w-full p-8 animate-in fade-in zoom-in duration-300">
                         <div className="flex justify-between items-center mb-8">
                             <div className="space-y-1">
-                                <h2 className="text-3xl font-bold font-display">Приколы и Игры</h2>
+                                <h2 className="text-3xl font-bold font-display">Предсказания и Игры</h2>
                                 <p className="text-gray-400">Одиночные игры для расслабления</p>
                             </div>
                             <button onClick={() => setMode('menu')} className="btn-ghost p-2 rounded-full hover:bg-white/10"><X /></button>
