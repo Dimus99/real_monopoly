@@ -1139,7 +1139,7 @@ const GameRoom = () => {
                 >
                     <Board
                         tiles={gameState.board}
-                        players={gameState.players}
+                        players={delayedPlayers || gameState.players}
                         onTileClick={handleTileClick}
                         mapType={gameState.map_type}
                         currentPlayerId={playerId}
@@ -1159,7 +1159,7 @@ const GameRoom = () => {
                         canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && (selectedTile || currentTile)?.is_monopoly && !(gameState.turn_state?.build_counts?.[(selectedTile || currentTile)?.group] >= 1)}
                         isMyTurn={isMyTurn}
                         lastAction={lastAction}
-                        playersPos={gameState.players}
+                        playersPos={delayedPlayers || gameState.players}
                     />
 
                     {/* Chat relative to Board Center (Bottom) */}
@@ -1505,6 +1505,7 @@ const GameRoom = () => {
                 values={diceValues}
                 glow={diceValues[0] === diceValues[1]}
                 playerName={gameState?.players?.[rollingPlayerId]?.name || ''}
+                isMine={rollingPlayerId === playerId}
             />
             {
                 showCasinoModal && (

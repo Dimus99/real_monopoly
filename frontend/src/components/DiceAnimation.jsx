@@ -100,7 +100,7 @@ const DiceFace = ({ n }) => {
     );
 };
 
-const Cube = ({ value, isRolling, index, show }) => {
+const Cube = ({ value, isRolling, index, show, isMine }) => {
     const controls = useAnimation();
 
     useEffect(() => {
@@ -109,10 +109,13 @@ const Cube = ({ value, isRolling, index, show }) => {
         if (isRolling) {
             const target = getRotation(value);
             // Dynamic "thrown" animation - SINGLE CONTINUOUS MOTION
-            // We animate directly to the final target rotation with a physics-like ease.
+            // If isMine: Thrown from bottom (y: 600 -> 0)
+            // If !isMine (Opponent): Dropped from top (y: -800 -> 0)
+            const startY = isMine ? 600 : -800;
+
             controls.start({
                 x: [0, 0], // No side wavering, straight throw relative to slot
-                y: [600, 0], // Throw from bottom up to center
+                y: [startY, 0], // Throw from bottom/top to center
                 z: [500, 0], // From close to camera to board
                 rotateX: [0, (360 * 4) + target.x], // Consistent tumble forward
                 rotateY: [0, (360 * 2) + target.y], // Consistent spin sideways
@@ -127,7 +130,7 @@ const Cube = ({ value, isRolling, index, show }) => {
         // This prevents the dice from snapping/teleporting if the parent component 
         // sets isRolling=false slightly before the animation finishes.
         // The animation will naturally complete to the final keyframe (the target).
-    }, [show, isRolling, value, index, controls]);
+    }, [show, isRolling, value, index, controls, isMine]);
 
     return (
         <div className="relative w-[100px] h-[100px]">
@@ -171,7 +174,7 @@ const Cube = ({ value, isRolling, index, show }) => {
     );
 };
 
-const DiceAnimation = ({ show, rolling, values, playerName, glow }) => {
+const DiceAnimation = ({ show, rolling, values, playerName, glow, isMine = true }) => {
     const [displayValues, setDisplayValues] = useState([1, 1]);
 
     useEffect(() => {
@@ -214,8 +217,8 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow }) => {
                             </motion.div>
                         )}
 
-                        <Cube value={displayValues[0]} isRolling={rolling} index={0} show={show} />
-                        <Cube value={displayValues[1]} isRolling={rolling} index={1} show={show} />
+                        <Cube value={displayValues[0]} isRolling={rolling} index={0} show={show} isMine={isMine} />
+                        <Cube value={displayValues[1]} isRolling={rolling} index={1} show={show} isMine={isMine} />
                     </div>
 
 

@@ -707,6 +707,7 @@ class GameEngine:
             if card["position"] == 30:  # Go to jail (Epstein Island)
                 player.is_jailed = True
                 player.jail_turns = 0
+                return {"chance_card": log_text, "new_position": card["position"], "action": "go_to_jail"}
             return {"chance_card": log_text, "new_position": card["position"]}
             
         elif card["type"] == "repair":
@@ -1038,6 +1039,11 @@ class GameEngine:
         
         if not player.is_jailed:
             return {"error": "You are not in jail"}
+            
+        # If player was sent to jail THIS turn (has_rolled is True), they cannot pay bail immediately.
+        # They must wait for next turn.
+        if game.turn_state and game.turn_state.get("has_rolled"):
+            return {"error": "Cannot pay bail in the same turn you were sent to jail. End your turn."}
         
         bail_amount = 50
         if player.money < bail_amount:
