@@ -543,11 +543,11 @@ const GameRoom = () => {
                     setIsRolling(true);
                 }
 
-                // Phase 1: Rolling animation (3.5s tumble)
+                // Phase 1: Rolling animation (4.2s tumble)
                 setTimeout(() => {
                     setDiceRolling(false); // Stop spinning (Freeze on result)
 
-                    // Phase 1.5: Short Pause to show dice result (0.8s) BEFORE moving
+                    // Phase 1.5: Short Pause to show dice result (0.7s) BEFORE moving
                     setTimeout(() => {
                         // Release logs now that dice have settled!
                         if (lastAction.game_state?.logs) {
@@ -608,8 +608,8 @@ const GameRoom = () => {
                             }, 1200);
 
                         }, 1000); // 1.0s movement
-                    }, 800); // 0.8s pause to read dice
-                }, 3500); // 3.5s total tumble
+                    }, 700); // 0.7s pause to read dice
+                }, 4200); // 4.2s total tumble
                 break;
 
             case 'PROPERTY_BOUGHT':

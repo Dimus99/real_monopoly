@@ -104,61 +104,33 @@ const DiceFace = ({ n }) => {
 
 const Cube = ({ value, isRolling, index, show, isMine }) => {
     const controls = useAnimation();
-    const shadowControls = useAnimation();
 
     useEffect(() => {
         if (!show) return;
 
         if (isRolling) {
             const target = getRotation(value);
-            // Unique paths for each die
-            const sideOffset = index === 0 ? -120 : 120;
-            const startY = isMine ? 700 : -900;
-            const flightTime = 3.5;
+            const startY = isMine ? 600 : -800;
 
-            // Animate the Cube
             controls.start({
-                x: [sideOffset, sideOffset * 0.4, 0],
-                y: [startY, -80, 0], // Higher arc for more "air time"
-                z: [700, 0, 100, 0],  // Enhanced Bounce
-                rotateX: [(360 * 5 * (isMine ? 1 : -1)), (360 * 2), target.x],
-                rotateY: [(360 * 3 * (isMine ? 1 : -1)), (360 * 4), target.y],
-                rotateZ: [0, 1080, (index === 0 ? 8 : -8)], // Settle with a tiny touch of random
+                x: 0,
+                y: [startY, 0],
+                z: [600, 0],
+                rotateX: (360 * 5 * (isMine ? 1 : -1)) + target.x,
+                rotateY: (360 * 3 * (isMine ? 1 : -1)) + target.y,
+                rotateZ: (360 * 1.5) + 20,
                 transition: {
-                    duration: flightTime,
-                    times: [0, 0.75, 0.9, 1],
-                    ease: ["circOut", "easeIn", "easeOut", "bounce"],
-                    z: {
-                        duration: flightTime,
-                        times: [0, 0.75, 0.88, 1],
-                        values: [700, 0, 100, 0],
-                        ease: "easeOut"
-                    }
-                }
-            });
-
-            // Animate Shadow
-            shadowControls.start({
-                scale: [0.4, 1.4, 0.8, 1],
-                opacity: [0, 0.5, 0.1, 0.3],
-                transition: {
-                    duration: flightTime,
-                    times: [0, 0.75, 0.88, 1],
-                    ease: "linear"
+                    duration: 4.2,
+                    ease: [0.16, 1, 0.3, 1], // easeOutExpo for ultra-smooth deceleration
+                    y: { duration: 2.2, ease: "circOut" },
+                    z: { duration: 2.2, ease: "circOut" }
                 }
             });
         }
-    }, [show, isRolling, value, index, controls, shadowControls, isMine]);
+    }, [show, isRolling, value, index, controls, isMine]);
 
     return (
         <div className="relative w-[100px] h-[100px]">
-            {/* Dynamic Shadow */}
-            <motion.div
-                animate={shadowControls}
-                className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-24 h-6 bg-black/40 blur-2xl rounded-full -z-10"
-                style={{ scale: 0.5, opacity: 0 }}
-            />
-
             <motion.div
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={show ? { opacity: 1, scale: isRolling ? [0.6, 1.1, 1] : 1 } : {}}
@@ -166,7 +138,7 @@ const Cube = ({ value, isRolling, index, show, isMine }) => {
                 className="w-full h-full"
                 style={{ transformStyle: 'preserve-3d' }}
             >
-                <div className="w-full h-full" style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}>
+                <div className="w-full h-full" style={{ perspective: '800px', transformStyle: 'preserve-3d' }}>
                     <motion.div
                         className="w-full h-full relative"
                         style={{ transformStyle: 'preserve-3d', willChange: 'transform' }}
@@ -199,23 +171,15 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow, isMine = true 
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 z-[250] flex flex-col items-center justify-center pointer-events-none"
                 >
-                    <motion.div
-                        className="flex gap-48 relative mb-20"
-                        animate={rolling ? {
-                            y: [0, -5, 0],
-                            rotate: [0, 0.5, -0.5, 0]
-                        } : {}}
-                        transition={{ duration: 0.5, ease: "easeInOut", times: [0, 0.7, 0.85, 1] }}
-                        style={{ transformStyle: 'preserve-3d' }}
-                    >
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-blue-500/15 blur-[220px] rounded-full -z-10" />
+                    <div className="flex gap-32 relative mb-20" style={{ transformStyle: 'preserve-3d' }}>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/10 blur-[180px] rounded-full -z-10" />
 
                         {glow && !rolling && (
                             <motion.div
                                 initial={{ opacity: 0 }}
-                                animate={{ opacity: [0.3, 0.6, 0.3], scale: [0.9, 1.2, 0.9] }}
-                                transition={{ duration: 1.5, repeat: Infinity }}
-                                className="absolute inset-0 -inset-x-80 bg-yellow-500/30 blur-[180px] rounded-full -z-10"
+                                animate={{ opacity: [0.3, 0.5, 0.3], scale: [0.8, 1.1, 0.8] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                                className="absolute inset-0 -inset-x-60 bg-yellow-500/20 blur-[140px] rounded-full -z-10"
                             />
                         )}
 
@@ -233,7 +197,7 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow, isMine = true 
 
                         <Cube value={displayValues[0]} isRolling={rolling} index={0} show={show} isMine={isMine} />
                         <Cube value={displayValues[1]} isRolling={rolling} index={1} show={show} isMine={isMine} />
-                    </motion.div>
+                    </div>
                 </motion.div>
             )}
         </AnimatePresence>
