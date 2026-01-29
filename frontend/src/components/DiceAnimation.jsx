@@ -6,8 +6,8 @@ const getRotation = (val) => {
     switch (val) {
         case 1: base = { x: 0, y: 0 }; break;
         case 6: base = { x: 0, y: 180 }; break;
-        case 2: base = { x: 0, y: 90 }; break;
-        case 5: base = { x: 0, y: -90 }; break;
+        case 2: base = { x: 0, y: -90 }; break;
+        case 5: base = { x: 0, y: 90 }; break;
         case 3: base = { x: -90, y: 0 }; break;
         case 4: base = { x: 90, y: 0 }; break;
         default: break;
