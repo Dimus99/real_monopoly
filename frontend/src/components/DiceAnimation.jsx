@@ -12,10 +12,10 @@ const getRotation = (val) => {
         case 4: base = { x: 90, y: 0 }; break;
         default: break;
     }
-    // Final settling tilt for 3D depth perception
+    // Final rotation: perfectly flat towards player for readability
     return {
-        x: base.x - 25,
-        y: base.y + 25
+        x: base.x,
+        y: base.y
     };
 };
 
@@ -110,33 +110,30 @@ const Cube = ({ value, isRolling, index, show, isMine }) => {
 
         if (isRolling) {
             const target = getRotation(value);
-            // Dynamic "thrown" animation - SINGLE CONTINUOUS MOTION
-            // If isMine: Thrown from bottom (y: 600 -> 0)
-            // If !isMine (Opponent): Dropped from top (y: -800 -> 0)
             const startY = isMine ? 600 : -800;
 
             controls.start({
-                x: [0, 0], // No side wavering, straight throw relative to slot
-                y: [startY, 0], // Throw from bottom/top to center
-                z: [500, 0], // From close to camera to board
-                rotateX: [0, (360 * 4 * (isMine ? 1 : -1)) + target.x], // Consistent tumble forward (reversed if drop)
-                rotateY: [0, (360 * 2 * (isMine ? 1 : -1)) + target.y], // Consistent spin sideways
-                rotateZ: [0, (360 * 1) + 20], // Slight random-feel tilt
+                x: 0,
+                y: [startY, 0],
+                z: [600, 0],
+                rotateX: (360 * 4 * (isMine ? 1 : -1)) + target.x,
+                rotateY: (360 * 2 * (isMine ? 1 : -1)) + target.y,
+                rotateZ: (360 * 1),
                 transition: {
-                    duration: 4, // Reduced from 5
-                    ease: "easeOut", // Smooth deceleration
+                    duration: 3.5,
+                    ease: "easeOut",
+                    rotateX: { duration: 3.5, ease: "easeOut" },
+                    rotateY: { duration: 3.5, ease: "easeOut" },
+                    rotateZ: { duration: 3.5, ease: "easeOut" },
+                    y: { duration: 1.2, ease: "circOut" },
+                    z: { duration: 1.2, ease: "circOut" }
                 }
             });
         }
-        // We REMOVED the else { controls.set(...) } block. 
-        // This prevents the dice from snapping/teleporting if the parent component 
-        // sets isRolling=false slightly before the animation finishes.
-        // The animation will naturally complete to the final keyframe (the target).
     }, [show, isRolling, value, index, controls, isMine]);
 
     return (
         <div className="relative w-[100px] h-[100px]">
-            {/* 1. Opacity & Scale Wrapper (Non-3D to prevent flattening) */}
             <motion.div
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={show ? { opacity: 1, scale: isRolling ? [0.6, 1.1, 1] : 1 } : {}}
@@ -144,10 +141,7 @@ const Cube = ({ value, isRolling, index, show, isMine }) => {
                 className="w-full h-full"
                 style={{ transformStyle: 'preserve-3d' }}
             >
-                {/* 2. 3D Stage (Perspective) */}
                 <div className="w-full h-full" style={{ perspective: '800px', transformStyle: 'preserve-3d' }}>
-
-                    {/* 3. Shadow Layer (Grounded) */}
                     <motion.div
                         className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-24 h-6 bg-black/40 blur-xl rounded-full"
                         animate={isRolling ? {
@@ -162,7 +156,6 @@ const Cube = ({ value, isRolling, index, show, isMine }) => {
                         transition={{ duration: 2.2, ease: "easeOut" }}
                     />
 
-                    {/* 4. The Rotating Cube Body */}
                     <motion.div
                         className="w-full h-full relative"
                         style={{ transformStyle: 'preserve-3d', willChange: 'transform' }}
@@ -196,7 +189,6 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow, isMine = true 
                     className="fixed inset-0 z-[250] flex flex-col items-center justify-center pointer-events-none"
                 >
                     <div className="flex gap-32 relative mb-20" style={{ transformStyle: 'preserve-3d' }}>
-                        {/* Dramatic Light Source */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/10 blur-[180px] rounded-full -z-10" />
 
                         {glow && !rolling && (
@@ -223,8 +215,6 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow, isMine = true 
                         <Cube value={displayValues[0]} isRolling={rolling} index={0} show={show} isMine={isMine} />
                         <Cube value={displayValues[1]} isRolling={rolling} index={1} show={show} isMine={isMine} />
                     </div>
-
-
                 </motion.div>
             )}
         </AnimatePresence>

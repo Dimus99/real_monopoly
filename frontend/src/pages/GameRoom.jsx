@@ -141,10 +141,10 @@ const GameRoom = () => {
 
     // Auto-sync logs when NOT in a roll sequence
     useEffect(() => {
-        if (gameState?.logs && !showDice && !diceRolling) {
+        if (gameState?.logs && !showDice && !diceRolling && !isRolling) {
             setReleasedLogCount(gameState.logs.length);
         }
-    }, [gameState?.logs, showDice, diceRolling]);
+    }, [gameState?.logs, showDice, diceRolling, isRolling]);
 
     const displayedLogs = React.useMemo(() => {
         return (gameState?.logs || []).slice(0, releasedLogCount);
@@ -543,7 +543,7 @@ const GameRoom = () => {
                     setIsRolling(true);
                 }
 
-                // Phase 1: Rolling animation (4.0s tumble)
+                // Phase 1: Rolling animation (3.5s tumble)
                 setTimeout(() => {
                     setDiceRolling(false); // Stop spinning (Freeze on result)
 
@@ -565,9 +565,12 @@ const GameRoom = () => {
                         setTimeout(() => {
                             setIsRolling(false);
 
-                            // SYNC hasRolled accurately
-                            if (lastAction.player_id === playerId && gameState?.turn_state) {
-                                setHasRolled(!!gameState.turn_state.has_rolled);
+                            // SYNC hasRolled accurately 
+                            if (lastAction.player_id === playerId) {
+                                // If we are here, the server has already processed the roll. 
+                                // We trust the game_state provided in the action or the main gameState if it says we are done.
+                                const serverHasRolled = lastAction.game_state?.turn_state?.has_rolled ?? gameState?.turn_state?.has_rolled;
+                                setHasRolled(!!serverHasRolled);
                             }
 
                             // Handle land events
@@ -714,33 +717,31 @@ const GameRoom = () => {
 
         // Sync basic flags that don't interfere with animations
         if (gameState.turn_state) {
-            // Strictly sync rent pending state from server's truth
-            if (gameState.turn_state.awaiting_payment && isMyTurn) {
-                setRentDetails({
-                    amount: gameState.turn_state.awaiting_payment_amount,
-                    ownerId: gameState.turn_state.awaiting_payment_owner
-                });
-            } else if (!isRolling && !diceRolling) {
-                // Only clear if we are NOT in the middle of a roll animation
-                // which might be about to set its own rentDetails from the action data
-                setRentDetails(null);
-            }
-
-            // Sync other turn flags
-            // STRICTER CHECK: Do not sync hasRolled if ANY rolling flag is true.
-            // This prevents the "Button Blocked" bug where server says hasRolled=true (immediately after roll),
-            // but our animation hasn't finished, so we might get into a weird state.
-            // We only trust the server sync when we are IDLE.
-            if (isMyTurn) {
-                const serverHasRolled = !!gameState.turn_state.has_rolled;
-                if (!isRolling && !diceRolling && !showDice) {
-                    setHasRolled(serverHasRolled);
+            // CRITICAL: Do NOT sync interaction states (rent, etc) while dice are rolling/showing
+            // The DICE_ROLLED timeout sequence will handle triggering these at the right visual moment.
+            if (!showDice && !diceRolling && !isRolling) {
+                // Sync rent pending state
+                if (gameState.turn_state.awaiting_payment && isMyTurn) {
+                    setRentDetails({
+                        amount: gameState.turn_state.awaiting_payment_amount,
+                        ownerId: gameState.turn_state.awaiting_payment_owner
+                    });
                 } else {
-                    // Critical Fix: If server says we have NOT rolled (e.g. Doubles reset), force client to false even if animating
-                    // This prevents getting stuck in "Done" state when we should be able to roll again.
-                    if (!serverHasRolled) {
-                        setHasRolled(false);
-                    }
+                    setRentDetails(null);
+                }
+
+                // Sync roll status
+                if (isMyTurn) {
+                    const serverHasRolled = !!gameState.turn_state.has_rolled;
+                    // If server says we have rolled, but client thinks we haven't, 
+                    // we should sync it after a small buffer if no animation is blocking.
+                    setHasRolled(serverHasRolled);
+                }
+            } else {
+                // If we ARE rolling, but server says we haven't rolled (e.g. state reset), 
+                // we should still allow the 'false' state to propagate to prevent being stuck.
+                if (isMyTurn && !gameState.turn_state.has_rolled) {
+                    setHasRolled(false);
                 }
             }
         }
