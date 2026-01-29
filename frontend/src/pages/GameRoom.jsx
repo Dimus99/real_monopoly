@@ -526,20 +526,21 @@ const GameRoom = () => {
                 setTimeout(() => {
                     if (isRolling) setIsRolling(false);
                     setDiceRolling(false);
-                }, 8000);
+                }, 7000); // Reduced from 8000
 
-                // Phase 1: Rolling animation (5000ms spin)
+                // Phase 1: Rolling animation (4500ms spin - matches DiceAnimation duration closely)
                 const rollTimeout = setTimeout(() => {
                     setDiceRolling(false); // Stop spinning (Freeze)
 
-                    // Phase 1.5: Pause to show dice result (1500ms) BEFORE moving
+                    // Phase 1.5: Pause to show dice result (1000ms) BEFORE moving
                     setTimeout(() => {
                         // Trigger movement
                         if (gameState?.players) {
                             setDelayedPlayers(gameState.players);
                         }
 
-                        // Phase 2: Wait for movement (1500ms) then ENABLE BUTTONS
+                        // Phase 2: Wait for movement (1000ms) then ENABLE BUTTONS
+                        // NOTE: Player movement transition is usually ~0.5-1s
                         const enableTimeout = setTimeout(() => {
                             setIsRolling(false);
 
@@ -575,14 +576,14 @@ const GameRoom = () => {
                                 }
                             }
 
-                            // Phase 3: Wait more for visual "freeze" (2000ms) then HIDE DICE
+                            // Phase 3: Wait more for visual "freeze" (1500ms) then HIDE DICE
                             const hideTimeout = setTimeout(() => {
                                 setShowDice(false);
-                            }, 2000);
+                            }, 1500);
 
-                        }, 1500); // Allow time for piece to move on board
-                    }, 1500); // 1.5s Delay BEFORE moving
-                }, 5000);
+                        }, 1000); // Allow time for piece to move on board
+                    }, 1000); // 1.0s Delay BEFORE moving
+                }, 4500); // Matches DiceAnimation duration (approx)
                 break;
 
             case 'PROPERTY_BOUGHT':

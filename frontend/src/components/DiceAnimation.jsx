@@ -121,7 +121,7 @@ const Cube = ({ value, isRolling, index, show, isMine }) => {
                 rotateY: [0, (360 * 2 * (isMine ? 1 : -1)) + target.y], // Consistent spin sideways
                 rotateZ: [0, (360 * 1) + 20], // Slight random-feel tilt
                 transition: {
-                    duration: 5,
+                    duration: 4, // Reduced from 5
                     ease: "easeOut", // Smooth deceleration
                 }
             });
