@@ -900,7 +900,7 @@ const GameRoom = () => {
                     width: isMobile ? (sidebarCollapsed ? 0 : 280) : (sidebarCollapsed ? 80 : 300),
                     x: isMobile && sidebarCollapsed ? -280 : 0
                 }}
-                className={`flex-shrink-0 bg-[#0c0c14] border-r border-white/10 flex flex-col z-30 shadow-2xl relative transition-all duration-300 ${isMobile ? 'absolute inset-y-0 left-0' : ''}`}
+                className={`flex-shrink-0 bg-[#0c0c14] border-r border-white/10 flex flex-col z-[500] shadow-2xl relative transition-all duration-300 ${isMobile ? 'absolute inset-y-0 left-0' : ''}`}
             >
                 {/* Mobile Toggle Button (only visible on mobile) */}
                 {isMobile && sidebarCollapsed && (
