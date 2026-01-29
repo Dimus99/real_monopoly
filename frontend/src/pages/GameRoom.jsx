@@ -549,7 +549,7 @@ const GameRoom = () => {
                         }, 2000);
 
                     }, 1000);
-                }, 3000);
+                }, 5000);
                 break;
 
             case 'PROPERTY_BOUGHT':

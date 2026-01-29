@@ -118,7 +118,7 @@ const Cube = ({ value, isRolling, index, show }) => {
                 rotateY: [20, index === 0 ? -700 : 740, (360 * 3) + target.y],
                 rotateZ: [10, index === 0 ? 190 : -170, 0],
                 transition: {
-                    duration: 3, // Slower, more deliberate
+                    duration: 5, // Slower, more deliberate
                     ease: [0.25, 0.1, 0.25, 1], // Cubic bezier for natural slowdown
                     times: [0, 0.4, 1]
                 }
@@ -219,29 +219,7 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow }) => {
                         <Cube value={displayValues[1]} isRolling={rolling} index={1} show={show} />
                     </div>
 
-                    {!rolling && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.5, y: 50 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            transition={{ type: 'spring', damping: 15, stiffness: 100 }}
-                            className="flex flex-col items-center z-10"
-                        >
-                            <div className={`backdrop-blur-2xl px-16 py-10 rounded-[48px] border-2 shadow-[0_30px_80px_rgba(0,0,0,0.6)] flex flex-col items-center min-w-[240px] ${glow ? 'bg-yellow-500/20 border-yellow-500/40' : 'bg-white/5 border-white/10'}`}>
-                                <span className={`text-[12rem] font-black leading-none drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] font-mono tracking-tighter ${glow ? 'text-yellow-400' : 'text-white'}`}>
-                                    {displayValues[0] + displayValues[1]}
-                                </span>
-                                {glow && (
-                                    <motion.div
-                                        initial={{ y: 10, opacity: 0 }}
-                                        animate={{ y: 0, opacity: 1 }}
-                                        className="text-yellow-400 font-black text-4xl uppercase tracking-[0.5em] mt-6 drop-shadow-[0_0_15px_rgba(234,179,8,0.6)]"
-                                    >
-                                        Дубль!
-                                    </motion.div>
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
+
                 </motion.div>
             )}
         </AnimatePresence>
