@@ -1104,7 +1104,7 @@ const GameRoom = () => {
                         onSellHouse={handleSellHouse}
                         onMortgage={handleMortgage}
                         onUnmortgage={handleUnmortgage}
-                        canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && (selectedTile || currentTile)?.is_monopoly}
+                        canBuild={isMyTurn && (selectedTile || currentTile)?.owner_id === playerId && (selectedTile || currentTile)?.is_monopoly && !(gameState.turn_state?.build_counts?.[(selectedTile || currentTile)?.group] >= 1)}
                         isMyTurn={isMyTurn}
                         lastAction={lastAction}
                         playersPos={gameState.players}
@@ -1130,7 +1130,7 @@ const GameRoom = () => {
                                 currentPlayerId={playerId}
                                 onBuy={handleBuyProperty}
                                 canBuy={canBuy && (selectedTile?.id === currentTile?.id)}
-                                canBuild={isMyTurn}
+                                canBuild={isMyTurn && !(gameState.turn_state?.build_counts?.[selectedTile?.group] >= 1)}
                                 onBuild={handleBuildHouse}
                                 onSellHouse={handleSellHouse}
                                 onMortgage={handleMortgage}

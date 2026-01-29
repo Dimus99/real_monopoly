@@ -87,10 +87,9 @@ const ActionPanel = ({
                             onClick={() => !isAbilityBlocked && onAbility(ability.id)}
                             disabled={isAbilityBlocked}
                             className={`h-[56px] w-[56px] md:w-auto md:px-4 ${isAbilityBlocked ? 'bg-gray-600 grayscale cursor-not-allowed opacity-50' : ability.color} text-white rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg border border-white/20 relative overflow-hidden transition-all`}
-                            title={abilityUsed ? "Способность уже использована" : ability.name}
                         >
                             <span className="text-2xl filter drop-shadow-md">{ability.icon}</span>
-                            <span className="hidden md:block text-[10px] uppercase font-bold max-w-[60px] leading-tight truncat text-left">
+                            <span className="hidden md:block text-[10px] uppercase font-bold max-w-[60px] leading-tight text-left">
                                 {abilityUsed ? 'ИСПОЛЬЗ.' : (ability.name.split(' ')[0])}
                             </span>
                             {/* Cooldown/Used Overlay */}
@@ -102,6 +101,18 @@ const ActionPanel = ({
                                 </div>
                             )}
                         </motion.button>
+
+                        {/* Tooltip Description */}
+                        <div className="absolute bottom-[120%] left-0 w-64 p-3 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all pointer-events-none z-[100] origin-bottom-left">
+                            <div className="text-xs font-black text-white/40 uppercase tracking-widest mb-1 pb-1 border-b border-white/5 flex justify-between">
+                                <span>СПОСОБНОСТЬ: {ability.name}</span>
+                                {abilityCooldown > 0 && <span className="text-orange-400">⏳ {abilityCooldown}</span>}
+                            </div>
+                            <p className="text-[11px] text-white/90 leading-normal font-medium">
+                                {ability.desc}
+                            </p>
+                            <div className="absolute -bottom-1.5 left-6 w-3 h-3 bg-gray-900 border-r border-b border-white/10 rotate-45" />
+                        </div>
                     </div>
                 )}
 

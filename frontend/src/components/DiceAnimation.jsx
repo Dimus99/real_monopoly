@@ -12,9 +12,9 @@ const getRotation = (val) => {
         case 4: base = { x: 90, y: 0 }; break;
         default: break;
     }
-    // Always land with a 3D perspective tilt
+    // Final settling tilt for 3D depth perception
     return {
-        x: base.x - 20,
+        x: base.x - 25,
         y: base.y + 25
     };
 };
@@ -33,7 +33,7 @@ const DiceFace = ({ n }) => {
     };
 
     const getFaceStyle = (n) => {
-        const s = 49.6; // Slightly more than half to minimize corner gaps
+        const s = 50; // Perfect half of 100px
         let transform = "";
         let background = "white";
 
@@ -44,39 +44,44 @@ const DiceFace = ({ n }) => {
                 break;
             case 6:
                 transform = `rotateY(180deg) translateZ(${s}px)`;
-                background = 'linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%)';
+                background = 'linear-gradient(135deg, #e5e5e5 0%, #d1d1d1 100%)';
                 break;
             case 2:
                 transform = `rotateY(90deg) translateZ(${s}px)`;
-                background = 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)';
+                background = 'linear-gradient(135deg, #f9f9f9 0%, #e9e9e9 100%)';
                 break;
             case 5:
                 transform = `rotateY(-90deg) translateZ(${s}px)`;
-                background = 'linear-gradient(135deg, #f5f5f5 0%, #e5e5e5 100%)';
+                background = 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)';
                 break;
             case 3:
                 transform = `rotateX(90deg) translateZ(${s}px)`;
-                background = 'linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%)';
+                background = 'linear-gradient(135deg, #ffffff 0%, #f2f2f2 100%)';
                 break;
             case 4:
                 transform = `rotateX(-90deg) translateZ(${s}px)`;
-                background = 'linear-gradient(135deg, #ececec 0%, #dfdfdf 100%)';
+                background = 'linear-gradient(135deg, #dfdfdf 0%, #cccccc 100%)';
                 break;
             default: break;
         }
 
         return {
             transform,
-            backfaceVisibility: 'visible', // Always visible to prevent disappearing in 3D space
+            backfaceVisibility: 'hidden',
             background,
-            boxShadow: 'inset 0 0 15px rgba(0,0,0,0.05)',
-            transformStyle: 'preserve-3d'
+            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.2)',
+            transformStyle: 'preserve-3d',
+            position: 'absolute',
+            width: '100px',
+            height: '100px',
+            top: 0,
+            left: 0
         };
     };
 
     return (
         <div
-            className="absolute w-full h-full bg-white rounded-lg border border-gray-300/50 flex items-center justify-center p-2 select-none"
+            className="rounded-xl border border-gray-300/30 flex items-center justify-center p-2 select-none"
             style={getFaceStyle(n)}
         >
             <div className="w-full h-full grid grid-cols-3 grid-rows-3 gap-1 pointer-events-none">
@@ -85,7 +90,7 @@ const DiceFace = ({ n }) => {
                         {dots(n).includes(i) && (
                             <div
                                 className="w-4 h-4 rounded-full bg-black shadow-inner"
-                                style={{ background: 'radial-gradient(circle at 30% 30%, #444, #000)' }}
+                                style={{ background: 'radial-gradient(circle at 30% 30%, #444, #000)', boxShadow: 'inset -2px -2px 4px rgba(255,255,255,0.2), 1px 1px 2px rgba(0,0,0,0.4)' }}
                             />
                         )}
                     </div>
@@ -99,41 +104,62 @@ const Cube = ({ value, isRolling, index, show }) => {
     const controls = useAnimation();
 
     useEffect(() => {
-        if (show) {
-            if (isRolling) {
-                const target = getRotation(value);
-                // More complex multi-axis rotation for "tumbling" look
-                controls.start({
-                    x: [index === 0 ? -300 : 300, 0],
-                    y: [150, 0],
-                    z: [0, 0],
-                    rotateX: [0, index === 0 ? 1080 : -1080, (360 * 4) + target.x],
-                    rotateY: [0, index === 0 ? -1080 : 1080, (360 * 4) + target.y],
-                    rotateZ: [0, index === 0 ? 180 : -180, 0],
-                    scale: [0.6, 1.1, 1],
-                    opacity: 1,
-                    transition: { duration: 2.0, ease: "easeOut" }
-                });
-            } else {
-                const target = getRotation(value);
-                controls.set({
-                    x: 0,
-                    y: 0,
-                    rotateX: target.x,
-                    rotateY: target.y,
-                    rotateZ: 0,
-                    scale: 1,
-                    opacity: 1
-                });
-            }
+        if (!show) return;
+
+        if (isRolling) {
+            const target = getRotation(value);
+            // Dynamic "thrown" animation
+            controls.start({
+                x: [index === 0 ? -400 : 400, index === 0 ? -150 : 150, 0],
+                y: [300, -100, 0],
+                z: [0, 100, 0],
+                rotateX: [0, index === 0 ? 720 : -720, (360 * 4) + target.x],
+                rotateY: [0, index === 0 ? -1080 : 1080, (360 * 5) + target.y],
+                rotateZ: [0, index === 0 ? 180 : -180, 0],
+                scale: [0.4, 1.2, 1],
+                opacity: [0, 1, 1],
+                transition: {
+                    duration: 2.2,
+                    ease: "easeOut",
+                    times: [0, 0.4, 1]
+                }
+            });
+        } else {
+            const target = getRotation(value);
+            controls.set({
+                x: 0,
+                y: 0,
+                z: 0,
+                rotateX: target.x,
+                rotateY: target.y,
+                rotateZ: 0,
+                scale: 1,
+                opacity: 1
+            });
         }
     }, [show, isRolling, value, index, controls]);
 
     return (
-        <div className="relative w-[100px] h-[100px]" style={{ transformStyle: 'preserve-3d' }}>
+        <div className="relative w-[100px] h-[100px]">
+            {/* Dynamic Shadow */}
+            <motion.div
+                className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-20 h-4 bg-black/40 blur-xl rounded-full"
+                animate={isRolling ? {
+                    scale: [0.5, 1.5, 1],
+                    opacity: [0, 0.6, 0.4],
+                    y: [0, 10, 0]
+                } : {
+                    scale: 1,
+                    opacity: 0.4,
+                    y: 0
+                }}
+                transition={{ duration: 2.2, ease: "easeOut" }}
+                style={{ transformStyle: 'flat' }}
+            />
+
             <motion.div
                 className="w-full h-full relative"
-                style={{ transformStyle: 'preserve-3d', willChange: 'transform' }}
+                style={{ transformStyle: 'preserve-3d' }}
                 animate={controls}
                 initial={{ opacity: 0, scale: 0.5 }}
             >
@@ -159,30 +185,32 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow }) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[200] flex flex-col items-center justify-center pointer-events-none"
-                    style={{ perspective: '1200px' }}
+                    className="fixed inset-0 z-[250] flex flex-col items-center justify-center pointer-events-none"
+                    style={{ perspective: '1500px' }}
                 >
-                    {/* Background Overlay */}
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+                    {/* Darker localized background for better volume contrast */}
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px]" />
 
-                    <div className="flex gap-24 relative" style={{ transformStyle: 'preserve-3d' }}>
-                        {/* Glow effect for doubles */}
+                    <div className="flex gap-32 relative mb-20" style={{ transformStyle: 'preserve-3d' }}>
+                        {/* Dramatic Stage Light/Glow */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 blur-[150px] rounded-full -z-10" />
+
                         {glow && !rolling && (
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.2, 1] }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: [0.3, 0.6, 0.3], scale: [0.9, 1.1, 0.9] }}
                                 transition={{ duration: 2, repeat: Infinity }}
-                                className="absolute inset-0 -inset-x-20 bg-yellow-500/20 blur-[100px] rounded-full"
+                                className="absolute inset-0 -inset-x-40 bg-yellow-500/20 blur-[120px] rounded-full -z-10"
                             />
                         )}
 
                         {playerName && (
                             <motion.div
-                                initial={{ opacity: 0, y: -40 }}
+                                initial={{ opacity: 0, y: -60 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="absolute -top-40 left-1/2 -translate-x-1/2 text-center w-full"
+                                className="absolute -top-48 left-1/2 -translate-x-1/2 text-center w-full"
                             >
-                                <h1 className={`text-6xl font-black uppercase tracking-tighter drop-shadow-2xl ${glow && !rolling ? 'text-yellow-400' : 'text-white'}`}>
+                                <h1 className={`text-7xl font-black uppercase tracking-tighter drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] ${glow && !rolling ? 'text-yellow-400' : 'text-white'}`}>
                                     {playerName}
                                 </h1>
                             </motion.div>
@@ -196,18 +224,18 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow }) => {
                         <motion.div
                             initial={{ opacity: 0, scale: 0.5, y: 50 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            transition={{ type: 'spring', damping: 15 }}
-                            className="mt-24 flex flex-col items-center"
+                            transition={{ type: 'spring', damping: 15, stiffness: 100 }}
+                            className="flex flex-col items-center z-10"
                         >
-                            <div className={`backdrop-blur-xl px-12 py-6 rounded-3xl border shadow-2xl flex flex-col items-center ${glow ? 'bg-yellow-500/20 border-yellow-500/50' : 'bg-white/10 border-white/20'}`}>
+                            <div className={`backdrop-blur-2xl px-14 py-8 rounded-[40px] border-2 shadow-[0_20px_60px_rgba(0,0,0,0.5)] flex flex-col items-center min-w-[200px] ${glow ? 'bg-yellow-500/20 border-yellow-500/30' : 'bg-white/5 border-white/10'}`}>
                                 <span className={`text-[12rem] font-black leading-none drop-shadow-2xl font-mono tracking-tighter ${glow ? 'text-yellow-400' : 'text-white'}`}>
                                     {displayValues[0] + displayValues[1]}
                                 </span>
                                 {glow && (
                                     <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        className="text-yellow-400 font-black text-2xl uppercase tracking-[0.3em] mt-2"
+                                        initial={{ y: 10, opacity: 0 }}
+                                        animate={{ y: 0, opacity: 1 }}
+                                        className="text-yellow-400 font-black text-3xl uppercase tracking-[0.4em] mt-4 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]"
                                     >
                                         Дубль!
                                     </motion.div>
@@ -222,4 +250,3 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow }) => {
 };
 
 export default DiceAnimation;
-

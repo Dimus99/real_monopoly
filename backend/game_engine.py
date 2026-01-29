@@ -1311,10 +1311,10 @@ class GameEngine:
         if prop.houses >= 5:
             return {"error": "Maximum houses/hotel already built"}
             
-        # RULE: Max 1 build per property per turn
+        # RULE: Max 1 build per color group per turn
         build_counts = game.turn_state.get("build_counts", {})
-        if build_counts.get(str(property_id), 0) >= 1:
-            return {"error": "Limit reached: max 1 house/hotel per property per turn."}
+        if build_counts.get(prop.group, 0) >= 1:
+            return {"error": f"Limit reached: max 1 house/hotel per color group ({prop.group}) per turn."}
             
         # Even Building Constraints
         # houseCount on same color cells cannot differ by more than 1
@@ -1337,7 +1337,7 @@ class GameEngine:
         # Update build counts
         if "build_counts" not in game.turn_state:
             game.turn_state["build_counts"] = {}
-        game.turn_state["build_counts"][str(property_id)] = build_counts.get(str(property_id), 0) + 1
+        game.turn_state["build_counts"][prop.group] = build_counts.get(prop.group, 0) + 1
         
         game.logs.append(f"🏠 {player.name} built a {'hotel' if prop.houses == 5 else 'house'} on {prop.name} for ${house_price}")
         
