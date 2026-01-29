@@ -22,6 +22,7 @@ import { BuyoutAnimation, AidAnimation, NukeThreatAnimation, SanctionsAnimation,
 
 // Lazy load to avoid circular dependency/initialization issues
 const OreshnikAnimation = lazy(() => import('../components/OreshnikAnimation'));
+const WhoAmIAnimation = lazy(() => import('../components/WhoAmIAnimation'));
 
 const getApiBase = () => import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
 
@@ -48,6 +49,7 @@ const GameRoom = () => {
 
     // UI States
     const [showOreshnik, setShowOreshnik] = useState(false);
+    const [showWhoAmI, setShowWhoAmI] = useState(false);
     const [selectedTile, setSelectedTile] = useState(null);
     const [isRolling, setIsRolling] = useState(false); // For button disable
     const [diceValues, setDiceValues] = useState([1, 2]); // Default to non-doubles to avoid initial "Double" state
@@ -957,6 +959,18 @@ const GameRoom = () => {
                     </div>
                 </div>
 
+                {/* "Pranks" / Fun Section */}
+                <div className="p-2 border-b border-white/10 flex justify-center">
+                    <button
+                        onClick={() => setShowWhoAmI(true)}
+                        className={`btn-ghost text-xs py-1 px-2 flex items-center gap-2 border border-white/10 hover:bg-white/5 ${sidebarCollapsed ? 'justify-center' : 'w-full justify-center'}`}
+                        title="Мини-игра: Кто я?"
+                    >
+                        <span className="text-xl">🤡</span>
+                        {!sidebarCollapsed && <span>Кто я?</span>}
+                    </button>
+                </div>
+
                 {/* Players List */}
                 <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
                     {(gameState?.player_order || []).map(pid => {
@@ -1035,8 +1049,8 @@ const GameRoom = () => {
                                                         onMouseEnter={(e) => {
                                                             const rect = e.currentTarget.getBoundingClientRect();
                                                             setHoveredAbility({
-                                                                x: rect.right + 10, // 10px to the right of the badge
-                                                                y: rect.top,
+                                                                x: rect.left,
+                                                                y: rect.bottom + 10, // Position BELOW
                                                                 charName: p.character,
                                                                 name: ABILITIES[p.character].name,
                                                                 desc: ABILITIES[p.character].desc,
@@ -1242,6 +1256,10 @@ const GameRoom = () => {
                         onComplete={handleCloseOreshnik}
                         targetTileId={lastAction?.target_id}
                         boardRef={boardRef}
+                    />
+                    <WhoAmIAnimation
+                        isVisible={showWhoAmI}
+                        onClose={() => setShowWhoAmI(false)}
                     />
                 </Suspense>
                 <BuyoutAnimation isVisible={showBuyout} onComplete={handleCloseBuyout} targetProperty={abilityTargetName} />
@@ -1476,16 +1494,16 @@ const GameRoom = () => {
             <AnimatePresence>
                 {hoveredAbility && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1, y: -20 }} // Center vertically
-                        exit={{ opacity: 0, scale: 0.95 }}
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
                         style={{
                             position: 'fixed',
                             top: hoveredAbility.y,
-                            left: hoveredAbility.x, // Already offset in handler
+                            left: hoveredAbility.x,
                             zIndex: 9999
                         }}
-                        className="w-64 p-3 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl pointer-events-none origin-left"
+                        className="w-64 p-3 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl pointer-events-none origin-top-left"
                     >
                         <div className="text-xs font-black text-white/40 uppercase tracking-widest mb-1 pb-1 border-b border-white/5 flex justify-between">
                             <span>{hoveredAbility.charName}: {hoveredAbility.name}</span>
@@ -1494,8 +1512,8 @@ const GameRoom = () => {
                         <p className="text-[11px] text-white/90 leading-normal font-medium whitespace-normal">
                             {hoveredAbility.desc}
                         </p>
-                        {/* Arrow */}
-                        <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 bg-gray-900 border-l border-b border-white/10 rotate-45" />
+                        {/* Arrow (Pointing Up) */}
+                        <div className="absolute -top-1.5 left-4 w-3 h-3 bg-gray-900 border-l border-t border-white/10 rotate-45" />
                     </motion.div>
                 )}
             </AnimatePresence>

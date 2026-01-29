@@ -114,8 +114,8 @@ const Cube = ({ value, isRolling, index, show }) => {
                 x: [index === 0 ? -400 : 400, index === 0 ? -150 : 150, 0],
                 y: [300, -100, 0],
                 z: [0, 200, 0],
-                rotateX: [20, index === 0 ? 740 : -700, (360 * 4) + target.x],
-                rotateY: [20, index === 0 ? -1060 : 1100, (360 * 5) + target.y],
+                rotateX: [20, index === 0 ? 380 : -340, (360 * 2) + target.x],
+                rotateY: [20, index === 0 ? -700 : 740, (360 * 3) + target.y],
                 rotateZ: [10, index === 0 ? 190 : -170, 0],
                 transition: {
                     duration: 3, // Slower, more deliberate
