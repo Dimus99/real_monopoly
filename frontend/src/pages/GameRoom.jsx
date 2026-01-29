@@ -91,6 +91,7 @@ const GameRoom = () => {
     const [showDice, setShowDice] = useState(false);
     const [diceRolling, setDiceRolling] = useState(false);
     const [hasRolled, setHasRolled] = useState(false);
+    const [isDoubles, setIsDoubles] = useState(false); // Robust doubles tracking
     const [chanceCard, setChanceCard] = useState(null);
     const [rollingPlayerId, setRollingPlayerId] = useState(null);
 
@@ -102,6 +103,12 @@ const GameRoom = () => {
             if (!isRolling) {
                 const serverHasRolled = !!gameState.turn_state.has_rolled;
                 setHasRolled(serverHasRolled);
+                // Also sync doubles state if backend provides it, otherwise derive from dice
+                // gameState.turn_state doesn't always have doubles, usually in dice event.
+                // But we can check if can_roll is true AND has_rolled is true -> implies doubles
+                if (serverHasRolled && gameState.turn_state.can_roll) {
+                    setIsDoubles(true);
+                }
             }
 
             // Sync dice values
@@ -114,6 +121,7 @@ const GameRoom = () => {
     // Reset states on new turn
     useEffect(() => {
         setHasRolled(false);
+        setIsDoubles(false);
         setIsRolling(false);
         setShowDice(false);
         setDiceRolling(false);
@@ -140,7 +148,6 @@ const GameRoom = () => {
 
     // Animation States
     const [showBuyout, setShowBuyout] = useState(false);
-    const [showAid, setShowAid] = useState(false);
     const [showNuke, setShowNuke] = useState(false);
     const [showSanctions, setShowSanctions] = useState(false);
     const [showBeltRoad, setShowBeltRoad] = useState(false);
@@ -247,6 +254,15 @@ const GameRoom = () => {
 
     const handleAbility = (abilityType) => {
         if (!isMyTurn || !currentPlayer) return;
+
+        // Toggle logic for local visual abilities (WhoAmI)
+        // If already showing, close it and do NOT send action (or maybe the action itself toggles?)
+        // Assuming "Who Am I" ability creates a local state overlay.
+        if ((abilityType === 'WHO_AM_I' || abilityType === 'SHOW_OFF') && showWhoAmI) {
+            setShowWhoAmI(false);
+            return;
+        }
+
         if (['ORESHNIK', 'BUYOUT', 'ISOLATION', 'SANCTIONS'].includes(abilityType)) {
             setTargetingAbility(abilityType);
         } else {
@@ -1252,7 +1268,7 @@ const GameRoom = () => {
                                     gameMode={gameState.game_mode}
                                     isChatOpen={false}
                                     isChanceOpen={!!chanceCard}
-                                    isDoubles={diceValues[0] === diceValues[1]}
+                                    isDoubles={isDoubles}
                                     isJailed={currentPlayer?.is_jailed}
                                     abilityCooldown={currentPlayer?.ability_cooldown}
                                     abilityUsed={currentPlayer?.ability_used_this_game}
