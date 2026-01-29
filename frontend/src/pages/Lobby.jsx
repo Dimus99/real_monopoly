@@ -8,6 +8,8 @@ import {
 import CharacterSelection from '../components/CharacterSelection';
 import TelegramLoginButton from '../components/TelegramLoginButton';
 
+const WhoAmIAnimation = React.lazy(() => import('../components/WhoAmIAnimation'));
+
 // Helper component
 const Globe = ({ size, className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
@@ -38,6 +40,7 @@ const Lobby = () => {
     const [mode, setMode] = useState('auth'); // Default to auth to force initialization
     const [isLoading, setIsLoading] = useState(false);
     const [showTelegramLogin, setShowTelegramLogin] = useState(false);
+    const [showWhoAmI, setShowWhoAmI] = useState(false);
 
     // Check if we are in Mini App environment more robustly
     const [isMiniApp, setIsMiniApp] = useState(false);
@@ -815,6 +818,18 @@ const Lobby = () => {
                                 </div>
                             </button>
 
+                            {/* Who Am I? Mini-Game */}
+                            <button onClick={() => setShowWhoAmI(true)} className="group relative h-64 glass-card bg-white/5 hover:bg-white/10 transition-all duration-300 rounded-2xl border border-white/10 hover:border-red-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                                <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 to-rose-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="w-20 h-20 bg-red-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(220,38,38,0.3)]">
+                                    <span className="text-4xl filter drop-shadow-lg">🤡</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-bold mb-2">Кто я?</h3>
+                                    <p className="text-sm text-gray-400">Узнай правду о себе</p>
+                                </div>
+                            </button>
+
                             {/* Placeholder for future games */}
                             <div className="group relative h-64 glass-card bg-white/5 opacity-50 rounded-2xl border border-white/5 border-dashed flex flex-col items-center justify-center gap-4 text-center p-6 cursor-not-allowed">
                                 <div className="w-20 h-20 bg-gray-500/20 rounded-2xl flex items-center justify-center">
@@ -827,6 +842,13 @@ const Lobby = () => {
                             </div>
                         </div>
                     </div>
+                )}
+
+                {/* Render the animation */}
+                {showWhoAmI && (
+                    <React.Suspense fallback={null}>
+                        <WhoAmIAnimation onClose={() => setShowWhoAmI(false)} />
+                    </React.Suspense>
                 )}
 
                 {/* Join Mode */}

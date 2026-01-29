@@ -51,7 +51,12 @@ const ActionPanel = ({
     // If hasRolled is false, we definitely cannot end turn (unless special case logic changes, but for now strict).
     // If isDoubles is true, we can roll again, so cannot end turn.
     // Also strictly hide End Turn if currently rolling to prevent premature clicks or if payment is due.
-    const showEndTurn = !isRolling && hasRolled && !isDoubles && !rentDetails;
+    // ADDED: If jailed and rolled (failed doubles or paid), or jailed and cannot roll again -> show End Turn
+    // NOTE: Game engine blocks next roll if jailed+rolled. So we must allow 'End Turn'.
+    const showEndTurn = !isRolling && !rentDetails && (
+        (hasRolled && !isDoubles) ||
+        (isJailed && hasRolled) // Explicitly allow end turn if in jail and already tried to roll/pay
+    );
 
     const isAbilityBlocked = abilityUsed || abilityCooldown > 0;
 

@@ -117,8 +117,8 @@ const Cube = ({ value, isRolling, index, show, isMine }) => {
                 x: [0, 0], // No side wavering, straight throw relative to slot
                 y: [startY, 0], // Throw from bottom/top to center
                 z: [500, 0], // From close to camera to board
-                rotateX: [0, (360 * 4) + target.x], // Consistent tumble forward
-                rotateY: [0, (360 * 2) + target.y], // Consistent spin sideways
+                rotateX: [0, (360 * 4 * (isMine ? 1 : -1)) + target.x], // Consistent tumble forward (reversed if drop)
+                rotateY: [0, (360 * 2 * (isMine ? 1 : -1)) + target.y], // Consistent spin sideways
                 rotateZ: [0, (360 * 1) + 20], // Slight random-feel tilt
                 transition: {
                     duration: 5,

@@ -543,6 +543,11 @@ const GameRoom = () => {
                                 if (lastAction.action === 'go_to_jail') {
                                     setHasRolled(true);
                                 }
+                                // DELAYED BUY MODAL: Check if we can buy specifically here
+                                if (lastAction.can_buy && !showBuyModal) {
+                                    setShowBuyModal(true);
+                                    setSelectedTile(gameState.board[gameState.players[playerId].position]);
+                                }
                             }
 
                             // Phase 3: Wait more for visual "freeze" (2000ms) then HIDE DICE
