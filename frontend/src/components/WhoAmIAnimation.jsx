@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Heart, Star, Sun, Cloud, Coffee, Laugh, Skull, Ghost, Dizzy } from 'lucide-react';
+import { Sparkles, Heart, Star, Sun, Cloud, Coffee, Laugh, Skull, Ghost, Bomb } from 'lucide-react';
 
 const WhoAmIAnimation = ({ isVisible, onClose }) => {
     const jokes = [
@@ -21,7 +21,7 @@ const WhoAmIAnimation = ({ isVisible, onClose }) => {
         "Врач: 'У меня для вас две новости: плохая и очень плохая'. Пациент: 'Давайте плохую'. Врач: 'Вам осталось жить 24 часа'. Пациент: 'Боже мой! А какая же тогда очень плохая?'. Врач: 'Я вчера забыл вам это сказать'."
     ];
 
-    const icons = [Sparkles, Heart, Star, Sun, Cloud, Coffee, Laugh, Skull, Ghost, Dizzy];
+    const icons = [Sparkles, Heart, Star, Sun, Cloud, Coffee, Laugh, Skull, Ghost, Bomb];
     const [currentJoke, setCurrentJoke] = useState(jokes[0]);
     const [currentIcon, setCurrentIcon] = useState(0);
 
