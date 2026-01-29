@@ -33,7 +33,7 @@ const DiceFace = ({ n }) => {
     };
 
     const getFaceStyle = (n) => {
-        const s = 50; // Perfect half of 100px
+        const s = 50.1; // Slightly more than half to prevent z-fighting
         let transform = "";
         let background = "white";
 
@@ -67,7 +67,7 @@ const DiceFace = ({ n }) => {
 
         return {
             transform,
-            backfaceVisibility: 'hidden',
+            backfaceVisibility: 'visible',
             background,
             boxShadow: 'inset 0 0 20px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.2)',
             transformStyle: 'preserve-3d',
@@ -75,7 +75,8 @@ const DiceFace = ({ n }) => {
             width: '100px',
             height: '100px',
             top: 0,
-            left: 0
+            left: 0,
+            willChange: 'transform'
         };
     };
 
@@ -84,13 +85,17 @@ const DiceFace = ({ n }) => {
             className="rounded-xl border border-gray-300/30 flex items-center justify-center p-2 select-none"
             style={getFaceStyle(n)}
         >
-            <div className="w-full h-full grid grid-cols-3 grid-rows-3 gap-1 pointer-events-none">
+            <div className="w-full h-full grid grid-cols-3 grid-rows-3 gap-1 pointer-events-none" style={{ transformStyle: 'preserve-3d' }}>
                 {[...Array(9)].map((_, i) => (
-                    <div key={i} className="flex items-center justify-center">
+                    <div key={i} className="flex items-center justify-center" style={{ transformStyle: 'preserve-3d' }}>
                         {dots(n).includes(i) && (
                             <div
                                 className="w-4 h-4 rounded-full bg-black shadow-inner"
-                                style={{ background: 'radial-gradient(circle at 30% 30%, #444, #000)', boxShadow: 'inset -2px -2px 4px rgba(255,255,255,0.2), 1px 1px 2px rgba(0,0,0,0.4)' }}
+                                style={{
+                                    background: 'radial-gradient(circle at 30% 30%, #444, #000)',
+                                    boxShadow: 'inset -2px -2px 4px rgba(255,255,255,0.2), 1px 1px 2px rgba(0,0,0,0.4)',
+                                    transform: 'translateZ(1px)' // Pop the dots slightly for more volume
+                                }}
                             />
                         )}
                     </div>
@@ -108,20 +113,20 @@ const Cube = ({ value, isRolling, index, show }) => {
 
         if (isRolling) {
             const target = getRotation(value);
-            // Dynamic "thrown" animation
+            // Dynamic "thrown" animation with complex rotation
             controls.start({
-                x: [index === 0 ? -400 : 400, index === 0 ? -150 : 150, 0],
-                y: [300, -100, 0],
-                z: [0, 100, 0],
-                rotateX: [0, index === 0 ? 720 : -720, (360 * 4) + target.x],
-                rotateY: [0, index === 0 ? -1080 : 1080, (360 * 5) + target.y],
-                rotateZ: [0, index === 0 ? 180 : -180, 0],
-                scale: [0.4, 1.2, 1],
+                x: [index === 0 ? -450 : 450, index === 0 ? -200 : 200, 0],
+                y: [400, -150, 0],
+                z: [0, 200, 0],
+                rotateX: [0, index === 0 ? 1440 : -1440, (360 * 6) + target.x],
+                rotateY: [0, index === 0 ? -1800 : 1800, (360 * 7) + target.y],
+                rotateZ: [0, index === 0 ? 360 : -360, 20], // Land with Z tilt too
+                scale: [0.3, 1.3, 1],
                 opacity: [0, 1, 1],
                 transition: {
-                    duration: 2.2,
-                    ease: "easeOut",
-                    times: [0, 0.4, 1]
+                    duration: 2.5,
+                    ease: [0.22, 1, 0.36, 1], // Custom cubic-bezier for smoother deceleration
+                    times: [0, 0.5, 1]
                 }
             });
         } else {
@@ -132,7 +137,7 @@ const Cube = ({ value, isRolling, index, show }) => {
                 z: 0,
                 rotateX: target.x,
                 rotateY: target.y,
-                rotateZ: 0,
+                rotateZ: 20,
                 scale: 1,
                 opacity: 1
             });
@@ -140,28 +145,28 @@ const Cube = ({ value, isRolling, index, show }) => {
     }, [show, isRolling, value, index, controls]);
 
     return (
-        <div className="relative w-[100px] h-[100px]">
+        <div className="relative w-[100px] h-[100px]" style={{ transformStyle: 'preserve-3d' }}>
             {/* Dynamic Shadow */}
             <motion.div
-                className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-20 h-4 bg-black/40 blur-xl rounded-full"
+                className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-24 h-6 bg-black/60 blur-xl rounded-full"
                 animate={isRolling ? {
-                    scale: [0.5, 1.5, 1],
-                    opacity: [0, 0.6, 0.4],
-                    y: [0, 10, 0]
+                    scale: [0.4, 1.8, 1],
+                    opacity: [0, 0.7, 0.4],
+                    y: [0, 15, 0]
                 } : {
-                    scale: 1,
+                    scale: 1.2,
                     opacity: 0.4,
                     y: 0
                 }}
-                transition={{ duration: 2.2, ease: "easeOut" }}
+                transition={{ duration: 2.5, ease: "easeOut" }}
                 style={{ transformStyle: 'flat' }}
             />
 
             <motion.div
                 className="w-full h-full relative"
-                style={{ transformStyle: 'preserve-3d' }}
+                style={{ transformStyle: 'preserve-3d', willChange: 'transform' }}
                 animate={controls}
-                initial={{ opacity: 0, scale: 0.5 }}
+                initial={{ opacity: 0, scale: 0.5, translateZ: 0 }}
             >
                 {[1, 2, 3, 4, 5, 6].map(n => <DiceFace key={n} n={n} />)}
             </motion.div>

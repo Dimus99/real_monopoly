@@ -1025,16 +1025,25 @@ const GameRoom = () => {
                                             </div>
                                             {/* Ability Status */}
                                             {p.character && ABILITIES[p.character] && (
-                                                <div
-                                                    className="mt-1.5 flex items-center group/ability cursor-help"
-                                                    title={`${ABILITIES[p.character].name}: ${ABILITIES[p.character].desc}`}
-                                                >
-                                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold transition-colors ${p.ability_cooldown > 0
+                                                <div className="mt-1.5 relative group/ability">
+                                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold transition-colors cursor-help ${p.ability_cooldown > 0
                                                         ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
                                                         : 'bg-green-500/10 border-green-500/30 text-green-400'
                                                         }`}>
                                                         <span>{ABILITIES[p.character].icon}</span>
                                                         <span>{p.ability_cooldown > 0 ? `${p.ability_cooldown} Х` : 'ГОТОВО'}</span>
+                                                    </div>
+
+                                                    {/* Custom Tooltip */}
+                                                    <div className="absolute top-[80%] left-0 w-64 p-3 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl opacity-0 scale-95 group-hover/ability:opacity-100 group-hover/ability:scale-100 transition-all pointer-events-none z-[100] origin-top-left invisible group-hover/ability:visible">
+                                                        <div className="text-xs font-black text-white/40 uppercase tracking-widest mb-1 pb-1 border-b border-white/5 flex justify-between">
+                                                            <span>{p.character}: {ABILITIES[p.character].name}</span>
+                                                            {p.ability_cooldown > 0 && <span className="text-orange-400">⏳ {p.ability_cooldown}</span>}
+                                                        </div>
+                                                        <p className="text-[11px] text-white/90 leading-normal font-medium whitespace-normal">
+                                                            {ABILITIES[p.character].desc}
+                                                        </p>
+                                                        <div className="absolute -top-1.5 left-6 w-3 h-3 bg-gray-900 border-l border-t border-white/10 rotate-45" />
                                                     </div>
                                                 </div>
                                             )}
