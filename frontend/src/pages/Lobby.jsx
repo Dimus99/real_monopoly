@@ -799,8 +799,8 @@ const Lobby = () => {
                     <div className="glass-card max-w-4xl w-full p-8 animate-in fade-in zoom-in duration-300">
                         <div className="flex justify-between items-center mb-8">
                             <div className="space-y-1">
-                                <h2 className="text-3xl font-bold font-display">Приколы и Игры</h2>
-                                <p className="text-gray-400">Одиночные игры для расслабления</p>
+                                <h2 className="text-3xl font-bold font-display">Дополнительно</h2>
+                                <p className="text-gray-400">Мини-игры и развлечения</p>
                             </div>
                             <button onClick={() => setMode('menu')} className="btn-ghost p-2 rounded-full hover:bg-white/10"><X /></button>
                         </div>
@@ -818,15 +818,15 @@ const Lobby = () => {
                                 </div>
                             </button>
 
-                            {/* Who Am I? Mini-Game */}
-                            <button onClick={() => setShowWhoAmI(true)} className="group relative h-64 glass-card bg-white/5 hover:bg-white/10 transition-all duration-300 rounded-2xl border border-white/10 hover:border-red-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
-                                <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 to-rose-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <div className="w-20 h-20 bg-red-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(220,38,38,0.3)]">
-                                    <span className="text-4xl filter drop-shadow-lg">🤡</span>
+                            {/* Your Status / Compliment Mini-Game */}
+                            <button onClick={() => setShowWhoAmI(true)} className="group relative h-64 glass-card bg-white/5 hover:bg-white/10 transition-all duration-300 rounded-2xl border border-white/10 hover:border-indigo-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="w-20 h-20 bg-indigo-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(99,102,241,0.3)]">
+                                    <span className="text-4xl filter drop-shadow-lg">🔮</span>
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-bold mb-2">Кто я?</h3>
-                                    <p className="text-sm text-gray-400">Узнай правду о себе</p>
+                                    <h3 className="text-2xl font-bold mb-2">Статус дня</h3>
+                                    <p className="text-sm text-gray-400">Получи предсказание или комплимент</p>
                                 </div>
                             </button>
 

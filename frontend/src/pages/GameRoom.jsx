@@ -1041,10 +1041,10 @@ const GameRoom = () => {
                                 <button
                                     onClick={() => setShowWhoAmI(true)}
                                     className={`btn-ghost text-xs py-1 px-2 flex items-center gap-2 hover:bg-white/10 rounded-lg ${sidebarCollapsed ? 'justify-center' : 'w-full justify-start'}`}
-                                    title="Кто я?"
+                                    title="Статус дня"
                                 >
-                                    <span className="text-lg">🤡</span>
-                                    {!sidebarCollapsed && <span>Кто я?</span>}
+                                    <span className="text-lg">🔮</span>
+                                    {!sidebarCollapsed && <span>Статус дня</span>}
                                 </button>
                             </motion.div>
                         )}
