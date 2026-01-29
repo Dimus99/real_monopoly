@@ -35,12 +35,7 @@ const GameRoom = () => {
     // Sync State (Moved to top to prevent ReferenceError)
     const [delayedPlayers, setDelayedPlayers] = useState({});
 
-    // Keep delayedPlayers synced when not animating a move
-    useEffect(() => {
-        if (!isRolling && !diceRolling && gameState?.players) {
-            setDelayedPlayers(gameState.players);
-        }
-    }, [gameState?.players, isRolling, diceRolling]);
+
 
     // Derived State Variables (Moved up to avoid TDZ errors in useEffect)
     // CRITICAL: Use delayedPlayers for UI logic (Buy button,etc) so it matches the visual token position!
