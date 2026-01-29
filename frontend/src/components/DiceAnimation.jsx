@@ -40,19 +40,19 @@ const DiceFace = ({ n }) => {
         switch (n) {
             case 1:
                 transform = `rotateY(0deg) translateZ(${s}px)`;
-                background = 'linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)';
+                background = 'linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%)';
                 break;
             case 6:
                 transform = `rotateY(180deg) translateZ(${s}px)`;
-                background = 'linear-gradient(135deg, #e5e5e5 0%, #d1d1d1 100%)';
+                background = 'linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%)';
                 break;
             case 2:
                 transform = `rotateY(90deg) translateZ(${s}px)`;
-                background = 'linear-gradient(135deg, #f9f9f9 0%, #e9e9e9 100%)';
+                background = 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)';
                 break;
             case 5:
                 transform = `rotateY(-90deg) translateZ(${s}px)`;
-                background = 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)';
+                background = 'linear-gradient(135deg, #fdfdfd 0%, #eeeeee 100%)';
                 break;
             case 3:
                 transform = `rotateX(90deg) translateZ(${s}px)`;
@@ -60,7 +60,7 @@ const DiceFace = ({ n }) => {
                 break;
             case 4:
                 transform = `rotateX(-90deg) translateZ(${s}px)`;
-                background = 'linear-gradient(135deg, #dfdfdf 0%, #cccccc 100%)';
+                background = 'linear-gradient(135deg, #e8e8e8 0%, #d8d8d8 100%)';
                 break;
             default: break;
         }
@@ -69,13 +69,15 @@ const DiceFace = ({ n }) => {
             transform,
             backfaceVisibility: 'visible',
             background,
-            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.2)',
+            boxShadow: 'inset 0 0 15px rgba(0,0,0,0.05), inset 0 0 2px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.2)',
             transformStyle: 'preserve-3d',
             position: 'absolute',
             width: '100px',
             height: '100px',
             top: 0,
-            left: 0
+            left: 0,
+            border: '1px solid rgba(0,0,0,0.05)',
+            borderRadius: '12px'
         };
     };
 
@@ -140,6 +142,7 @@ const Cube = ({ value, isRolling, index, show, isMine }) => {
                 animate={show ? { opacity: 1, scale: isRolling ? [0.6, 1.1, 1] : 1 } : {}}
                 transition={{ duration: 0.5 }}
                 className="w-full h-full"
+                style={{ transformStyle: 'preserve-3d' }}
             >
                 {/* 2. 3D Stage (Perspective) */}
                 <div className="w-full h-full" style={{ perspective: '800px', transformStyle: 'preserve-3d' }}>

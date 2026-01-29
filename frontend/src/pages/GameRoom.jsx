@@ -118,33 +118,37 @@ const GameRoom = () => {
         }
     }, [gameState?.turn_state?.has_rolled, gameState?.dice, isMyTurn, isRolling]);
 
-    // Reset states on new turn
+    // Reset states on new turn - but be careful not to kill active dice animations
     useEffect(() => {
         setHasRolled(false);
         setIsDoubles(false);
-        setIsRolling(false);
-        setShowDice(false);
-        setDiceRolling(false);
+        // Only reset if we are not currently showing dice
+        if (!showDice) {
+            setIsRolling(false);
+            setDiceRolling(false);
+        }
     }, [gameState?.current_turn_index, gameState?.game_status]);
 
     // Log management - Update immediately to keep chat fresh, BUT delay roll messages if rolling
-    const [displayedLogs, setDisplayedLogs] = useState([]);
-    useEffect(() => {
-        if (!gameState?.logs) return;
+    const [releasedLogCount, setReleasedLogCount] = useState(0);
 
-        if (diceRolling) {
-            // If rolling, do NOT show the latest log if it's about rolling (prevent spoiler)
-            // We just keep the current displayedLogs (or update non-roll logs if possible, but simplest is pause)
-            // However, to allow chatting, we can be more smart:
-            const lastLog = gameState.logs[gameState.logs.length - 1];
-            // Check if last log is "Player rolled X"
-            if (lastLog && (lastLog.includes('rolled') || lastLog.includes('выбросил'))) {
-                // It's a roll log, and we are rolling. Don't update displayedLogs yet.
-                return;
-            }
+    // Initial sync of releasedLogCount
+    useEffect(() => {
+        if (gameState?.logs && releasedLogCount === 0) {
+            setReleasedLogCount(gameState.logs.length);
         }
-        setDisplayedLogs(gameState.logs);
-    }, [gameState?.logs, diceRolling]);
+    }, [gameState?.logs]);
+
+    // Auto-sync logs when NOT in a roll sequence
+    useEffect(() => {
+        if (gameState?.logs && !showDice && !diceRolling) {
+            setReleasedLogCount(gameState.logs.length);
+        }
+    }, [gameState?.logs, showDice, diceRolling]);
+
+    const displayedLogs = React.useMemo(() => {
+        return (gameState?.logs || []).slice(0, releasedLogCount);
+    }, [gameState?.logs, releasedLogCount]);
 
     // Animation States
     const [showBuyout, setShowBuyout] = useState(false);
@@ -523,12 +527,9 @@ const GameRoom = () => {
             case 'DICE_ROLLED':
                 // Handle Skipped Turn (Sanctions)
                 if (lastAction.action === 'skipped_turn') {
-                    // No animation needed. Just update state strictly.
-                    // Ensure we don't block controls.
                     setDiceRolling(false);
                     setIsRolling(false);
                     setShowDice(false);
-                    // setHasRolled(false); // Do not force false here, let server sync handle it naturally, essentially it's end of turn.
                     return;
                 }
 
@@ -542,34 +543,34 @@ const GameRoom = () => {
                     setIsRolling(true);
                 }
 
-                // SAFETY: Force clear rolling state after a reasonable time
+                // Phase 1: Rolling animation (4.0s tumble)
                 setTimeout(() => {
-                    if (isRolling) setIsRolling(false);
-                    setDiceRolling(false);
-                }, 7000); // Reduced from 8000
+                    setDiceRolling(false); // Stop spinning (Freeze on result)
 
-                // Phase 1: Rolling animation (4500ms spin - matches DiceAnimation duration closely)
-                const rollTimeout = setTimeout(() => {
-                    setDiceRolling(false); // Stop spinning (Freeze)
-
-                    // Phase 1.5: Pause to show dice result (1000ms) BEFORE moving
+                    // Phase 1.5: Pause to show dice result (1.0s) BEFORE moving/logs
                     setTimeout(() => {
+                        // Release logs now that dice have settled!
+                        if (lastAction.game_state?.logs) {
+                            setReleasedLogCount(lastAction.game_state.logs.length);
+                        } else if (gameState?.logs) {
+                            setReleasedLogCount(gameState.logs.length);
+                        }
+
                         // Trigger movement
                         if (gameState?.players) {
                             setDelayedPlayers(gameState.players);
                         }
 
-                        // Phase 2: Wait for movement (1000ms) then ENABLE BUTTONS
-                        // NOTE: Player movement transition is usually ~0.5-1s
-                        const enableTimeout = setTimeout(() => {
+                        // Phase 2: Wait for movement (1.0s) then Land Events
+                        setTimeout(() => {
                             setIsRolling(false);
 
-                            // SYNC hasRolled accurately from the latest server state
+                            // SYNC hasRolled accurately
                             if (lastAction.player_id === playerId && gameState?.turn_state) {
                                 setHasRolled(!!gameState.turn_state.has_rolled);
                             }
 
-                            // Handle rent/tax/chance after movement
+                            // Handle land events
                             if (lastAction.player_id === playerId) {
                                 if (lastAction.action === 'pay_rent' || lastAction.action === 'tax') {
                                     setRentDetails({
@@ -585,25 +586,26 @@ const GameRoom = () => {
                                 if (lastAction.action === 'casino_prompt') {
                                     setShowCasinoModal(true);
                                 }
-                                // Added: immediate jail check update
                                 if (lastAction.action === 'go_to_jail') {
                                     setHasRolled(true);
                                 }
-                                // DELAYED BUY MODAL: Check if we can buy specifically here
                                 if (lastAction.can_buy && !showBuyModal) {
                                     setShowBuyModal(true);
-                                    setSelectedTile(gameState.board[gameState.players[playerId].position]);
+                                    const landedPos = lastAction.game_state?.players?.[playerId]?.position;
+                                    if (landedPos !== undefined && gameState.board[landedPos]) {
+                                        setSelectedTile(gameState.board[landedPos]);
+                                    }
                                 }
                             }
 
-                            // Phase 3: Wait more for visual "freeze" (1500ms) then HIDE DICE
-                            const hideTimeout = setTimeout(() => {
+                            // Phase 3: Display dice for a bit longer (1.5s) then hide
+                            setTimeout(() => {
                                 setShowDice(false);
                             }, 1500);
 
-                        }, 1000); // Allow time for piece to move on board
-                    }, 1000); // 1.0s Delay BEFORE moving
-                }, 4500); // Matches DiceAnimation duration (approx)
+                        }, 1000);
+                    }, 1000);
+                }, 4000); // 4 seconds total tumble
                 break;
 
             case 'PROPERTY_BOUGHT':
