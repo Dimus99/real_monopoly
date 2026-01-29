@@ -847,7 +847,7 @@ const Lobby = () => {
                 {/* Render the animation */}
                 {showWhoAmI && (
                     <React.Suspense fallback={null}>
-                        <WhoAmIAnimation onClose={() => setShowWhoAmI(false)} />
+                        <WhoAmIAnimation isVisible={true} onClose={() => setShowWhoAmI(false)} />
                     </React.Suspense>
                 )}
 

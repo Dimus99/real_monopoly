@@ -33,9 +33,12 @@ const GameRoom = () => {
     const { gameState, sendAction, lastAction } = useGameSocket(gameId, playerId);
 
     // Derived State Variables (Moved up to avoid TDZ errors in useEffect)
-    const currentPlayer = gameState?.players?.[playerId];
+    // CRITICAL: Use delayedPlayers for UI logic (Buy button,etc) so it matches the visual token position!
+    const effectivePlayers = (Object.keys(delayedPlayers).length > 0) ? delayedPlayers : (gameState?.players || {});
+    const currentPlayer = effectivePlayers[playerId] || gameState?.players?.[playerId];
+
     const isMyTurn = gameState?.player_order?.[gameState?.current_turn_index] === playerId;
-    const currentTurnPlayer = gameState?.players?.[gameState?.player_order?.[gameState?.current_turn_index]];
+    const currentTurnPlayer = effectivePlayers[gameState?.player_order?.[gameState?.current_turn_index]];
     const playerChar = CHARACTERS[currentPlayer?.character] || CHARACTERS.Putin;
     const currentTile = gameState?.board?.[currentPlayer?.position];
 
@@ -111,13 +114,24 @@ const GameRoom = () => {
         setDiceRolling(false);
     }, [gameState?.current_turn_index, gameState?.game_status]);
 
-    // Log management - Update immediately to keep chat fresh
+    // Log management - Update immediately to keep chat fresh, BUT delay roll messages if rolling
     const [displayedLogs, setDisplayedLogs] = useState([]);
     useEffect(() => {
-        if (gameState?.logs) {
-            setDisplayedLogs(gameState.logs);
+        if (!gameState?.logs) return;
+
+        if (diceRolling) {
+            // If rolling, do NOT show the latest log if it's about rolling (prevent spoiler)
+            // We just keep the current displayedLogs (or update non-roll logs if possible, but simplest is pause)
+            // However, to allow chatting, we can be more smart:
+            const lastLog = gameState.logs[gameState.logs.length - 1];
+            // Check if last log is "Player rolled X"
+            if (lastLog && (lastLog.includes('rolled') || lastLog.includes('выбросил'))) {
+                // It's a roll log, and we are rolling. Don't update displayedLogs yet.
+                return;
+            }
         }
-    }, [gameState?.logs]);
+        setDisplayedLogs(gameState.logs);
+    }, [gameState?.logs, diceRolling]);
 
     // Animation States
     const [showBuyout, setShowBuyout] = useState(false);
@@ -138,6 +152,13 @@ const GameRoom = () => {
 
     // Sync State
     const [delayedPlayers, setDelayedPlayers] = useState({});
+
+    // Keep delayedPlayers synced when not animating a move
+    useEffect(() => {
+        if (!isRolling && !diceRolling && gameState?.players) {
+            setDelayedPlayers(gameState.players);
+        }
+    }, [gameState?.players, isRolling, diceRolling]);
 
     // Targeting State
     const [targetingAbility, setTargetingAbility] = useState(null);
