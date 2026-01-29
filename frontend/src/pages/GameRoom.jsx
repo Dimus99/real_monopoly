@@ -503,52 +503,55 @@ const GameRoom = () => {
                     setDiceRolling(false);
                 }, 8000);
 
-                // Phase 1: Rolling animation (2000ms spin)
+                // Phase 1: Rolling animation (5000ms spin)
                 const rollTimeout = setTimeout(() => {
                     setDiceRolling(false); // Stop spinning (Freeze)
 
-                    // Trigger movement immediately when dice stop
-                    if (gameState?.players) {
-                        setDelayedPlayers(gameState.players);
-                    }
-
-                    // Phase 2: Wait for movement (1000ms) then ENABLE BUTTONS
-                    const enableTimeout = setTimeout(() => {
-                        setIsRolling(false);
-
-                        // SYNC hasRolled accurately from the latest server state
-                        if (lastAction.player_id === playerId && gameState?.turn_state) {
-                            setHasRolled(!!gameState.turn_state.has_rolled);
+                    // Phase 1.5: Pause to show dice result (1500ms) BEFORE moving
+                    setTimeout(() => {
+                        // Trigger movement
+                        if (gameState?.players) {
+                            setDelayedPlayers(gameState.players);
                         }
 
-                        // Handle rent/tax/chance after movement
-                        if (lastAction.player_id === playerId) {
-                            if (lastAction.action === 'pay_rent' || lastAction.action === 'tax') {
-                                setRentDetails({
-                                    amount: lastAction.amount || lastAction.tax_paid,
-                                    ownerId: lastAction.owner_id || 'BANK'
-                                });
-                            }
-                            if (lastAction.chance_card) {
-                                setChanceCard(lastAction.chance_card);
-                                setChanceData({ chance_card: lastAction.chance_card });
-                                setShowChanceModal(true);
-                            }
-                            if (lastAction.action === 'casino_prompt') {
-                                setShowCasinoModal(true);
-                            }
-                            // Added: immediate jail check update
-                            if (lastAction.action === 'go_to_jail') {
-                                setHasRolled(true);
-                            }
-                        }
+                        // Phase 2: Wait for movement (1500ms) then ENABLE BUTTONS
+                        const enableTimeout = setTimeout(() => {
+                            setIsRolling(false);
 
-                        // Phase 3: Wait more for visual "freeze" (2000ms) then HIDE DICE
-                        const hideTimeout = setTimeout(() => {
-                            setShowDice(false);
-                        }, 2000);
+                            // SYNC hasRolled accurately from the latest server state
+                            if (lastAction.player_id === playerId && gameState?.turn_state) {
+                                setHasRolled(!!gameState.turn_state.has_rolled);
+                            }
 
-                    }, 1000);
+                            // Handle rent/tax/chance after movement
+                            if (lastAction.player_id === playerId) {
+                                if (lastAction.action === 'pay_rent' || lastAction.action === 'tax') {
+                                    setRentDetails({
+                                        amount: lastAction.amount || lastAction.tax_paid,
+                                        ownerId: lastAction.owner_id || 'BANK'
+                                    });
+                                }
+                                if (lastAction.chance_card) {
+                                    setChanceCard(lastAction.chance_card);
+                                    setChanceData({ chance_card: lastAction.chance_card });
+                                    setShowChanceModal(true);
+                                }
+                                if (lastAction.action === 'casino_prompt') {
+                                    setShowCasinoModal(true);
+                                }
+                                // Added: immediate jail check update
+                                if (lastAction.action === 'go_to_jail') {
+                                    setHasRolled(true);
+                                }
+                            }
+
+                            // Phase 3: Wait more for visual "freeze" (2000ms) then HIDE DICE
+                            const hideTimeout = setTimeout(() => {
+                                setShowDice(false);
+                            }, 2000);
+
+                        }, 1500); // Allow time for piece to move on board
+                    }, 1500); // 1.5s Delay BEFORE moving
                 }, 5000);
                 break;
 

@@ -111,16 +111,15 @@ const Cube = ({ value, isRolling, index, show }) => {
             // Dynamic "thrown" animation - SINGLE CONTINUOUS MOTION
             // We animate directly to the final target rotation with a physics-like ease.
             controls.start({
-                x: [index === 0 ? -400 : 400, index === 0 ? -150 : 150, 0],
-                y: [300, -100, 0],
-                z: [0, 200, 0],
-                rotateX: [20, index === 0 ? 380 : -340, (360 * 2) + target.x],
-                rotateY: [20, index === 0 ? -700 : 740, (360 * 3) + target.y],
-                rotateZ: [10, index === 0 ? 190 : -170, 0],
+                x: [0, 0], // No side wavering, straight throw relative to slot
+                y: [600, 0], // Throw from bottom up to center
+                z: [500, 0], // From close to camera to board
+                rotateX: [0, (360 * 4) + target.x], // Consistent tumble forward
+                rotateY: [0, (360 * 2) + target.y], // Consistent spin sideways
+                rotateZ: [0, (360 * 1) + 20], // Slight random-feel tilt
                 transition: {
-                    duration: 5, // Slower, more deliberate
-                    ease: [0.25, 0.1, 0.25, 1], // Cubic bezier for natural slowdown
-                    times: [0, 0.4, 1]
+                    duration: 5,
+                    ease: "easeOut", // Smooth deceleration
                 }
             });
         }
