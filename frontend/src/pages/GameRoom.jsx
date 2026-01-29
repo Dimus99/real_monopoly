@@ -148,6 +148,7 @@ const GameRoom = () => {
 
     // Animation States
     const [showBuyout, setShowBuyout] = useState(false);
+    const [showAid, setShowAid] = useState(false);
     const [showNuke, setShowNuke] = useState(false);
     const [showSanctions, setShowSanctions] = useState(false);
     const [showBeltRoad, setShowBeltRoad] = useState(false);
@@ -1547,6 +1548,12 @@ const GameRoom = () => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Global Animations Layer */}
+            <Suspense fallback={null}>
+                {showWhoAmI && <WhoAmIAnimation isVisible={showWhoAmI} onClose={() => setShowWhoAmI(false)} />}
+                {showOreshnik && <OreshnikAnimation onClose={handleCloseOreshnik} />}
+            </Suspense>
 
             {/* Global Dice Animation Overlay - Fixed to Viewport */}
             <DiceAnimation
