@@ -5,7 +5,7 @@ import {
     Copy, Users, Bot, Play, Check, Home, Clock, ArrowLeftRight,
     ArrowLeft, MessageSquare, Settings, Bell,
     Menu, UserPlus, X, MapPin, ChevronLeft, ChevronRight, Crosshair, Flag,
-    Map, Zap
+    Map, Zap, Folder, Smile
 } from 'lucide-react';
 import { CHARACTERS, ABILITIES } from '../constants/characters';
 import useGameSocket from '../hooks/useGameSocket';
@@ -63,6 +63,7 @@ const GameRoom = () => {
     const [selectedUserProfile, setSelectedUserProfile] = useState(null);
     const [pendingRequests, setPendingRequests] = useState([]);
     const [showRequestsModal, setShowRequestsModal] = useState(false);
+    const [showPranksMenu, setShowPranksMenu] = useState(false);
     const [isLoadingProfile, setIsLoadingProfile] = useState(false);
     const [myUser, setMyUser] = useState(null);
     const [hoveredAbility, setHoveredAbility] = useState(null);
@@ -959,16 +960,37 @@ const GameRoom = () => {
                     </div>
                 </div>
 
-                {/* "Pranks" / Fun Section */}
-                <div className="p-2 border-b border-white/10 flex justify-center">
+                {/* "Pranks" / Fun Folder Section */}
+                <div className="p-2 border-b border-white/10 flex flex-col gap-2">
                     <button
-                        onClick={() => setShowWhoAmI(true)}
-                        className={`btn-ghost text-xs py-1 px-2 flex items-center gap-2 border border-white/10 hover:bg-white/5 ${sidebarCollapsed ? 'justify-center' : 'w-full justify-center'}`}
-                        title="Мини-игра: Кто я?"
+                        onClick={() => setShowPranksMenu(!showPranksMenu)}
+                        className={`btn-ghost text-xs py-2 px-2 flex items-center gap-2 border border-white/10 hover:bg-white/5 ${sidebarCollapsed ? 'justify-center' : 'w-full pl-3'}`}
+                        title="Папка с приколами"
                     >
-                        <span className="text-xl">🤡</span>
-                        {!sidebarCollapsed && <span>Кто я?</span>}
+                        <Folder size={16} className="text-yellow-400" />
+                        {!sidebarCollapsed && <span className="font-bold text-gray-300">ПРИКОЛЫ</span>}
+                        {!sidebarCollapsed && <span className="ml-auto text-[10px]">{showPranksMenu ? '▼' : '▶'}</span>}
                     </button>
+
+                    <AnimatePresence>
+                        {showPranksMenu && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden flex flex-col gap-1 pl-2"
+                            >
+                                <button
+                                    onClick={() => setShowWhoAmI(true)}
+                                    className={`btn-ghost text-xs py-1 px-2 flex items-center gap-2 hover:bg-white/10 rounded-lg ${sidebarCollapsed ? 'justify-center' : 'w-full justify-start'}`}
+                                    title="Кто я?"
+                                >
+                                    <span className="text-lg">🤡</span>
+                                    {!sidebarCollapsed && <span>Кто я?</span>}
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 {/* Players List */}
