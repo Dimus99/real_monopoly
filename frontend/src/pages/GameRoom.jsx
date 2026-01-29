@@ -159,10 +159,13 @@ const GameRoom = () => {
 
     // Keep delayedPlayers synced when not animating a move
     useEffect(() => {
-        if (!isRolling && !diceRolling && gameState?.players) {
+        // Prevent auto-sync if we are in the middle of a dice roll sequence (controlled by timeouts)
+        const isDiceSequence = lastAction?.type === 'DICE_ROLLED';
+
+        if (!isRolling && !diceRolling && !isDiceSequence && gameState?.players) {
             setDelayedPlayers(gameState.players);
         }
-    }, [gameState?.players, isRolling, diceRolling]);
+    }, [gameState?.players, isRolling, diceRolling, lastAction?.type]);
 
     // Targeting State
     const [targetingAbility, setTargetingAbility] = useState(null);

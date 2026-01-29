@@ -32,8 +32,9 @@ const WhoAmIAnimation = ({ isVisible, onClose }) => {
                         stiffness: 300,
                         damping: 15
                     }}
-                    className="text-6xl md:text-8xl font-black text-red-600 uppercase tracking-tighter text-center drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] font-display z-20"
+                    className="text-6xl md:text-8xl font-black text-red-600 uppercase tracking-tighter text-center drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] font-display z-20 cursor-pointer"
                     style={{ textShadow: '4px 4px 0px #000' }}
+                    onClick={onClose}
                 >
                     ТЫ ПИДОР
                 </motion.h1>
@@ -47,7 +48,8 @@ const WhoAmIAnimation = ({ isVisible, onClose }) => {
                         type: "spring",
                         bounce: 0.4
                     }}
-                    className="relative z-10 w-[500px] h-[500px] flex items-center justify-center"
+                    className="relative z-10 w-[500px] h-[500px] flex items-center justify-center cursor-pointer"
+                    onClick={onClose}
                 >
                     <img
                         src={handPointing}
