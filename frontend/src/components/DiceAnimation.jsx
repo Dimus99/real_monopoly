@@ -33,7 +33,7 @@ const DiceFace = ({ n }) => {
     };
 
     const getFaceStyle = (n) => {
-        const s = 50.1; // Slightly more than half to prevent z-fighting
+        const s = 49.8; // Slightly less than 50 to ensure faces overlap and seal the cube
         let transform = "";
         let background = "white";
 
@@ -67,15 +67,15 @@ const DiceFace = ({ n }) => {
 
         return {
             transform,
-            backfaceVisibility: 'visible',
+            backfaceVisibility: 'hidden',
             background,
-            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.2)',
+            boxShadow: 'inset 0 0 25px rgba(0,0,0,0.15)',
             transformStyle: 'preserve-3d',
             position: 'absolute',
-            width: '100px',
-            height: '100px',
-            top: 0,
-            left: 0,
+            width: '101px', // 1px larger to prevent gaps
+            height: '101px',
+            top: '-0.5px', // Adjust for larger size
+            left: '-0.5px',
             willChange: 'transform'
         };
     };
@@ -90,11 +90,11 @@ const DiceFace = ({ n }) => {
                     <div key={i} className="flex items-center justify-center" style={{ transformStyle: 'preserve-3d' }}>
                         {dots(n).includes(i) && (
                             <div
-                                className="w-4 h-4 rounded-full bg-black shadow-inner"
+                                className="w-4 h-4 rounded-full bg-black"
                                 style={{
                                     background: 'radial-gradient(circle at 30% 30%, #444, #000)',
-                                    boxShadow: 'inset -2px -2px 4px rgba(255,255,255,0.2), 1px 1px 2px rgba(0,0,0,0.4)',
-                                    transform: 'translateZ(1px)' // Pop the dots slightly for more volume
+                                    boxShadow: 'inset -1px -1px 2px rgba(255,255,255,0.2), 1px 1px 2px rgba(0,0,0,0.4)',
+                                    transform: 'translateZ(1px)' // Pop dots for volume
                                 }}
                             />
                         )}
@@ -115,18 +115,18 @@ const Cube = ({ value, isRolling, index, show }) => {
             const target = getRotation(value);
             // Dynamic "thrown" animation with complex rotation
             controls.start({
-                x: [index === 0 ? -450 : 450, index === 0 ? -200 : 200, 0],
-                y: [400, -150, 0],
+                x: [index === 0 ? -500 : 500, index === 0 ? -200 : 200, 0],
+                y: [500, -200, 0],
                 z: [0, 200, 0],
                 rotateX: [0, index === 0 ? 1440 : -1440, (360 * 6) + target.x],
                 rotateY: [0, index === 0 ? -1800 : 1800, (360 * 7) + target.y],
                 rotateZ: [0, index === 0 ? 360 : -360, 20], // Land with Z tilt too
-                scale: [0.3, 1.3, 1],
+                scale: [0.3, 1.4, 1],
                 opacity: [0, 1, 1],
                 transition: {
                     duration: 2.5,
-                    ease: [0.22, 1, 0.36, 1], // Custom cubic-bezier for smoother deceleration
-                    times: [0, 0.5, 1]
+                    ease: [0.19, 1, 0.22, 1],
+                    times: [0, 0.4, 1]
                 }
             });
         } else {
@@ -148,14 +148,14 @@ const Cube = ({ value, isRolling, index, show }) => {
         <div className="relative w-[100px] h-[100px]" style={{ transformStyle: 'preserve-3d' }}>
             {/* Dynamic Shadow */}
             <motion.div
-                className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-24 h-6 bg-black/60 blur-xl rounded-full"
+                className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-28 h-8 bg-black/50 blur-xl rounded-full"
                 animate={isRolling ? {
-                    scale: [0.4, 1.8, 1],
-                    opacity: [0, 0.7, 0.4],
-                    y: [0, 15, 0]
+                    scale: [0.4, 2, 1],
+                    opacity: [0, 0.5, 0.3],
+                    y: [0, 20, 0]
                 } : {
-                    scale: 1.2,
-                    opacity: 0.4,
+                    scale: 1.3,
+                    opacity: 0.3,
                     y: 0
                 }}
                 transition={{ duration: 2.5, ease: "easeOut" }}
@@ -166,7 +166,7 @@ const Cube = ({ value, isRolling, index, show }) => {
                 className="w-full h-full relative"
                 style={{ transformStyle: 'preserve-3d', willChange: 'transform' }}
                 animate={controls}
-                initial={{ opacity: 0, scale: 0.5, translateZ: 0 }}
+                initial={{ opacity: 0, scale: 0.5, translateZ: 1 }}
             >
                 {[1, 2, 3, 4, 5, 6].map(n => <DiceFace key={n} n={n} />)}
             </motion.div>
@@ -191,21 +191,20 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow }) => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 z-[250] flex flex-col items-center justify-center pointer-events-none"
-                    style={{ perspective: '1500px' }}
+                    style={{ perspective: '2000px', transformStyle: 'preserve-3d' }}
                 >
-                    {/* Darker localized background for better volume contrast */}
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px]" />
+                    {/* Background darkening removed as requested */}
 
-                    <div className="flex gap-32 relative mb-20" style={{ transformStyle: 'preserve-3d' }}>
+                    <div className="flex gap-40 relative mb-20" style={{ transformStyle: 'preserve-3d' }}>
                         {/* Dramatic Stage Light/Glow */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 blur-[150px] rounded-full -z-10" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 blur-[120px] rounded-full -z-10" />
 
                         {glow && !rolling && (
                             <motion.div
                                 initial={{ opacity: 0 }}
-                                animate={{ opacity: [0.3, 0.6, 0.3], scale: [0.9, 1.1, 0.9] }}
+                                animate={{ opacity: [0.1, 0.3, 0.1], scale: [0.9, 1.2, 0.9] }}
                                 transition={{ duration: 2, repeat: Infinity }}
-                                className="absolute inset-0 -inset-x-40 bg-yellow-500/20 blur-[120px] rounded-full -z-10"
+                                className="absolute inset-0 -inset-x-60 bg-yellow-500/10 blur-[150px] rounded-full -z-10"
                             />
                         )}
 
@@ -213,9 +212,9 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow }) => {
                             <motion.div
                                 initial={{ opacity: 0, y: -60 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="absolute -top-48 left-1/2 -translate-x-1/2 text-center w-full"
+                                className="absolute -top-60 left-1/2 -translate-x-1/2 text-center w-full"
                             >
-                                <h1 className={`text-7xl font-black uppercase tracking-tighter drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] ${glow && !rolling ? 'text-yellow-400' : 'text-white'}`}>
+                                <h1 className={`text-8xl font-black uppercase tracking-tighter drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] ${glow && !rolling ? 'text-yellow-400' : 'text-white'}`}>
                                     {playerName}
                                 </h1>
                             </motion.div>
@@ -227,20 +226,20 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow }) => {
 
                     {!rolling && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.5, y: 50 }}
+                            initial={{ opacity: 0, scale: 0.5, y: 100 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            transition={{ type: 'spring', damping: 15, stiffness: 100 }}
+                            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
                             className="flex flex-col items-center z-10"
                         >
-                            <div className={`backdrop-blur-2xl px-14 py-8 rounded-[40px] border-2 shadow-[0_20px_60px_rgba(0,0,0,0.5)] flex flex-col items-center min-w-[200px] ${glow ? 'bg-yellow-500/20 border-yellow-500/30' : 'bg-white/5 border-white/10'}`}>
-                                <span className={`text-[12rem] font-black leading-none drop-shadow-2xl font-mono tracking-tighter ${glow ? 'text-yellow-400' : 'text-white'}`}>
+                            <div className={`backdrop-blur-3xl px-16 py-10 rounded-[50px] border-2 shadow-[0_30px_80px_rgba(0,0,0,0.6)] flex flex-col items-center min-w-[240px] ${glow ? 'bg-yellow-500/10 border-yellow-500/20' : 'bg-white/5 border-white/10'}`}>
+                                <span className={`text-[14rem] font-black leading-none drop-shadow-2xl font-mono tracking-tighter ${glow ? 'text-yellow-400' : 'text-white'}`}>
                                     {displayValues[0] + displayValues[1]}
                                 </span>
                                 {glow && (
                                     <motion.div
-                                        initial={{ y: 10, opacity: 0 }}
+                                        initial={{ y: 20, opacity: 0 }}
                                         animate={{ y: 0, opacity: 1 }}
-                                        className="text-yellow-400 font-black text-3xl uppercase tracking-[0.4em] mt-4 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]"
+                                        className="text-yellow-400 font-black text-4xl uppercase tracking-[0.5em] mt-6 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]"
                                     >
                                         Дубль!
                                     </motion.div>
