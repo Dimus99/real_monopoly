@@ -543,7 +543,7 @@ const GameRoom = () => {
                     setIsRolling(true);
                 }
 
-                // Phase 1: Rolling animation (4.2s tumble)
+                // Phase 1: Rolling animation (3.5s tumble)
                 setTimeout(() => {
                     setDiceRolling(false); // Stop spinning (Freeze on result)
 
@@ -609,7 +609,7 @@ const GameRoom = () => {
 
                         }, 1000); // 1.0s movement
                     }, 700); // 0.7s pause to read dice
-                }, 4200); // 4.2s total tumble
+                }, 3500); // 3.5s total tumble (matched with Cube duration)
                 break;
 
             case 'PROPERTY_BOUGHT':
@@ -633,11 +633,10 @@ const GameRoom = () => {
             case 'PLAYER_DISQUALIFIED':
                 if (lastAction.player_id === playerId) {
                     setHasRolled(false);
-                    setShowDice(false);
                     setDiceRolling(false);
                     setIsRolling(false);
-                    setDiceValues([1, 2]); // Reset dice to non-doubles for next turn
                 }
+                // Do NOT reset dice values or hide showDice immediately here to avoid jumps for others
                 break;
             case 'ERROR':
                 setIsRolling(false);

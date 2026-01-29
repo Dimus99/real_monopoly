@@ -8,8 +8,8 @@ const getRotation = (val) => {
         case 6: base = { x: 0, y: 180 }; break;
         case 2: base = { x: 0, y: -90 }; break;
         case 5: base = { x: 0, y: 90 }; break;
-        case 3: base = { x: -90, y: 0 }; break;
-        case 4: base = { x: 90, y: 0 }; break;
+        case 3: base = { x: 90, y: 0 }; break;
+        case 4: base = { x: -90, y: 0 }; break;
         default: break;
     }
     // Final rotation: perfectly flat towards player for readability
@@ -55,11 +55,11 @@ const DiceFace = ({ n }) => {
                 background = 'linear-gradient(135deg, #fdfdfd 0%, #eeeeee 100%)';
                 break;
             case 3:
-                transform = `rotateX(90deg) translateZ(${s}px)`;
+                transform = `rotateX(-90deg) translateZ(${s}px)`;
                 background = 'linear-gradient(135deg, #ffffff 0%, #f2f2f2 100%)';
                 break;
             case 4:
-                transform = `rotateX(-90deg) translateZ(${s}px)`;
+                transform = `rotateX(90deg) translateZ(${s}px)`;
                 background = 'linear-gradient(135deg, #e8e8e8 0%, #d8d8d8 100%)';
                 break;
             default: break;
@@ -91,8 +91,8 @@ const DiceFace = ({ n }) => {
                     <div key={i} className="flex items-center justify-center">
                         {dots(n).includes(i) && (
                             <div
-                                className="w-4 h-4 rounded-full bg-black shadow-inner"
-                                style={{ background: 'radial-gradient(circle at 30% 30%, #444, #000)', boxShadow: 'inset -2px -2px 4px rgba(255,255,255,0.2), 1px 1px 2px rgba(0,0,0,0.4)' }}
+                                className="w-4 h-4 rounded-full bg-black shadow-lg"
+                                style={{ background: '#222', boxShadow: 'inset -2px -2px 4px rgba(255,255,255,0.1)' }}
                             />
                         )}
                     </div>
@@ -116,14 +116,14 @@ const Cube = ({ value, isRolling, index, show, isMine }) => {
                 x: 0,
                 y: [startY, 0],
                 z: [600, 0],
-                rotateX: (360 * 5 * (isMine ? 1 : -1)) + target.x,
-                rotateY: (360 * 3 * (isMine ? 1 : -1)) + target.y,
-                rotateZ: (360 * 1.5) + 20,
+                rotateX: (360 * 4 * (isMine ? 1 : -1)) + target.x,
+                rotateY: (360 * 2 * (isMine ? 1 : -1)) + target.y,
+                rotateZ: (360 * 1) + 20,
                 transition: {
-                    duration: 4.2,
-                    ease: [0.16, 1, 0.3, 1], // easeOutExpo for ultra-smooth deceleration
-                    y: { duration: 2.2, ease: "circOut" },
-                    z: { duration: 2.2, ease: "circOut" }
+                    duration: 3.5,
+                    ease: "easeOut",
+                    y: { duration: 1.8, ease: "circOut" },
+                    z: { duration: 1.8, ease: "circOut" }
                 }
             });
         }
@@ -154,13 +154,7 @@ const Cube = ({ value, isRolling, index, show, isMine }) => {
 };
 
 const DiceAnimation = ({ show, rolling, values, playerName, glow, isMine = true }) => {
-    const [displayValues, setDisplayValues] = useState([1, 1]);
-
-    useEffect(() => {
-        if (values && values.length === 2) {
-            setDisplayValues(values);
-        }
-    }, [values]);
+    const currentValues = (values && values.length === 2) ? values : [1, 1];
 
     return (
         <AnimatePresence>
@@ -195,8 +189,8 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow, isMine = true 
                             </motion.div>
                         )}
 
-                        <Cube value={displayValues[0]} isRolling={rolling} index={0} show={show} isMine={isMine} />
-                        <Cube value={displayValues[1]} isRolling={rolling} index={1} show={show} isMine={isMine} />
+                        <Cube value={currentValues[0]} isRolling={rolling} index={0} show={show} isMine={isMine} />
+                        <Cube value={currentValues[1]} isRolling={rolling} index={1} show={show} isMine={isMine} />
                     </div>
                 </motion.div>
             )}
