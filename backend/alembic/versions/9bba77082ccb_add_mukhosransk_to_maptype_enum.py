@@ -21,9 +21,27 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     # ALTER TYPE ADD VALUE cannot run in a transaction block in PostgreSQL
-    # So we commit the current transaction first
     op.execute("COMMIT")
-    op.execute("ALTER TYPE maptype ADD VALUE 'Mukhosransk'")
+    
+    # 1. Update maptype enum
+    try:
+        op.execute("ALTER TYPE maptype ADD VALUE 'MUKHOSRANSK'")
+    except Exception:
+        pass
+    try:
+        op.execute("ALTER TYPE maptype ADD VALUE 'Mukhosransk'")
+    except Exception:
+        pass
+
+    # 2. Update charactertype enum
+    try:
+        op.execute("ALTER TYPE charactertype ADD VALUE 'NETANYAHU'")
+    except Exception:
+        pass
+    try:
+        op.execute("ALTER TYPE charactertype ADD VALUE 'Netanyahu'")
+    except Exception:
+        pass
 
 
 def downgrade() -> None:
