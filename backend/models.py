@@ -79,7 +79,7 @@ class Player(BaseModel):
     id: str
     user_id: Optional[str] = None  # Link to User account
     name: str
-    character: Literal["Putin", "Trump", "Zelensky", "Kim", "Biden", "Xi"]
+    character: Literal["Putin", "Trump", "Zelensky", "Kim", "Biden", "Xi", "Netanyahu"]
     money: int = 1500
     position: int = 0  # 0-39
     properties: List[int] = Field(default_factory=list)
@@ -189,7 +189,7 @@ class CreateGameRequest(BaseModel):
 
 class JoinGameRequest(BaseModel):
     """Request to join a game."""
-    character: Literal["Putin", "Trump", "Zelensky", "Kim", "Biden", "Xi"]
+    character: Literal["Putin", "Trump", "Zelensky", "Kim", "Biden", "Xi", "Netanyahu"]
 
 
 class RollDiceResponse(BaseModel):
