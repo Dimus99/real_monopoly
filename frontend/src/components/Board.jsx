@@ -558,7 +558,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                         currentPlayerId={currentPlayerId}
                         allPlayers={players}
                         isMonopoly={(() => {
-                            if (['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Utility'].includes(tile.group)) return false;
+                            if (['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax'].includes(tile.group)) return false;
                             const groupTiles = tiles.filter(t => t.group === tile.group);
                             if (groupTiles.length === 0) return false;
                             const firstOwner = groupTiles[0].owner_id;
