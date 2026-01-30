@@ -21,8 +21,8 @@ const LOBBY_CHARACTERS = [
     { id: 'Trump', name: 'Трамп', avatar: '/avatars/trump.png', color: '#FF6B35', ability: 'BUYOUT', abilityName: 'Рейдерский Захват', country: 'USA', abilityDesc: 'Купить любую недвижимость, даже чужую.' },
     { id: 'Zelensky', name: 'Зеленский', avatar: '/avatars/zelensky.png', color: '#0057B8', ability: 'AID', abilityName: 'Помощь Запада', country: 'UA', abilityDesc: 'Собрать помощь со всех игроков.' },
     { id: 'Kim', name: 'Ким', avatar: '/avatars/kim.png', color: '#8B0000', ability: 'NUKE', abilityName: 'Ядерная Угроза', country: 'NK', abilityDesc: 'Ядерная угроза блокирует аренду.' },
-    { id: 'Biden', name: 'Байден', avatar: '/avatars/biden.png', color: '#3C3B6E', ability: 'SANCTIONS', abilityName: 'Санкции', country: 'USA', abilityDesc: 'Заморозить доходы с собственности врага.' },
-    { id: 'Xi', name: 'Си', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT', abilityName: 'Пояс и Путь', country: 'CN', abilityDesc: 'Загнать оппонента в долговую ловушку.' }
+    { id: 'Biden', name: 'Байден', avatar: '/avatars/biden.png', color: '#3C3B6E', ability: 'SANCTIONS', abilityName: 'Санкции', country: 'USA', abilityDesc: 'Заморозить оппонента: он пропустит следующий ход.' },
+    { id: 'Xi', name: 'Си', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT', abilityName: 'Пояс и Путь', country: 'CN', abilityDesc: 'Получить по $50 за каждый свой город.' }
 ];
 
 const getApiBase = () => {
@@ -745,7 +745,7 @@ const Lobby = () => {
                                     {[
                                         { id: 'World', name: 'Мировая карта' },
                                         { id: 'Ukraine', name: 'Украина' },
-                                        { id: 'Monopoly1', name: 'Монополия One' }
+                                        { id: 'Mukhosransk', name: 'Мухосранск' }
                                     ].map(m => (
                                         <button key={m.id} onClick={() => setSelectedMap(m.id)} className={`p-4 rounded-xl border text-sm font-bold transition-all ${selectedMap === m.id ? 'bg-purple-600/20 border-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.3)]' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}>
                                             {m.name}

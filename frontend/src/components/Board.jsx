@@ -341,7 +341,9 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                         </motion.div>
                     ) : (
                         <>
-                            <motion.h1 initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.5, type: 'spring' }} className="font-display text-5xl md:text-7xl font-black text-white tracking-tight drop-shadow-lg">{mapType === 'Ukraine' ? 'УКРАИНА' : 'МИР'}</motion.h1>
+                            <motion.h1 initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.5, type: 'spring' }} className="font-display text-5xl md:text-7xl font-black text-white tracking-tight drop-shadow-lg">
+                                {mapType === 'Ukraine' ? 'УКРАИНА' : mapType === 'Mukhosransk' ? 'МУХОСРАНСК' : 'МИР'}
+                            </motion.h1>
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="text-xl md:text-2xl font-display text-yellow-400 mt-2">МОНОПОЛИЯ</motion.div>
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} className="text-sm text-gray-400 mt-4">Сатирическое Издание</motion.div>
                         </>

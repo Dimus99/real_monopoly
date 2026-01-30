@@ -23,7 +23,7 @@ const GROUP_STYLES = {
     Tax: { gradient: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)', textColor: '#fff', icon: '💰' },
     Cyan: { gradient: 'linear-gradient(135deg, #00FFFF 0%, #00CED1 100%)', textColor: '#1a1a2e' },
     Negotiations: { gradient: 'linear-gradient(135deg, #7f8c8d 0%, #bdc3c7 100%)', textColor: '#fff', icon: '🕊️' },
-    Casino: { gradient: 'linear-gradient(135deg, #2c3e50 0%, #000000 100%)', textColor: '#fff', icon: '🎰' },
+    Casino: { gradient: 'linear-gradient(135deg, #1a2a1a 0%, #000000 100%)', textColor: '#fff', icon: '🐎' },
     RaiseTax: { gradient: 'linear-gradient(135deg, #f1c40f 0%, #f39c12 100%)', textColor: '#000', icon: '📈' },
 };
 
@@ -50,11 +50,17 @@ const CHARACTER_COLORS = {
 // Special tile icons
 const SPECIAL_ICONS = {
     'START': '🚀',
+    'ВЪЕЗД В ГОРОД': '🚀',
     'ТЮРЬМА': '🏝️',
+    'ОБЕЗЬЯННИК': '👮',
     'В ТЮРЬМУ': '✈️',
+    'ПРИЕМ В МЕНТОВКУ': '🚓',
     'БЕСПЛАТНАЯ ПАРКОВКА': '🏛️',
+    'ЛАВОЧКА В ПАРКЕ': '🌳',
     'Шанс': '📰',
+    'Слухи': '🤫',
     'Подоходный налог': '💸',
+    'Сбор на нужды города': '💸',
     'Налог на роскошь': '💎',
     'Газпром': '⛽',
     'Роснефть': '🛢️',
@@ -64,6 +70,7 @@ const SPECIAL_ICONS = {
     'PRISON': '⛓️',
     'SafeIsland': '🏝️',
     'Казино': '🎰',
+    'Тотализатор': '🐎',
     'Переговоры': '🕊️',
     'Повысить налоги': '📈'
 };

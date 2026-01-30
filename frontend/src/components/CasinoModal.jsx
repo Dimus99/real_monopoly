@@ -14,9 +14,11 @@ const DiceIcon = ({ value, size = 24, className }) => {
     }
 };
 
-const CasinoModal = ({ onClose, onBet }) => {
+const CasinoModal = ({ onClose, onBet, mapType }) => {
     const [selectedNumbers, setSelectedNumbers] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const isTotalizator = mapType === 'Mukhosransk';
 
     const toggleNumber = (num) => {
         if (selectedNumbers.includes(num)) {
@@ -31,7 +33,6 @@ const CasinoModal = ({ onClose, onBet }) => {
         if (selectedNumbers.length === 0) return;
         setIsSubmitting(true);
         onBet(selectedNumbers);
-        // Don't close immediately, wait for server result or parent to close
     };
 
     const calculatePotentialWin = () => {
@@ -49,25 +50,46 @@ const CasinoModal = ({ onClose, onBet }) => {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-[#1a1b26] border border-yellow-500/30 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden"
+                    className={`bg-[#1a1b26] border ${isTotalizator ? 'border-emerald-500/30' : 'border-yellow-500/30'} w-full max-w-md rounded-2xl shadow-2xl overflow-hidden`}
                 >
-                    <div className="bg-gradient-to-r from-yellow-600/20 to-yellow-900/20 p-6 text-center border-b border-white/10">
-                        <Dices className="mx-auto text-yellow-400 mb-2" size={48} />
-                        <h2 className="text-3xl font-black text-white font-display uppercase tracking-widest">
-                            КАЗИНО
-                        </h2>
-                        <div className="text-yellow-400 font-bold text-sm mt-1">
-                            Испытай удачу или потеряй все!
+                    {isTotalizator ? (
+                        <div className="bg-gradient-to-r from-green-600/20 to-emerald-900/20 p-6 text-center border-b border-white/10">
+                            <div className="text-5xl mb-2">🐎</div>
+                            <h2 className="text-3xl font-black text-white font-display uppercase tracking-widest">
+                                ТОТАЛИЗАТОР
+                            </h2>
+                            <div className="text-emerald-400 font-bold text-sm mt-1">
+                                Ставки на ипподроме Мухосранска!
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="bg-gradient-to-r from-yellow-600/20 to-yellow-900/20 p-6 text-center border-b border-white/10">
+                            <Dices className="mx-auto text-yellow-400 mb-2" size={48} />
+                            <h2 className="text-3xl font-black text-white font-display uppercase tracking-widest">
+                                КАЗИНО
+                            </h2>
+                            <div className="text-yellow-400 font-bold text-sm mt-1">
+                                Испытай удачу или потеряй все!
+                            </div>
+                        </div>
+                    )}
 
                     <div className="p-6">
                         <div className="text-gray-300 text-center mb-6 text-sm">
-                            Выберите от 1 до 3 чисел. Если выпадет ваше число — вы выиграли!
+                            {isTotalizator
+                                ? "Выберите от 1 до 3 лошадей. Если ваша лошадь придет первой — вы сорвали куш!"
+                                : "Выберите от 1 до 3 чисел. Если выпадет ваше число — вы выиграли!"}
                             <br />
-                            <span className="text-red-400 font-bold block mt-2">
-                                ОСТОРОЖНО: Проигрыш означает РЕВОЛЮЦИЮ (конец игры).
-                            </span>
+                            {isTotalizator && (
+                                <span className="text-yellow-400 font-bold block mt-2">
+                                    СТАВКА: $300 (фиксированно)
+                                </span>
+                            )}
+                            {!isTotalizator && (
+                                <span className="text-red-400 font-bold block mt-2">
+                                    ОСТОРОЖНО: Проигрыш означает РЕВОЛЮЦИЮ (конец игры).
+                                </span>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-3 gap-3 mb-8">
@@ -128,7 +150,7 @@ const CasinoModal = ({ onClose, onBet }) => {
                                 disabled={isSubmitting}
                                 className="w-full py-2 rounded-xl font-bold text-xs uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/5 transition-all"
                             >
-                                Отказаться от игры (Штраф $50)
+                                {isTotalizator ? 'Отказаться от игры (Комиссия $100)' : 'Отказаться от игры (Штраф $50)'}
                             </button>
                         </div>
                     </div>

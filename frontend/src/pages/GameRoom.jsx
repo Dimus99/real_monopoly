@@ -1670,6 +1670,7 @@ const GameRoom = () => {
                     <CasinoModal
                         onClose={() => setShowCasinoModal(false)}
                         onBet={(numbers) => sendAction('CASINO_BET', { bet_numbers: numbers })}
+                        mapType={gameState?.map_type}
                     />
                 )
             }

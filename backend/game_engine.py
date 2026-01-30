@@ -100,47 +100,47 @@ UKRAINE_MAP_DATA = [
     {"name": "Киев", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},
 ]
 
-MONOPOLY1_MAP_DATA = [
-    {"name": "SUPER JACKPOT", "group": "Special", "price": 0, "rent": []},  # 0
-    {"name": "McDonald's", "group": "Brown", "price": 60, "rent": [2, 10, 30, 90, 160, 250]},  # 1
-    {"name": "Chance", "group": "Chance", "price": 0, "rent": []},  # 2
-    {"name": "KFC", "group": "Brown", "price": 60, "rent": [4, 20, 60, 180, 320, 450]},  # 3
-    {"name": "Income Tax", "group": "Tax", "price": 0, "rent": [200]},  # 4
-    {"name": "M1 Sky", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},  # 5
-    {"name": "American Airlines", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},  # 6
-    {"name": "Chance", "group": "Chance", "price": 0, "rent": []},  # 7
-    {"name": "Lufthansa", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},  # 8
-    {"name": "British Airways", "group": "LightBlue", "price": 120, "rent": [8, 40, 100, 300, 450, 600]},  # 9
-    {"name": "JAIL", "group": "Jail", "price": 0, "rent": []},  # 10
-    {"name": "Holiday Inn", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},  # 11
-    {"name": "Electric Company", "group": "Utility", "price": 150, "rent": []},  # 12
-    {"name": "Radisson", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},  # 13
-    {"name": "Novotel", "group": "Pink", "price": 160, "rent": [12, 60, 180, 500, 700, 900]},  # 14
-    {"name": "Rail Station 2", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},  # 15
-    {"name": "Land Rover", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},  # 16
-    {"name": "Chance", "group": "Chance", "price": 0, "rent": []},  # 17
-    {"name": "Pepsi", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},  # 18
-    {"name": "Nike", "group": "Orange", "price": 200, "rent": [16, 80, 220, 600, 800, 1000]},  # 19
-    {"name": "FREE PARKING", "group": "FreeParking", "price": 0, "rent": []},  # 20
-    {"name": "Gucci", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},  # 21
-    {"name": "Chance", "group": "Chance", "price": 0, "rent": []},  # 22
-    {"name": "Sunsilk", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},  # 23
-    {"name": "World", "group": "Red", "price": 240, "rent": [20, 100, 300, 750, 925, 1100]},  # 24
-    {"name": "Cash", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},  # 25
-    {"name": "Reebok", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},  # 26
-    {"name": "Diesel", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},  # 27
-    {"name": "Water Works", "group": "Utility", "price": 150, "rent": []},  # 28
-    {"name": "New Balance", "group": "Yellow", "price": 280, "rent": [24, 120, 360, 850, 1025, 1200]},  # 29
-    {"name": "GO TO JAIL", "group": "GoToJail", "price": 0, "rent": []},  # 30
-    {"name": "VK", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},  # 31
-    {"name": "Facebook", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},  # 32
-    {"name": "Chance", "group": "Chance", "price": 0, "rent": []},  # 33
-    {"name": "Twitter", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},  # 34
-    {"name": "Space", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},  # 35
-    {"name": "Chance", "group": "Chance", "price": 0, "rent": []},  # 36
-    {"name": "7up", "group": "DarkBlue", "price": 350, "rent": [35, 175, 500, 1100, 1300, 1500]},  # 37
-    {"name": "Luxury Tax", "group": "Tax", "price": 0, "rent": [100]},  # 38
-    {"name": "Mirinda", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},  # 39
+MUKHOSRANSK_MAP_DATA = [
+    {"name": "ВЪЕЗД В ГОРОД", "group": "Special", "price": 0, "rent": []},  # 0
+    {"name": "Гараж Михалыча", "group": "Brown", "price": 60, "rent": [2, 10, 30, 90, 160, 250]},  # 1
+    {"name": "Слухи", "group": "Chance", "price": 0, "rent": []},  # 2
+    {"name": "Мусорные баки", "group": "Brown", "price": 60, "rent": [4, 20, 60, 180, 320, 450]},  # 3
+    {"name": "Сбор на нужды города", "group": "Tax", "price": 0, "rent": [200]},  # 4
+    {"name": "Пивнуха 'У Михалыча'", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},  # 5
+    {"name": "Киоск 'Союзпечать'", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},  # 6
+    {"name": "Слухи", "group": "Chance", "price": 0, "rent": []},  # 7
+    {"name": "Ремонт обуви", "group": "LightBlue", "price": 100, "rent": [6, 30, 90, 270, 400, 550]},  # 8
+    {"name": "Палатка с овощами", "group": "LightBlue", "price": 120, "rent": [8, 40, 100, 300, 450, 600]},  # 9
+    {"name": "ОБЕЗЬЯННИК", "group": "Jail", "price": 0, "rent": []},  # 10
+    {"name": "Столовая 'Березка'", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},  # 11
+    {"name": "Водоканал", "group": "Utility", "price": 150, "rent": []},  # 12
+    {"name": "Шашлычная у Вано", "group": "Pink", "price": 140, "rent": [10, 50, 150, 450, 625, 750]},  # 13
+    {"name": "Рюмочная 'Второй Шанс'", "group": "Pink", "price": 160, "rent": [12, 60, 180, 500, 700, 900]},  # 14
+    {"name": "Пиво-Воды 24/7", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},  # 15
+    {"name": "Парикмахерская 'Людмила'", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},  # 16
+    {"name": "Слухи", "group": "Chance", "price": 0, "rent": []},  # 17
+    {"name": "Ломбард 'Золотой'", "group": "Orange", "price": 180, "rent": [14, 70, 200, 550, 750, 950]},  # 18
+    {"name": "Хозтовары", "group": "Orange", "price": 200, "rent": [16, 80, 220, 600, 800, 1000]},  # 19
+    {"name": "ЛАВОЧКА В ПАРКЕ", "group": "FreeParking", "price": 0, "rent": []},  # 20
+    {"name": "Бар 'Яма'", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},  # 21
+    {"name": "Слухи", "group": "Chance", "price": 0, "rent": []},  # 22
+    {"name": "Караоке 'Крик'", "group": "Red", "price": 220, "rent": [18, 90, 250, 700, 875, 1050]},  # 23
+    {"name": "Клуб 'Метелица'", "group": "Red", "price": 240, "rent": [20, 100, 300, 750, 925, 1100]},  # 24
+    {"name": "Фирменная Разливайка", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},  # 25
+    {"name": "Автомойка 'Блеск'", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},  # 26
+    {"name": "Шиномонтаж 24", "group": "Yellow", "price": 260, "rent": [22, 110, 330, 800, 975, 1150]},  # 27
+    {"name": "Электросети", "group": "Utility", "price": 150, "rent": []},  # 28
+    {"name": "АЗС 'NoName'", "group": "Yellow", "price": 280, "rent": [24, 120, 360, 850, 1025, 1200]},  # 29
+    {"name": "ПРИЕМ В МЕНТОВКУ", "group": "GoToJail", "price": 0, "rent": []},  # 30
+    {"name": "Супермаркет 'Гвоздь'", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},  # 31
+    {"name": "Торговый центр 'Эдем'", "group": "Green", "price": 300, "rent": [26, 130, 390, 900, 1100, 1275]},  # 32
+    {"name": "Слухи", "group": "Chance", "price": 0, "rent": []},  # 33
+    {"name": "Фитнес-клуб 'Титан'", "group": "Green", "price": 320, "rent": [28, 150, 450, 1000, 1200, 1400]},  # 34
+    {"name": "Оптовая База Пива", "group": "Station", "price": 200, "rent": [50, 100, 250, 500]},  # 35
+    {"name": "ТОТАЛИЗАТОР", "group": "Casino", "price": 0, "rent": []},  # 36
+    {"name": "Администрация", "group": "DarkBlue", "price": 350, "rent": [35, 175, 500, 1100, 1300, 1500]},  # 37
+    {"name": "Налог на роскошь", "group": "Tax", "price": 0, "rent": [100]},  # 38
+    {"name": "Коттедж Мэра", "group": "DarkBlue", "price": 400, "rent": [50, 200, 600, 1400, 1700, 2000]},  # 39
 ]
 
 # Character abilities
@@ -182,13 +182,35 @@ def create_board(map_type: str = "World") -> List[Property]:
     """Create the game board with 40 tiles."""
     properties = []
     
-    if map_type == "Monopoly1":
-        # Monopoly1 has a complete custom layout
-        for i, prop_data in enumerate(MONOPOLY1_MAP_DATA):
+    if map_type == "Mukhosransk":
+        # MUKHOSRANSK has a custom layout
+        for i, prop_data in enumerate(MUKHOSRANSK_MAP_DATA):
+            type_ = "property"
+            action = None
+            grp = prop_data["group"]
+            
+            if grp == "Station":
+                type_ = "beer_shop"
+            elif grp == "Utility":
+                type_ = "utility"
+            elif grp in ["Special", "Jail", "FreeParking", "GoToJail", "Tax", "Chance", "Casino"]:
+                type_ = "service"
+            
+            # Actions and behavior mapping
+            if grp == "Special" and i == 0: action = "collect_200"
+            elif grp == "Jail": action = "just_visiting"
+            elif grp == "GoToJail": action = "go_to_jail"
+            elif grp == "Tax": action = f"pay_{prop_data.get('rent', [0])[0]}"
+            elif grp == "Chance": action = "chance"
+            elif grp == "FreeParking": action = "parking"
+            elif grp == "Casino": action = "casino"
+            
             properties.append(Property(
                 id=i,
                 name=prop_data["name"],
                 group=prop_data["group"],
+                type=type_,
+                action=action,
                 price=prop_data["price"],
                 rent=prop_data.get("rent", [])
             ))
@@ -460,7 +482,7 @@ class GameEngine:
         # Check if passed GO
         # Standard: if crossed 0. Also handles landing exactly on 0.
         if (new_position < old_position) or (new_position == 0 and old_position != 0):
-            go_money = 2000 if game.map_type == "Monopoly1" else 200
+            go_money = 200
             player.money += go_money
             result["passed_go"] = True
             game.logs.append(f"🏧 {player.name} passed START and collected ${go_money}")
@@ -828,18 +850,21 @@ class GameEngine:
         return self._handle_bankruptcy(game, player, None, 0)
 
     def play_casino(self, game_id: str, player_id: str, bet_numbers: List[int]) -> Dict[str, Any]:
-        """Handle Casino bet logic."""
+        """Handle Casino/Totalizator bet logic based on map."""
         game = self.games.get(game_id)
         if not game: return {"error": "Game not found"}
         
         player = game.players.get(player_id)
         if not player: return {"error": "Player not found"}
         
+        is_totalizator = game.map_type == "Mukhosransk"
+
         # Handle SKIP (Refuse to play)
         if bet_numbers == []:
-            cost = 50
-            player.money -= cost
-            game.logs.append(f"🎰 {player.name} отказался от игры в Казино и заплатил $50 штрафа.")
+            cost = 100 if is_totalizator else 50
+            player.money = max(0, player.money - cost)
+            msg = f"🐎 {player.name} отказался ставить на тотализаторе. С горя выпил на $100." if is_totalizator else f"🎰 {player.name} отказался от игры в казино. Штраф $50."
+            game.logs.append(msg)
             return {
                 "player_id": player_id,
                 "action": "casino_result",
@@ -847,29 +872,44 @@ class GameEngine:
                 "game_state": game.dict()
             }
 
-        # Validate bet
-        if len(bet_numbers) > 3:
-            return {"error": "Invalid bet. Choose 1-3 numbers."}
+        # Rules adjustment
+        if is_totalizator:
+            bet_amount = 300
+            if player.money < bet_amount:
+                return {"error": f"Нужно хотя бы ${bet_amount}, чтобы зайти в тотализатор!"}
+            player.money -= bet_amount
+        else:
+            bet_amount = 0 # Casino is free entry, but high risk
+        
+        # Validate bet numbers
+        if not bet_numbers or len(bet_numbers) > 3:
+            return {"error": "Выберите от 1 до 3 чисел."}
         
         for n in bet_numbers:
             if not (1 <= n <= 6):
-                 return {"error": "Numbers must be 1-6"}
-                 
+                 return {"error": "Числа должны быть от 1 до 6"}
+        
         # Roll One Die (1-6)
         roll = random.randint(1, 6)
         won = roll in bet_numbers
         choices_str = ", ".join(map(str, sorted(bet_numbers)))
         
-        # Calculate prize
-        prize = 0
         if won:
-            count = len(bet_numbers)
-            if count == 1: prize = 3000
-            elif count == 2: prize = 1500
-            elif count == 3: prize = 1000
+            prize = 0
+            if is_totalizator:
+                count = len(bet_numbers)
+                if count == 1: prize = 1800 # 300 * 6
+                elif count == 2: prize = 900 # 300 * 3
+                elif count == 3: prize = 600 # 300 * 2
+            else:
+                count = len(bet_numbers)
+                if count == 1: prize = 3000
+                elif count == 2: prize = 1500
+                elif count == 3: prize = 1000
             
             player.money += prize
-            game.logs.append(f"🎰 {player.name} выбрал ({choices_str}), выпало {roll} и ВЫИГРАЛ ${prize}!")
+            icon = "🐎 ТОТАЛИЗАТОР" if is_totalizator else "🎰 КАЗИНО"
+            game.logs.append(f"{icon}: {player.name} выиграл! Пришло число {roll}. Приз: ${prize}!")
             return {
                 "player_id": player_id,
                 "action": "casino_result",
@@ -879,20 +919,29 @@ class GameEngine:
                 "game_state": game.dict()
             }
         else:
-            game.logs.append(f"🎰 {player.name} выбрал ({choices_str}), выпало {roll} и ПРОИГРАЛ ВСЕ. Революция!")
-            game.logs.append(f"🔥 РЕВОЛЮЦИЯ! {player.name} был свергнут.")
-            # ELIMINATE PLAYER (Revolution)
-            res = self._handle_bankruptcy(game, player, None, 0)
-            
-            return {
-                "player_id": player_id,
-                "action": "casino_result",
-                "win": False,
-                "roll": roll,
-                "eliminated": True,
-                "game_state": res["game_state"],
-                "game_over": res.get("game_over", False)
-            }
+            icon = "🐎 ТОТАЛИЗАТОР" if is_totalizator else "🎰 КАЗИНО"
+            if is_totalizator:
+                game.logs.append(f"{icon}: {player.name} проиграл. Первой пришла №{roll}. Ставка ${bet_amount} утеряна.")
+                return {
+                    "player_id": player_id,
+                    "action": "casino_result",
+                    "win": False,
+                    "roll": roll,
+                    "amount": -bet_amount,
+                    "game_state": game.dict()
+                }
+            else:
+                game.logs.append(f"{icon}: {player.name} ПРОИГРАЛ ВСЁ! РЕВОЛЮЦИЯ! Выпало {roll}.")
+                # Handle Bankruptcy/Elimination for Casino
+                self._handle_bankruptcy(game, player, None, 0)
+                return {
+                    "player_id": player_id,
+                    "action": "casino_result",
+                    "win": False,
+                    "roll": roll,
+                    "eliminated": True,
+                    "game_state": game.dict()
+                }
 
             
 

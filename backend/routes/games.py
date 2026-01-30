@@ -76,8 +76,6 @@ async def create_game(
     
     game_id = str(uuid.uuid4())[:8].upper()
     starting_money = request.starting_money
-    if request.map_type == "Monopoly1" and starting_money == 1500:
-        starting_money = 15000 # Standard Monopoly One start
         
     game = engine.create_game(
         game_id=game_id, 
