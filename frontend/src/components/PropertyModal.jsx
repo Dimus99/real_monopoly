@@ -133,17 +133,31 @@ const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, 
                             </div>
                         </div>
                         {property.owner_id && !property.is_mortgaged && (
-                            <div className="bg-green-500/10 border border-green-500/20 p-3 rounded-[16px] text-center backdrop-blur-md">
-                                <div className="text-[9px] text-green-400 uppercase font-black tracking-widest mb-0.5">Текущая аренда</div>
-                                <div className="text-2xl font-black text-white font-mono tracking-tighter">
-                                    ${(() => {
-                                        if (property.houses > 0) return property.rent?.[property.houses] || 0;
-                                        if (property.group === 'Station') {
-                                            const stations_owned = tiles ? tiles.filter(t => t.group === 'Station' && t.owner_id === property.owner_id).length : 1;
-                                            return property.rent?.[stations_owned - 1] || property.rent?.[0] || 0;
-                                        }
-                                        return (property.is_monopoly && property.group !== 'Utility') ? (property.rent?.[0] * 2) : (property.rent?.[0] || 0);
-                                    })()}
+                            <div className={`p-3 rounded-[16px] text-center backdrop-blur-md border ${property.isolation_turns > 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-green-500/10 border-green-500/20'}`}>
+                                <div className={`text-[9px] uppercase font-black tracking-widest mb-0.5 ${property.isolation_turns > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                                    {property.isolation_turns > 0 ? 'Ядерная Угроза' : 'Текущая аренда'}
+                                </div>
+                                <div className="text-2xl font-black text-white font-mono tracking-tighter flex items-center justify-center gap-2">
+                                    {property.isolation_turns > 0 ? (
+                                        <div className="flex flex-col items-center">
+                                            <div className="flex items-center gap-2 text-red-500">
+                                                <span className="text-xl">☢️</span>
+                                                <span>БЛОК</span>
+                                            </div>
+                                            <div className="text-[10px] text-red-400/70 font-bold uppercase mt-1">
+                                                Аренда заблокирована ({property.isolation_turns})
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        `$${(() => {
+                                            if (property.houses > 0) return (property.rent?.[property.houses] || 0).toLocaleString();
+                                            if (property.group === 'Station') {
+                                                const stations_owned = tiles ? tiles.filter(t => t.group === 'Station' && t.owner_id === property.owner_id).length : 1;
+                                                return (property.rent?.[stations_owned - 1] || property.rent?.[0] || 0).toLocaleString();
+                                            }
+                                            return ((property.is_monopoly && property.group !== 'Utility') ? (property.rent?.[0] * 2) : (property.rent?.[0] || 0)).toLocaleString();
+                                        })()}`
+                                    )}
                                 </div>
                             </div>
                         )}
