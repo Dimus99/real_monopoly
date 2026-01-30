@@ -223,7 +223,7 @@ class GamePlayerDB(Base):
     user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     player_id: Mapped[str] = mapped_column(String(36), nullable=False)  # In-game player ID
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    character: Mapped[CharacterType] = mapped_column(Enum(CharacterType), nullable=False)
+    character: Mapped[CharacterType] = mapped_column(Enum(CharacterType, name="charactertype"), nullable=False)
     color: Mapped[str] = mapped_column(String(10), nullable=False)
     is_bot: Mapped[bool] = mapped_column(Boolean, default=False)
     is_bankrupt: Mapped[bool] = mapped_column(Boolean, default=False)
