@@ -257,6 +257,16 @@ const GameRoom = () => {
         // Do NOT setHasRolled(false) here. Wait for backend confirmation.
     };
 
+    const handleSync = () => {
+        console.log("Manual Sync Triggered");
+        sendAction('SYNC');
+        // Force unlock UI locks that might be stuck
+        setIsRolling(false);
+        setDiceRolling(false);
+        setShowDice(false);
+        setHasRolled(!!gameState?.turn_state?.has_rolled);
+    };
+
     const handleAbility = (abilityType) => {
         if (!isMyTurn || !currentPlayer) return;
 
@@ -292,11 +302,30 @@ const GameRoom = () => {
         return () => clearInterval(interval);
     }, [gameState?.turn_expiry, gameState?.current_turn_index]); // Also update on turn index change
 
+    const [lastRollTime, setLastRollTime] = useState(0);
+
     const handleRoll = () => {
         if (!isMyTurn || isRolling) return;
         setIsRolling(true);
+        setLastRollTime(Date.now());
         sendAction('ROLL');
     };
+
+    // Safety Timeout: If rolling for more than 15 seconds, something is wrong.
+    useEffect(() => {
+        if (isRolling && lastRollTime > 0) {
+            const timer = setTimeout(() => {
+                const now = Date.now();
+                if (now - lastRollTime > 15000) {
+                    console.warn("Dice roll sequence took too long (>15s). Forcing unlock.");
+                    setIsRolling(false);
+                    setDiceRolling(false);
+                    setShowDice(false);
+                }
+            }, 16000);
+            return () => clearTimeout(timer);
+        }
+    }, [isRolling, lastRollTime]);
 
     const handleSendMessage = (text) => {
         if (text.trim()) sendAction('CHAT', { message: text });
@@ -646,6 +675,25 @@ const GameRoom = () => {
                     alert(`Внимание: ${lastAction.message}`);
                 }
                 break;
+            case 'SYNC_RESPONSE':
+                if (lastAction.game_state) {
+                    setDelayedPlayers(lastAction.game_state.players);
+                    if (isMyTurn && lastAction.game_state.turn_state) {
+                        setHasRolled(!!lastAction.game_state.turn_state.has_rolled);
+                        setIsDoubles(!!lastAction.game_state.turn_state.is_doubles);
+
+                        // Sync rent/tax details
+                        if (lastAction.game_state.turn_state.awaiting_payment) {
+                            setRentDetails({
+                                amount: lastAction.game_state.turn_state.awaiting_payment_amount,
+                                ownerId: lastAction.game_state.turn_state.awaiting_payment_owner
+                            });
+                        } else {
+                            setRentDetails(null);
+                        }
+                    }
+                }
+                break;
             case 'GAME_OVER': setShowVictory(true); break;
             case 'TRADE_OFFERED':
                 if (lastAction.trade?.to_player_id === playerId) setIncomingTrade(lastAction.trade);
@@ -984,14 +1032,24 @@ const GameRoom = () => {
 
                     </div>
 
-                    <button onClick={() => copyToClipboard(gameId)} className={`flex flex-col ${sidebarCollapsed ? 'items-center w-full' : 'items-end'}`}>
-                        {sidebarCollapsed ? <Copy size={16} className="text-blue-400 mb-1" /> : (
-                            <>
-                                <span className="text-[9px] text-blue-500 font-bold tracking-widest uppercase">ID игры</span>
-                                <span className="text-sm font-mono font-bold text-blue-400">#{gameId.substring(0, 6)}</span>
-                            </>
-                        )}
-                    </button>
+                    <div className={`flex items-center gap-2 ${sidebarCollapsed ? 'flex-col w-full' : ''}`}>
+                        <button onClick={() => copyToClipboard(gameId)} className={`flex flex-col ${sidebarCollapsed ? 'items-center w-full' : 'items-end'}`}>
+                            {sidebarCollapsed ? <Copy size={16} className="text-blue-400 mb-1" /> : (
+                                <>
+                                    <span className="text-[9px] text-blue-500 font-bold tracking-widest uppercase">ID игры</span>
+                                    <span className="text-sm font-mono font-bold text-blue-400">#{gameId.substring(0, 6)}</span>
+                                </>
+                            )}
+                        </button>
+
+                        <button
+                            onClick={handleSync}
+                            className={`p-1.5 rounded-lg hover:bg-white/10 text-gray-400 transition-colors ${sidebarCollapsed ? 'w-full flex justify-center' : ''}`}
+                            title="Синхронизировать состояние"
+                        >
+                            <ArrowLeftRight size={16} className={isRolling ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
 
                     <button
                         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}

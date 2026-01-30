@@ -31,7 +31,7 @@ const useGameSocket = (gameId, playerId) => {
                 if (ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ action: 'PING' }));
                 }
-            }, 25000);
+            }, 15000);
         };
 
         ws.onmessage = (event) => {

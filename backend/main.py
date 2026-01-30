@@ -538,6 +538,12 @@ async def websocket_game(
                         await _check_and_run_bot_turn(game_id)
             
             
+            elif action == "SYNC":
+                await websocket.send_json({
+                    "type": "SYNC_RESPONSE",
+                    "game_state": jsonable_encoder(game)
+                })
+
             elif action == "PING":
                 await websocket.send_json({"type": "PONG"})
             
