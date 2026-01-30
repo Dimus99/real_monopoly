@@ -256,143 +256,70 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
         });
     }
 
+    // 1. Pre-calculate monopoly statuses for performance and to prevent flashing
+    const groupMonopolies = React.useMemo(() => {
+        if (!tiles) return {};
+        const monopolies = {};
+        const groups = [...new Set(tiles.map(t => t.group))];
+
+        groups.forEach(group => {
+            if (['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax'].includes(group)) {
+                monopolies[group] = false;
+                return;
+            }
+            const groupTiles = tiles.filter(t => t.group === group);
+            const firstOwner = groupTiles[0]?.owner_id;
+            monopolies[group] = firstOwner && groupTiles.every(t => t.owner_id === firstOwner);
+        });
+        return monopolies;
+    }, [tiles]);
+
     return (
         <div ref={boardRef} className="board-grid relative">
-            {/* Animated Player Avatars */}
+            {/* Animated Player Avatars ... (unchanged) */}
             {Object.entries(playerPositions).map(([playerId, pos]) => {
+                // ... Avatar rendering remains same ...
                 const player = players?.[playerId];
-                if (!player || pos.x === undefined || pos.y === undefined || (pos.x === 0 && pos.y === 0)) {
-                    if (player && player.position !== undefined) return null;
-                    return null;
-                }
-
+                if (!player || pos.x === undefined || pos.y === undefined || (pos.x === 0 && pos.y === 0)) return null;
                 const char = BOARD_CHARACTERS[player.character] || {};
                 const prevPos = prevPositionsRef.current[playerId];
                 const isMoving = prevPos && prevPos.position !== undefined && (prevPos.position !== pos.position);
-
-                // Calculate offset if multiple players are on the same tile
-                // SORT by ID to ensure stable indexing and prevent "teleporting" jitter
                 const playersOnTile = (playersByTile[pos.position] || []).sort((a, b) => String(a.id).localeCompare(String(b.id)));
                 const indexOnTile = playersOnTile.findIndex(p => p.id === playerId);
                 const totalOnTile = playersOnTile.length;
-
-                let offsetX = 0;
-                let offsetY = 0;
-
+                let offsetX = 0, offsetY = 0;
                 if (totalOnTile > 1) {
-                    const radius = 22; // Relative to tile center
+                    const radius = 22;
                     const angle = (2 * Math.PI * indexOnTile) / totalOnTile;
                     offsetX = Math.cos(angle) * radius;
                     offsetY = Math.sin(angle) * radius;
                 }
-
                 const pathIndices = animatedPaths[playerId];
                 const hasPath = pathIndices && pathIndices.length > 0;
-
                 const isMobile = window.innerWidth < 768;
                 const gap = isMobile ? 1 : 2;
-
-                // Map indices to real-time pixel coordinates from current board size
-                // This makes movement reactive to sidebar toggles/window resize!
                 const pathCoords = hasPath ? pathIndices.map(pos => getTileCoordinates(pos, boardRef, gap)) : null;
-
-                // Center point adjustment (icon is 44x44)
                 const ICON_HALF_SIZE = 22;
 
                 return (
                     <motion.div
                         key={playerId}
-                        initial={isMoving && prevPos ? {
-                            x: prevPos.x + offsetX - ICON_HALF_SIZE,
-                            y: prevPos.y + offsetY - ICON_HALF_SIZE
-                        } : {
-                            x: pos.x + offsetX - ICON_HALF_SIZE,
-                            y: pos.y + offsetY - ICON_HALF_SIZE
-                        }}
-                        animate={hasPath ? {
-                            x: pathCoords.map(c => c.x + offsetX - ICON_HALF_SIZE),
-                            y: pathCoords.map(c => c.y + offsetY - ICON_HALF_SIZE)
-                        } : {
-                            x: pos.x + offsetX - ICON_HALF_SIZE,
-                            y: pos.y + offsetY - ICON_HALF_SIZE
-                        }}
+                        initial={isMoving && prevPos ? { x: prevPos.x + offsetX - ICON_HALF_SIZE, y: prevPos.y + offsetY - ICON_HALF_SIZE } : { x: pos.x + offsetX - ICON_HALF_SIZE, y: pos.y + offsetY - ICON_HALF_SIZE }}
+                        animate={hasPath ? { x: pathCoords.map(c => c.x + offsetX - ICON_HALF_SIZE), y: pathCoords.map(c => c.y + offsetY - ICON_HALF_SIZE) } : { x: pos.x + offsetX - ICON_HALF_SIZE, y: pos.y + offsetY - ICON_HALF_SIZE }}
                         whileHover={{ scale: 1.15, zIndex: 100 }}
-                        transition={hasPath ? {
-                            duration: pathCoords.length * 0.15,
-                            ease: "linear",
-                            times: pathCoords.map((_, i) => (i + 1) / pathCoords.length)
-                        } : {
-                            type: "spring",
-                            stiffness: 150,
-                            damping: 20
-                        }}
+                        transition={hasPath ? { duration: pathCoords.length * 0.15, ease: "linear", times: pathCoords.map((_, i) => (i + 1) / pathCoords.length) } : { type: "spring", stiffness: 150, damping: 20 }}
                         className="absolute pointer-events-auto cursor-pointer flex items-center justify-center z-50"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (onAvatarClick) onAvatarClick(playerId);
-                        }}
-                        style={{
-                            left: 0,
-                            top: 0,
-                            width: '44px',
-                            height: '44px',
-                            zIndex: 50 + indexOnTile
-                        }}
+                        onClick={(e) => { e.stopPropagation(); if (onAvatarClick) onAvatarClick(playerId); }}
+                        style={{ left: 0, top: 0, width: '44px', height: '44px', zIndex: 50 + indexOnTile }}
                     >
-                        {/* Shadow/Glow effect */}
-                        <div
-                            className="absolute rounded-full blur-[3px]"
-                            style={{
-                                width: '36px',
-                                height: '36px',
-                                background: playerId === currentPlayerId ? (char.color || '#FFD700') : 'rgba(0,0,0,0.5)',
-                                opacity: 0.6,
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)'
-                            }}
-                        />
-
-                        {/* Avatar Image */}
-                        <motion.div
-                            style={{
-                                width: '40px',
-                                height: '40px',
-                                minWidth: '40px',
-                                maxWidth: '40px',
-                                minHeight: '40px',
-                                maxHeight: '40px',
-                                borderRadius: '50%',
-                                border: `2px solid ${char.color || '#fff'}`,
-                                position: 'relative',
-                                zIndex: 2,
-                                backgroundColor: '#1a1a2e',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                overflow: 'hidden'
-                            }}
-                            animate={isMoving ? {
-                                scale: [1, 1.2, 1],
-                                y: [0, -5, 0]
-                            } : {
-                                scale: playerId === currentPlayerId ? [1, 1.1, 1] : 1
-                            }}
-                            transition={isMoving ? {
-                                duration: 0.5,
-                                times: [0, 0.5, 1]
-                            } : {
-                                duration: 2,
-                                repeat: Infinity,
-                                repeatType: "reverse"
-                            }}
-                        >
+                        <div className="absolute rounded-full blur-[3px]" style={{ width: '36px', height: '36px', background: playerId === currentPlayerId ? (char.color || '#FFD700') : 'rgba(0,0,0,0.5)', opacity: 0.6, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
+                        <motion.div style={{ width: '40px', height: '40px', borderRadius: '50%', border: `2px solid ${char.color || '#fff'}`, position: 'relative', zIndex: 2, backgroundColor: '#1a1a2e', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justify_content: 'center', overflow: 'hidden' }} animate={isMoving ? { scale: [1, 1.2, 1], y: [0, -5, 0] } : { scale: playerId === currentPlayerId ? [1, 1.1, 1] : 1 }} transition={isMoving ? { duration: 0.5, times: [0, 0.5, 1] } : { duration: 2, repeat: Infinity, repeatType: "reverse" }}>
                             <img src={char.avatar} alt={player.name} className="w-full h-full object-cover" />
                         </motion.div>
                     </motion.div>
                 );
             })}
+
             {/* Center Map Area */}
             <motion.div
                 initial={{ opacity: 0 }}
@@ -401,96 +328,34 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                 style={{ gridRow: '2 / 11', gridColumn: '2 / 11' }}
                 className="board-center flex items-center justify-center p-4 relative z-0"
             >
+                {/* ... Center content remains same ... */}
                 <div className={`relative z-10 text-center transition-opacity duration-300`}>
                     {winner ? (
-                        <motion.div
-                            initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ type: "spring", stiffness: 200 }}
-                            className="flex flex-col items-center"
-                        >
-                            <h1 className="font-display text-5xl md:text-6xl font-black text-yellow-400 tracking-tight drop-shadow-[0_0_20px_rgba(255,215,0,0.5)] mb-4">
-                                ИГРА ОКОНЧЕНА
-                            </h1>
+                        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200 }} className="flex flex-col items-center">
+                            <h1 className="font-display text-5xl md:text-6xl font-black text-yellow-400 tracking-tight drop-shadow-[0_0_20px_rgba(255,215,0,0.5)] mb-4">ИГРА ОКОНЧЕНА</h1>
                             <div className="text-2xl text-white font-bold mb-2">ПОБЕДИТЕЛЬ</div>
                             <div className="relative">
-                                <img
-                                    src={BOARD_CHARACTERS[winner.character]?.avatar}
-                                    className="w-32 h-32 rounded-full border-4 border-yellow-400 shadow-[0_0_50px_rgba(255,215,0,0.6)] object-cover"
-                                />
-                                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-4 py-1 rounded-full font-black uppercase text-sm whitespace-nowrap">
-                                    {winner.name}
-                                </div>
+                                <img src={BOARD_CHARACTERS[winner.character]?.avatar} className="w-32 h-32 rounded-full border-4 border-yellow-400 shadow-[0_0_50px_rgba(255,215,0,0.6)] object-cover" />
+                                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-4 py-1 rounded-full font-black uppercase text-sm whitespace-nowrap">{winner.name}</div>
                             </div>
                         </motion.div>
                     ) : (
                         <>
-                            <motion.h1
-                                initial={{ scale: 0.8 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: 0.5, type: 'spring' }}
-                                className="font-display text-5xl md:text-7xl font-black text-white tracking-tight drop-shadow-lg"
-                            >
-                                {mapType === 'Ukraine' ? 'УКРАИНА' : 'МИР'}
-                            </motion.h1>
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.7 }}
-                                className="text-xl md:text-2xl font-display text-yellow-400 mt-2"
-                            >
-                                МОНОПОЛИЯ
-                            </motion.div>
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.9 }}
-                                className="text-sm text-gray-400 mt-4"
-                            >
-                                Сатирическое Издание
-                            </motion.div>
+                            <motion.h1 initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.5, type: 'spring' }} className="font-display text-5xl md:text-7xl font-black text-white tracking-tight drop-shadow-lg">{mapType === 'Ukraine' ? 'УКРАИНА' : 'МИР'}</motion.h1>
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="text-xl md:text-2xl font-display text-yellow-400 mt-2">МОНОПОЛИЯ</motion.div>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} className="text-sm text-gray-400 mt-4">Сатирическое Издание</motion.div>
                         </>
                     )}
-
-
-                    {/* Animated globe or map icon */}
-                    <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
-                        className="absolute -z-10 inset-0 flex items-center justify-center opacity-10"
-                    >
-                        <div className="text-[200px]">🌍</div>
-                    </motion.div>
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 60, repeat: Infinity, ease: 'linear' }} className="absolute -z-10 inset-0 flex items-center justify-center opacity-10"><div className="text-[200px]">🌍</div></motion.div>
                 </div>
 
-                {/* Center Content: Either Property Details or Chat/Logs */}
-                {/* Contextual Hover Info */}
                 <AnimatePresence>
                     {hoveredTileId !== null && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                            className="absolute z-50 pointer-events-none"
-                            style={{
-                                // Always center tooltip in the board area for consistent visibility
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)'
-                            }}
-                        >
+                        <motion.div initial={{ opacity: 0, scale: 0.8, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.8, y: 10 }} className="absolute z-50 pointer-events-none" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
                             <div className="bg-[#1a1b26]/95 backdrop-blur-xl p-3 px-5 rounded-2xl border border-white/20 text-white shadow-[0_10px_40px_rgba(0,0,0,0.6)] flex flex-col items-center gap-1 min-w-[140px]">
-                                <div className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
-                                    {tiles.find(t => t.id === hoveredTileId)?.group}
-                                </div>
-                                <div className="font-black text-sm uppercase tracking-tight">
-                                    {tiles.find(t => t.id === hoveredTileId)?.name}
-                                </div>
-                                {tiles.find(t => t.id === hoveredTileId)?.price > 0 && (
-                                    <div className="text-yellow-400 font-mono font-black text-lg">
-                                        ${tiles.find(t => t.id === hoveredTileId)?.price}
-                                    </div>
-                                )}
+                                <div className="text-[10px] font-black tracking-widest text-gray-400 uppercase">{tiles.find(t => t.id === hoveredTileId)?.group}</div>
+                                <div className="font-black text-sm uppercase tracking-tight">{tiles.find(t => t.id === hoveredTileId)?.name}</div>
+                                {tiles.find(t => t.id === hoveredTileId)?.price > 0 && <div className="text-yellow-400 font-mono font-black text-lg">${tiles.find(t => t.id === hoveredTileId)?.price}</div>}
                             </div>
                         </motion.div>
                     )}
@@ -500,73 +365,33 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                     <AnimatePresence>
                         {(selectedTileId !== null && selectedTileId !== undefined) && (
                             <>
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="absolute inset-0 z-40 pointer-events-auto bg-black/20 backdrop-blur-[2px]"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onTileClick(null);
-                                    }}
-                                />
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.8, y: 30 }}
-                                    animate={{ opacity: 1, scale: 0.9, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.8, y: 30 }}
-                                    className="pointer-events-auto z-50 relative"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <PropertyModal
-                                        property={tiles.find(t => t.id === selectedTileId)}
-                                        players={players}
-                                        tiles={tiles}
-                                        canBuy={isMyTurn && players[currentPlayerId]?.position === selectedTileId && !tiles.find(t => t.id === selectedTileId)?.owner_id}
-                                        onBuy={onBuy}
-                                        onClose={() => onTileClick(null)}
-                                        onBuild={onBuild}
-                                        onSellHouse={onSellHouse}
-                                        onMortgage={onMortgage}
-                                        onUnmortgage={onUnmortgage}
-                                        currentPlayerId={currentPlayerId}
-                                        canBuild={canBuild}
-                                    />
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-40 pointer-events-auto bg-black/20 backdrop-blur-[2px]" onClick={(e) => { e.stopPropagation(); onTileClick(null); }} />
+                                <motion.div initial={{ opacity: 0, scale: 0.8, y: 30 }} animate={{ opacity: 1, scale: 0.9, y: 0 }} exit={{ opacity: 0, scale: 0.8, y: 30 }} className="pointer-events-auto z-50 relative" onClick={(e) => e.stopPropagation()}>
+                                    <PropertyModal property={tiles.find(t => t.id === selectedTileId)} players={players} tiles={tiles} canBuy={isMyTurn && players[currentPlayerId]?.position === selectedTileId && !tiles.find(t => t.id === selectedTileId)?.owner_id} onBuy={onBuy} onClose={() => onTileClick(null)} onBuild={onBuild} onSellHouse={onSellHouse} onMortgage={onMortgage} onUnmortgage={onUnmortgage} currentPlayerId={currentPlayerId} canBuild={canBuild} />
                                 </motion.div>
                             </>
                         )}
                     </AnimatePresence>
                 </div>
-
-
             </motion.div>
 
-            {/* Render all tiles */}
-            {tiles.map((tile, index) => (
-                <motion.div
-                    key={tile.id}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.015 }}
-                    style={getTileStyle(tile.id)}
-                >
-                    <Tile
-                        property={tile}
-                        playersHere={playersByTile[tile.id]}
-                        onClick={handleTileInteraction}
-                        image={TILE_IMAGES[tile.name]}
-                        isCorner={[0, 10, 20, 30].includes(tile.id)}
-                        currentPlayerId={currentPlayerId}
-                        allPlayers={players}
-                        isMonopoly={(() => {
-                            if (['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax'].includes(tile.group)) return false;
-                            const groupTiles = tiles.filter(t => t.group === tile.group);
-                            if (groupTiles.length === 0) return false;
-                            const firstOwner = groupTiles[0].owner_id;
-                            return firstOwner && groupTiles.every(t => t.owner_id === firstOwner);
-                        })()}
-                    />
-                </motion.div>
-            ))}
+            {/* Render all tiles - Optimized Loop */}
+            {tiles.map((tile) => {
+                const owner = players?.[tile.owner_id];
+                return (
+                    <div key={tile.id} style={getTileStyle(tile.id)} className="w-full h-full">
+                        <Tile
+                            property={tile}
+                            isCurrentPlayerHere={players?.[currentPlayerId]?.position === tile.id}
+                            onClick={handleTileInteraction}
+                            image={TILE_IMAGES[tile.name]}
+                            isCorner={[0, 10, 20, 30].includes(tile.id)}
+                            isMonopoly={groupMonopolies[tile.group]}
+                            ownerInfo={owner ? { character: owner.character, name: owner.name } : null}
+                        />
+                    </div>
+                );
+            })}
         </div>
     );
 };

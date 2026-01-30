@@ -109,7 +109,8 @@ const getColorBarStyle = (tileId) => {
     }
 };
 
-const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentPlayerId, allPlayers, isMonopoly }) => {
+// Memoize Tile component to prevent flashing and unnecessary rerenders
+const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, style, image, isCorner, isMonopoly, ownerInfo }) => {
     const groupStyle = GROUP_STYLES[property.group] || GROUP_STYLES.Special;
     const specialIcon = SPECIAL_ICONS[property.name];
     const isPropertyTile = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking', 'Negotiations', 'RaiseTax', 'Casino'].includes(property.group) && !isCorner;
@@ -117,22 +118,7 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
     const colorBarStyle = getColorBarStyle(property.id);
     const orientation = getTileOrientation(property.id);
 
-    // Find owner's character for flag display
-    let ownerCharacter = null;
-    let ownerFlag = null;
-    let ownerColors = null;
-    let owner = null;
-
-    if (hasOwner && allPlayers) {
-        owner = Object.values(allPlayers).find(p => p.id === property.owner_id);
-        if (owner) {
-            ownerCharacter = owner.character;
-            ownerFlag = CHARACTER_FLAGS[ownerCharacter];
-            ownerColors = CHARACTER_COLORS[ownerCharacter];
-        }
-    }
-
-    const currentPlayerHere = playersHere?.some(p => p.id === currentPlayerId);
+    const ownerColors = ownerInfo ? CHARACTER_COLORS[ownerInfo.character] : null;
 
     // Dynamic padding for content to avoid overlap with color bar
     let contentPaddingClass = 'p-1';
@@ -144,12 +130,9 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
     }
 
     // User requested NO TEXT ROTATION. All text must be upright.
-    // User requested to save space on side airports (Stations) by putting icon to side
     const isSideStation = property.group === 'Station' && (orientation === 'left-col' || orientation === 'right-col');
     let contentLayoutClass = (!isPropertyTile && !isCorner) ? 'flex-row' : 'flex-col';
-    if (isSideStation) contentLayoutClass = 'flex-row'; // Force side layout
-
-    let contentRotation = '';
+    if (isSideStation) contentLayoutClass = 'flex-row';
 
     return (
         <div
@@ -157,10 +140,9 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
             onMouseLeave={() => onClick(null, 'leave')}
             onClick={() => onClick(property.id, 'click')}
             data-tile-id={property.id}
-            className={`tile relative w-full h-full border ${property.is_destroyed ? 'tile-destroyed' : ''} ${currentPlayerHere ? 'ring-2 ring-yellow-400 z-20' : ''}`}
+            className={`tile relative w-full h-full border transition-shadow duration-300 ${property.is_destroyed ? 'tile-destroyed' : ''} ${isCurrentPlayerHere ? 'ring-2 ring-yellow-400 z-20 shadow-[0_0_15px_rgba(250,204,21,0.5)]' : ''}`}
             style={{
                 ...style,
-                // If monopoly, use owner's flag gradient as background instead of dark blue
                 background: isCorner ? groupStyle.gradient : (isMonopoly && hasOwner && ownerColors ? ownerColors.bg : '#1a1a2e'),
                 borderColor: hasOwner && ownerColors
                     ? ownerColors.border
@@ -171,39 +153,36 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                     : 'inset 0 0 20px rgba(0,0,0,0.3)',
             }}
         >
-            {/* Owner Avatar Overlay - Top Right corner */}
-            {hasOwner && owner && !property.is_destroyed && (
-                <div className="absolute top-0.5 right-0.5 z-30 filter drop-shadow-md transform hover:scale-125 transition-transform" title={`Owned by ${owner.name}`}>
+            {/* Owner Avatar Overlay */}
+            {hasOwner && ownerInfo && !property.is_destroyed && (
+                <div className="absolute top-0.5 right-0.5 z-30 filter drop-shadow-md transform hover:scale-125 transition-transform">
                     <div className="w-5 h-5 md:w-6 md:h-6 rounded-full overflow-hidden border-2" style={{ borderColor: ownerColors?.border || '#fff' }}>
-                        <img src={AVATAR_MAP[owner.character]?.avatar || '/avatars/putin.png'} alt={ownerCharacter} className="w-full h-full object-cover" />
+                        <img src={AVATAR_MAP[ownerInfo.character]?.avatar || '/avatars/putin.png'} alt={ownerInfo.character} className="w-full h-full object-cover" />
                     </div>
                 </div>
             )}
 
-            {/* Color Bar for purchasable properties - on inner side - ALWAYS VISIBLE */}
+            {/* Color Bar */}
             {isPropertyTile && colorBarStyle && (
                 <div
                     className="absolute z-10"
                     style={{
                         ...colorBarStyle,
                         background: groupStyle.gradient,
-                        boxShadow: '0 0 8px rgba(0,0,0,0.5)'
+                        boxShadow: '0 0 4px rgba(0,0,0,0.5)'
                     }}
                 />
             )}
 
             {/* Tile Content */}
-            <div className={`flex-1 flex ${contentLayoutClass} items-center justify-center gap-1.5 relative h-full ${contentPaddingClass} ${contentRotation}`}>
-                {/* Special tile icon */}
+            <div className={`flex-1 flex ${contentLayoutClass} items-center justify-center gap-1.5 relative h-full ${contentPaddingClass}`}>
                 {(specialIcon || groupStyle.icon) && (
                     <div className={`${isCorner ? 'text-2xl md:text-3xl' : (isSideStation ? 'text-lg mr-1' : 'text-xl md:text-2xl')} drop-shadow-md`}>
                         {specialIcon || groupStyle.icon}
                     </div>
                 )}
 
-                {/* Container for name and price to handle horizontal/vertical layout */}
                 <div className="flex flex-col items-center justify-center">
-                    {/* Tile Name */}
                     <div
                         className="tile-name leading-tight text-center px-0.5"
                         style={{
@@ -218,11 +197,8 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                     >
                         {property.name}
                     </div>
-
-                    {/* Check if name is long, force line break for icons if needed */}
                 </div>
 
-                {/* Price */}
                 {property.price > 0 && !hasOwner && (
                     <div
                         className="font-black mt-0.5 text-yellow-400"
@@ -232,60 +208,40 @@ const Tile = ({ property, onClick, playersHere, style, image, isCorner, currentP
                     </div>
                 )}
             </div>
+
             {/* Houses indicator */}
             {property.houses > 0 && (
                 <div className="absolute bottom-1 right-1 flex gap-0.5">
-                    {property.houses < 5 && Array(property.houses).fill(0).map((_, i) => (
-                        <div key={i} className="w-2 h-2.5 bg-green-500 rounded-sm border border-white/50 shadow-md" />
-                    ))}
-                    {property.houses === 5 && (
+                    {property.houses < 5 ? (
+                        Array(property.houses).fill(0).map((_, i) => (
+                            <div key={i} className="w-2 h-2.5 bg-green-500 rounded-sm border border-white/50 shadow-md" />
+                        ))
+                    ) : (
                         <div className="text-sm">🏨</div>
                     )}
                 </div>
             )}
 
+            {/* Destroyed/Mortgaged overlays */}
+            {property.is_destroyed && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-[25] backdrop-blur-[2px]">
+                    <div className="text-3xl mb-1 filter drop-shadow-[0_0_10px_rgba(255,0,0,0.5)]">💥</div>
+                    <span className="text-[8px] font-black text-red-500 tracking-wider uppercase">РАЗРУШЕНО</span>
+                </motion.div>
+            )}
 
-            {/* Destroyed overlay */}
-            {
-                property.is_destroyed && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-[25] backdrop-blur-[2px]"
-                    >
-                        <motion.div
-                            animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                            className="text-3xl mb-1 filter drop-shadow-[0_0_10px_rgba(255,0,0,0.5)]"
-                        >
-                            💥
-                        </motion.div>
-                        <span className="text-[8px] font-black text-red-500 tracking-wider uppercase">DESTROYED</span>
-                    </motion.div>
-                )
-            }
+            {property.is_mortgaged && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center z-[25] backdrop-blur-[1px]">
+                    <div className="bg-orange-500/80 text-white text-[7px] font-black px-1 py-0.5 rounded shadow-lg uppercase tracking-widest border border-white/20">ЗАЛОЖЕНО</div>
+                </motion.div>
+            )}
 
-            {/* Mortgaged overlay */}
-            {
-                property.is_mortgaged && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center z-[25] backdrop-blur-[1px]"
-                    >
-                        <div className="bg-orange-500/80 text-white text-[7px] font-black px-1 py-0.5 rounded shadow-lg uppercase tracking-widest border border-white/20">
-                            ЗАЛОЖЕНО
-                        </div>
-                    </motion.div>
-                )
-            }
-
-            {/* Hover glow effect */}
+            {/* Hover glow */}
             <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none">
                 <div className="absolute inset-0 bg-gradient-to-t from-yellow-400/20 to-transparent" />
             </div>
-        </div >
+        </div>
     );
-};
+});
 
 export default Tile;
