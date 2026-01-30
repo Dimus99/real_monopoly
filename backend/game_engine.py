@@ -880,11 +880,9 @@ class GameEngine:
             }
         else:
             game.logs.append(f"🎰 {player.name} выбрал ({choices_str}), выпало {roll} и ПРОИГРАЛ ВСЕ. Революция!")
+            game.logs.append(f"🔥 РЕВОЛЮЦИЯ! {player.name} был свергнут.")
             # ELIMINATE PLAYER (Revolution)
             res = self._handle_bankruptcy(game, player, None, 0)
-            
-            # Override message log?
-            game.logs.append(f"🔥 РЕВОЛЮЦИЯ! {player.name} был свергнут.")
             
             return {
                 "player_id": player_id,
@@ -893,89 +891,10 @@ class GameEngine:
                 "roll": roll,
                 "eliminated": True,
                 "game_state": res["game_state"],
-                "game_over": res["game_over"]
+                "game_over": res.get("game_over", False)
             }
 
             
-    def _handle_bankruptcy(self, game: GameState, debtor: Player, creditor_id: Optional[str], amount: int) -> Dict[str, Any]:
-        """Handle player bankruptcy."""
-        debtor.is_bankrupt = True
-        debtor.money = 0
-        
-        # Release properties
-        for prop in game.board:
-            if prop.owner_id == debtor.id:
-                prop.owner_id = None
-                prop.houses = 0
-                prop.is_mortgaged = False
-                prop.is_monopoly = False
-                prop.is_destroyed = False
-                prop.isolation_turns = 0
-        
-        # Check game over condition
-        remaining = [p for p in game.players.values() if not p.is_bankrupt]
-        
-        result = {
-            "action": "bankrupt",
-            "player_id": debtor.id,
-            "game_state": game.dict()
-        }
-        
-        if len(remaining) <= 1:
-            winner = remaining[0] if remaining else None
-            game.game_status = "finished"
-            game.winner_id = winner.id if winner else None
-            game.finished_at = datetime.utcnow()
-            game.logs.append(f"🏆 GAME OVER! {winner.name if winner else 'No one'} wins!")
-            result["game_over"] = True
-            
-        return result
-
-    def _calculate_assets(self, game: GameState, player: Player) -> int:
-        """Calculate total value of assets (cash + houses + mortgage value of props)."""
-        total = player.money
-        for prop in game.board:
-            if prop.owner_id == player.id:
-                # Add mortgage value (half price)
-                if not prop.is_mortgaged:
-                    total += prop.price // 2
-                
-                # Add house sell value (half price)
-                # Assuming house price is roughly based on property group or standard.
-                # Standard house prices: Brown/LightBlue=50, etc.
-                # Simplified here:
-                house_price = 50
-                if prop.group in ["Station", "Utility"]: house_price = 0
-                elif prop.group in ["Brown", "LightBlue"]: house_price = 50
-                elif prop.group in ["Pink", "Orange"]: house_price = 100
-                elif prop.group in ["Red", "Yellow"]: house_price = 150
-                elif prop.group in ["Green", "DarkBlue"]: house_price = 200
-                
-                total += (prop.houses * house_price) // 2
-        return total
-
-        # Voluntary bankruptcy (to Bank)
-        self._handle_bankruptcy(game, player, None, 0)
-        
-        game.logs.append(f"🏳️ {player.name} SURRENDERED and left the game!")
-        
-        # Determine Game Over status
-        active_players = [p for p in game.players.values() if not p.is_bankrupt]
-        game_over = False
-        
-        if len(active_players) < 2 and game.game_status == "active":
-             game.game_status = "finished"
-             if active_players:
-                 game.winner_id = active_players[0].id
-                 game.logs.append(f"🏆 {active_players[0].name} wins by default!")
-             game_over = True
-
-        return {
-            "success": True,
-            "player_id": player_id,
-            "game_over": game_over,
-            "game_state": game.dict()
-        }
 
     def _kick_player(self, game: GameState, player: Player, reason: str) -> Dict[str, Any]:
         """Remove a player from the game (timeout/quit)."""
@@ -1414,6 +1333,10 @@ class GameEngine:
             else:
                 prop.owner_id = None
                 prop.houses = 0
+                prop.is_mortgaged = False
+                prop.is_monopoly = False
+                prop.is_destroyed = False
+                prop.isolation_turns = 0
         
         # Transfer remaining money
         if creditor:
@@ -1428,42 +1351,36 @@ class GameEngine:
             p_idx = game.player_order.index(player.id)
             game.player_order.remove(player.id)
         
-        game.logs.append(f"{player.name} went BANKRUPT!")
+        game.logs.append(f"💀 {player.name} went BANKRUPT!")
 
         # Advance turn if it was this player's turn
         if p_idx == game.current_turn_index and game.game_status == "active":
             # Don't increment index because everyone shifted left
             if len(game.player_order) > 0:
                 game.current_turn_index = game.current_turn_index % len(game.player_order)
-                # Important: we don't call _next_turn because that increments.
-                # Just reset turn state for the new current player.
                 game.turn_number += 1
                 game.turn_state = {}
                 self._reset_timer(game)
         
         # Check for winner (Last man standing)
         active_players = [p for p in game.players.values() if not p.is_bankrupt]
+        game_over = False
         
-        # If only 1 player remains (and it's not a solo test game where only 1 started logic might differ, 
-        # but usually we need >1 player for a winner. Use game.max_players or just assume 
-        # if players dropped out... Classic Monopoly ends when 1 left.)
-        if len(active_players) == 1 and len(game.players) > 1:
-            winner = active_players[0]
+        if len(active_players) <= 1 and len(game.players) > 1:
+            winner = active_players[0] if active_players else None
             game.game_status = "finished"
-            game.winner_id = winner.id
+            if winner:
+                game.winner_id = winner.id
+                game.logs.append(f"🏆 {winner.name} WINS THE GAME! 🏆")
             game.finished_at = datetime.utcnow()
-            game.logs.append(f"🏆 {winner.name} WINS THE GAME! 🏆")
+            game_over = True
             
             # --- UPDATE STATS ---
             try:
-                # We need to run async DB update from sync code. 
-                # Since we are in a sync method, we can create a task on the running loop 
-                # OR just enqueue it if we had a background worker.
-                # For now, let's try to get the running loop.
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
                     # Update Winner
-                    if not winner.is_bot and winner.user_id:
+                    if winner and not winner.is_bot and winner.user_id:
                          loop.create_task(db.increment_user_stats_async(winner.user_id, is_winner=True))
                     
                     # Update Losers (Bankrupt player)
@@ -1471,11 +1388,12 @@ class GameEngine:
                          loop.create_task(db.increment_user_stats_async(player.user_id, is_winner=False))
             except Exception as e:
                 print(f"Error updating stats: {e}")
-            # --------------------
 
         return {
             "success": True,
             "bankrupt": True,
+            "player_id": player.id,
+            "game_over": game_over,
             "game_state": game.dict()
         }
     

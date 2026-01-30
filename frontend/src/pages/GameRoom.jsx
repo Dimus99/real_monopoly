@@ -5,7 +5,7 @@ import {
     Copy, Users, Bot, Play, Check, Home, Clock, ArrowLeftRight,
     ArrowLeft, MessageSquare, Settings, Bell,
     Menu, UserPlus, X, MapPin, ChevronLeft, ChevronRight, Crosshair, Flag,
-    Map, Zap, Folder, Smile
+    Map, Zap, Folder, Smile, Maximize, Minimize
 } from 'lucide-react';
 import { CHARACTERS, ABILITIES } from '../constants/characters';
 import useGameSocket from '../hooks/useGameSocket';
@@ -181,6 +181,30 @@ const GameRoom = () => {
 
     // Targeting State
     const [targetingAbility, setTargetingAbility] = useState(null);
+    const [isFullScreen, setIsFullScreen] = useState(false);
+
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+            });
+            setIsFullScreen(true);
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                setIsFullScreen(false);
+            }
+        }
+    };
+
+    // Sync fullscreen state on escape key etc.
+    useEffect(() => {
+        const handleFsChange = () => {
+            setIsFullScreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFsChange);
+        return () => document.removeEventListener('fullscreenchange', handleFsChange);
+    }, []);
 
     const handleCloseOreshnik = React.useCallback(() => setShowOreshnik(false), []);
     const handleCloseBuyout = React.useCallback(() => setShowBuyout(false), []);
@@ -1225,6 +1249,22 @@ const GameRoom = () => {
                             </motion.div>
                         );
                     })}
+                </div>
+
+                {/* Sidebar Footer - Bottom Actions */}
+                <div className="p-3 border-t border-white/10 bg-[#0c0c14]">
+                    <button
+                        onClick={toggleFullScreen}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${sidebarCollapsed ? 'justify-center' : 'pl-4'} bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-gray-400 hover:text-white`}
+                        title={isFullScreen ? "Выйти из полноэкранного режима" : "Полный экран"}
+                    >
+                        {isFullScreen ? (
+                            <Minimize size={sidebarCollapsed ? 20 : 18} className="text-blue-400" />
+                        ) : (
+                            <Maximize size={sidebarCollapsed ? 20 : 18} className="text-blue-400" />
+                        )}
+                        {!sidebarCollapsed && <span className="text-xs font-bold uppercase tracking-wider">Полный экран</span>}
+                    </button>
                 </div>
             </motion.div >
 
