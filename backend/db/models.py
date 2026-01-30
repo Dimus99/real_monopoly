@@ -168,10 +168,10 @@ class GameDB(Base):
     
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     host_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    map_type: Mapped[MapType] = mapped_column(Enum(MapType, name="maptype", values_callable=lambda obj: [e.value for e in obj]), default=MapType.WORLD)
+    map_type: Mapped[MapType] = mapped_column(Enum(MapType, name="maptype"), default=MapType.WORLD)
     starting_money: Mapped[int] = mapped_column(Integer, default=1500)
     max_players: Mapped[int] = mapped_column(Integer, default=6)
-    status: Mapped[GameStatus] = mapped_column(Enum(GameStatus, name="gamestatus", values_callable=lambda obj: [e.value for e in obj]), default=GameStatus.WAITING)
+    status: Mapped[GameStatus] = mapped_column(Enum(GameStatus, name="gamestatus"), default=GameStatus.WAITING)
     winner_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     
     # Game state stored as JSON (full state for restoration)

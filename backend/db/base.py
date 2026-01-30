@@ -72,10 +72,14 @@ async def init_db():
             ))
             labels = [row[0] for row in result.all()]
             
+            if 'MUKHOSRANSK' not in labels:
+                print("Adding 'MUKHOSRANSK' to maptype enum...")
+                await conn.execute(text("ALTER TYPE maptype ADD VALUE 'MUKHOSRANSK'"))
+                print("Added 'MUKHOSRANSK' to maptype enum.")
+            
             if 'Mukhosransk' not in labels:
-                print("Adding 'Mukhosransk' to maptype enum...")
+                # Also adding lowercase just in case of future value-based mapping
                 await conn.execute(text("ALTER TYPE maptype ADD VALUE 'Mukhosransk'"))
-                print("Added 'Mukhosransk' to maptype enum.")
     except Exception as e:
         # If it fails (e.g. type doesn't exist yet or permission denied), log and continue
         print(f"Notice: MapType enum migration skipped or failed: {e}")
