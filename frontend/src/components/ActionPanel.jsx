@@ -58,7 +58,7 @@ const ActionPanel = ({
         (isJailed && hasRolled) // Explicitly allow end turn if in jail and already tried to roll/pay
     );
 
-    const isAbilityBlocked = abilityUsed || abilityCooldown > 0;
+    const isAbilityBlocked = abilityCooldown > 0;
 
     // For doubles: The "Roll" button stays active. The "End" button is hidden.
     // For normal end: The "Roll" button is disabled. The "End" button appears.
@@ -95,13 +95,13 @@ const ActionPanel = ({
                         >
                             <span className="text-2xl filter drop-shadow-md">{ability.icon}</span>
                             <span className="hidden md:block text-[10px] uppercase font-bold max-w-[60px] leading-tight text-left">
-                                {abilityUsed ? 'ИСПОЛЬЗ.' : (ability.name.split(' ')[0])}
+                                {isAbilityBlocked ? 'ОЖИДАНИЕ' : (ability.name.split(' ')[0])}
                             </span>
-                            {/* Cooldown/Used Overlay */}
+                            {/* Cooldown Overlay */}
                             {isAbilityBlocked && (
                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                    <span className="text-xs font-bold text-white/80">
-                                        {abilityUsed ? 'X' : abilityCooldown}
+                                    <span className="text-xl font-black text-white/90">
+                                        {abilityCooldown}
                                     </span>
                                 </div>
                             )}
