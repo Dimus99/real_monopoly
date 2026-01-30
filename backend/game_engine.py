@@ -174,6 +174,11 @@ CHARACTER_ABILITIES = {
         "name": "BELT_ROAD",
         "description": " Infrastructure Investment: Collect $50 for each property you own.",
         "cooldown": 20
+    },
+    "Netanyahu": {
+        "name": "TELEPORT",
+        "description": "Strategic Move: Move to any tile on the map.",
+        "cooldown": 20
     }
 }
 
@@ -1514,6 +1519,8 @@ class GameEngine:
             result = self._ability_sanctions(game, player, target_id)
         elif ability_type == "BELT_ROAD":
             result = self._ability_belt_road(game, player)
+        elif ability_type == "TELEPORT":
+            result = self._ability_teleport(game, player, target_id)
         else:
             return {"error": "Unknown ability"}
         
@@ -1677,6 +1684,36 @@ class GameEngine:
             "type": "SANCTIONS",
             "target_player_id": target.id,
             "target_name": target.name
+        }
+    
+    def _ability_teleport(self, game: GameState, player: Player, target_id: Union[int, str] = None) -> Dict[str, Any]:
+        """Netanyahu's Teleport: Move to any tile."""
+        if target_id is None:
+            return {"error": "Target tile ID required"}
+        
+        try:
+            target_id = int(target_id)
+        except:
+            return {"error": "Invalid target ID"}
+            
+        if not (0 <= target_id < len(game.board)):
+            return {"error": "Invalid tile position"}
+            
+        old_position = player.position
+        player.position = target_id
+        tile = game.board[target_id]
+        
+        game.logs.append(f"🔯 {player.name} used Strategic Move and teleported to {tile.name}!")
+        
+        # Handle landing
+        landing_result = self._handle_landing(game, player, tile)
+        
+        return {
+            "success": True,
+            "type": "TELEPORT",
+            "target_id": target_id,
+            "target_name": tile.name,
+            **landing_result
         }
     
     def _ability_belt_road(self, game: GameState, player: Player) -> Dict[str, Any]:

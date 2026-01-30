@@ -302,7 +302,7 @@ const GameRoom = () => {
             return;
         }
 
-        if (['ORESHNIK', 'BUYOUT', 'ISOLATION', 'SANCTIONS'].includes(abilityType)) {
+        if (['ORESHNIK', 'BUYOUT', 'ISOLATION', 'SANCTIONS', 'TELEPORT'].includes(abilityType)) {
             setTargetingAbility(abilityType);
         } else {
             sendAction('USE_ABILITY', { ability_type: abilityType });
@@ -735,6 +735,15 @@ const GameRoom = () => {
                     }
                 }
                 break;
+            case 'TELEPORT':
+                if (lastAction.player_id === playerId) {
+                    const targetPos = lastAction.target_id;
+                    if (targetPos !== undefined && (lastAction.game_state?.board || gameState?.board)) {
+                        const board = lastAction.game_state?.board || gameState.board;
+                        setSelectedTile(board[targetPos]);
+                    }
+                }
+                break;
         }
     }, [lastAction]); // STRICT DEPENDENCY: Only lastAction. NO diceValues.
 
@@ -832,8 +841,8 @@ const GameRoom = () => {
         }
 
         if (targetingAbility) {
-            // For property-targeting abilities (ORESHNIK, BUYOUT, ISOLATION)
-            if (['ORESHNIK', 'BUYOUT', 'ISOLATION'].includes(targetingAbility)) {
+            // For property-targeting abilities (ORESHNIK, BUYOUT, ISOLATION, TELEPORT)
+            if (['ORESHNIK', 'BUYOUT', 'ISOLATION', 'TELEPORT'].includes(targetingAbility)) {
                 sendAction('USE_ABILITY', { ability_type: targetingAbility, target_id: tileId });
                 setTargetingAbility(null);
             }
