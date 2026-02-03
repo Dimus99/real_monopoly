@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Newspaper, AlertCircle, Info, X } from 'lucide-react';
 
-const ChanceModal = ({ show, data, onClose }) => {
+const ChanceModal = React.memo(({ show, data, onClose }) => {
     if (!data) return null;
 
     return (
@@ -59,6 +59,9 @@ const ChanceModal = ({ show, data, onClose }) => {
             )}
         </AnimatePresence>
     );
-};
+});
+
+ChanceModal.displayName = 'ChanceModal';
 
 export default ChanceModal;
+

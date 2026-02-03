@@ -18,6 +18,7 @@ import TradeModal from '../components/TradeModal';
 import TradeNotification from '../components/TradeNotification';
 import ChanceModal from '../components/ChanceModal';
 import CasinoModal from '../components/CasinoModal';
+import AuctionModal from '../components/AuctionModal';
 import { BuyoutAnimation, AidAnimation, NukeThreatAnimation, SanctionsAnimation, BeltRoadAnimation } from '../components/AbilityAnimations';
 
 // Lazy load to avoid circular dependency/initialization issues
@@ -222,6 +223,20 @@ const GameRoom = () => {
         sendAction('BUY', { property_id: currentPlayer.position });
     };
 
+    const handleDeclineProperty = () => {
+        if (!isMyTurn || !currentPlayer) {
+            console.warn("Cannot decline: not my turn or no player", { isMyTurn, currentPlayer });
+            return;
+        }
+        console.log("Declining property at", currentPlayer.position);
+        sendAction('DECLINE_PROPERTY');
+    };
+
+    const handlePlaceBid = (amount) => {
+        console.log("Placing bid:", amount);
+        sendAction('PLACE_BID', { amount });
+    };
+
     const handleBuildHouse = (propertyId) => {
         if (!isMyTurn) return;
         sendAction('BUILD', { property_id: propertyId });
@@ -325,6 +340,34 @@ const GameRoom = () => {
         const interval = setInterval(updateTimer, 1000);
         return () => clearInterval(interval);
     }, [gameState?.turn_expiry, gameState?.current_turn_index]); // Also update on turn index change
+
+    // Auction timer and state management
+    useEffect(() => {
+        const auctionActive = gameState?.turn_state?.auction_active;
+        const auctionStartTime = gameState?.turn_state?.auction_start_time;
+        const auctionDuration = gameState?.turn_state?.auction_duration || 30;
+
+        if (auctionActive && auctionStartTime) {
+            setShowAuctionModal(true);
+
+            const interval = setInterval(() => {
+                const elapsed = Date.now() / 1000 - auctionStartTime;
+                const remaining = Math.max(0, auctionDuration - Math.floor(elapsed));
+                setAuctionTimeLeft(remaining);
+
+                if (remaining === 0) {
+                    // Auto-resolve auction when time expires
+                    sendAction('RESOLVE_AUCTION');
+                    clearInterval(interval);
+                }
+            }, 1000);
+
+            return () => clearInterval(interval);
+        } else {
+            setShowAuctionModal(false);
+            setAuctionTimeLeft(30);
+        }
+    }, [gameState?.turn_state?.auction_active, gameState?.turn_state?.auction_start_time]);
 
     const [lastRollTime, setLastRollTime] = useState(0);
 
@@ -544,6 +587,10 @@ const GameRoom = () => {
     const [showChanceModal, setShowChanceModal] = useState(false);
     const [showCasinoModal, setShowCasinoModal] = useState(false);
     const [chanceData, setChanceData] = useState(null);
+
+    // Auction state
+    const [showAuctionModal, setShowAuctionModal] = useState(false);
+    const [auctionTimeLeft, setAuctionTimeLeft] = useState(30);
 
     // Track processed actions to prevent loops/re-triggers
     const lastProcessedActionRef = useRef(null);
@@ -1370,6 +1417,7 @@ const GameRoom = () => {
                                     onRoll={handleRoll}
                                     canBuy={canBuy}
                                     onBuy={handleBuyProperty}
+                                    onDecline={handleDeclineProperty}
                                     onEndTurn={handleEndTurn}
                                     character={currentPlayer?.character}
                                     onAbility={handleAbility}
@@ -1683,6 +1731,21 @@ const GameRoom = () => {
                     />
                 )
             }
+
+            {/* Auction Modal */}
+            {showAuctionModal && gameState?.turn_state?.auction_property_id !== undefined && (
+                <AuctionModal
+                    isOpen={showAuctionModal}
+                    property={gameState.board[gameState.turn_state.auction_property_id]}
+                    minBid={gameState.board[gameState.turn_state.auction_property_id]?.price || 0}
+                    currentBids={gameState.turn_state.auction_bids || {}}
+                    timeLeft={auctionTimeLeft}
+                    onBid={handlePlaceBid}
+                    onClose={() => setShowAuctionModal(false)}
+                    currentPlayerId={playerId}
+                    players={gameState.players || {}}
+                />
+            )}
 
             {/* Global Tooltip Portal (rendered outside overflow containers) */}
             <AnimatePresence>

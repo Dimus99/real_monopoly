@@ -78,8 +78,13 @@ const CasinoModal = ({ onClose, onBet, mapType }) => {
                         <div className="text-gray-300 text-center mb-6 text-sm">
                             {isTotalizator
                                 ? "Выберите от 1 до 3 лошадей. Если ваша лошадь придет первой — вы сорвали куш!"
-                                : "Выберите от 1 до 3 чисел. Если выпадет ваше число — вы выиграли!"}
+                                : "Выберите от 1 до 3 чисел на кубиках. Если выпадет ваше число — вы выиграли!"}
                             <br />
+                            <span className="text-xs text-gray-400 block mt-2">
+                                {selectedNumbers.length > 0
+                                    ? `Выбрано чисел: ${selectedNumbers.join(', ')}`
+                                    : 'Выберите хотя бы одно число'}
+                            </span>
                             {isTotalizator && (
                                 <span className="text-yellow-400 font-bold block mt-2">
                                     СТАВКА: $300 (фиксированно)
@@ -97,10 +102,13 @@ const CasinoModal = ({ onClose, onBet, mapType }) => {
                                 <button
                                     key={num}
                                     onClick={() => toggleNumber(num)}
-                                    className={`relative h-16 rounded-xl flex items-center justify-center transition-all ${selectedNumbers.includes(num)
-                                        ? 'bg-yellow-500 text-black shadow-[0_0_15px_rgba(234,179,8,0.5)] scale-105'
-                                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                    className={`relative h-16 rounded-xl flex items-center justify-center transition-all transform hover:scale-105 ${selectedNumbers.includes(num)
+                                        ? 'bg-yellow-500 text-black shadow-[0_0_20px_rgba(234,179,8,0.7)] scale-105 animate-pulse'
+                                        : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:shadow-[0_0_10px_rgba(255,255,255,0.2)]'
                                         }`}
+                                    style={{
+                                        animation: selectedNumbers.includes(num) ? 'glow 1.5s ease-in-out infinite' : 'none'
+                                    }}
                                 >
                                     <DiceIcon value={num} size={32} />
                                     {selectedNumbers.includes(num) && (
@@ -116,6 +124,17 @@ const CasinoModal = ({ onClose, onBet, mapType }) => {
                                 </button>
                             ))}
                         </div>
+
+                        <style jsx>{`
+                            @keyframes glow {
+                                0%, 100% {
+                                    box-shadow: 0 0 20px rgba(234, 179, 8, 0.7);
+                                }
+                                50% {
+                                    box-shadow: 0 0 30px rgba(234, 179, 8, 1);
+                                }
+                            }
+                        `}</style>
 
                         <div className="space-y-4">
                             <div className="flex justify-between items-center text-sm p-3 bg-white/5 rounded-lg border border-white/5">

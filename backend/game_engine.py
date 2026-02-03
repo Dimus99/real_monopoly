@@ -171,13 +171,18 @@ CHARACTER_ABILITIES = {
         "cooldown": 8
     },
     "Xi": {
-        "name": "BELT_ROAD",
-        "description": " Infrastructure Investment: Collect $50 for each property you own.",
-        "cooldown": 20
+        "name": "CONSTRUCTION",
+        "description": "Infrastructure: Rebuild any destroyed property OR build 1 house on monopoly street.",
+        "cooldown": 8
     },
     "Netanyahu": {
         "name": "TELEPORT",
         "description": "Strategic Move: Move to any tile on the map.",
+        "cooldown": 20
+    },
+    "BinLaden": {
+        "name": "SEPTEMBER_11",
+        "description": "Terrorist Attack: Destroy 2 adjacent properties (Twin Towers).",
         "cooldown": 20
     }
 }
@@ -810,11 +815,42 @@ class GameEngine:
         if next_player and next_player.ability_cooldown > 0:
             next_player.ability_cooldown -= 1
         
+        # Check for mortgage expiration (14 turns)
+        self._check_mortgage_expiration(game)
+        
         # Decrease Isolation counters
         for prop in game.board:
             if prop.isolation_turns > 0:
                 prop.isolation_turns -= 1
     
+    def _check_mortgage_expiration(self, game: GameState):
+        """Check for mortgaged properties that have expired (14 turns) and seize them."""
+        for prop in game.board:
+            if prop.is_mortgaged and prop.mortgage_turn is not None:
+                turns_mortgaged = game.turn_number - prop.mortgage_turn
+                
+                if turns_mortgaged >= 14:
+                    # Seize the property
+                    old_owner_id = prop.owner_id
+                    old_owner = game.players.get(old_owner_id) if old_owner_id else None
+                    
+                    # Remove from owner's properties
+                    if old_owner and prop.id in old_owner.properties:
+                        old_owner.properties.remove(prop.id)
+                    
+                    # Reset property to unowned
+                    prop.owner_id = None
+                    prop.is_mortgaged = False
+                    prop.mortgage_turn = None
+                    prop.houses = 0
+                    
+                    # Update monopoly status for the group
+                    self._update_group_monopoly(game, prop.group)
+                    
+                    owner_name = old_owner.name if old_owner else "Unknown"
+                    game.logs.append(f"🏛️ {prop.name} seized by the bank from {owner_name} after 14 turns of mortgage!")
+    
+
     def check_timeouts(self) -> List[Dict[str, Any]]:
         """Check for expired turns and kick players. Returns updates to broadcast."""
         updates = []
@@ -1136,6 +1172,178 @@ class GameEngine:
             "game_state": game.dict()
         }
     
+    def decline_property(self, game_id: str, player_id: str) -> Dict[str, Any]:
+        """Player declines property purchase, triggering auction."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        player = game.players.get(player_id)
+        if not player:
+            return {"error": "Player not found"}
+        
+        # Turn Check
+        if not game.player_order or game.player_order[game.current_turn_index] != player_id:
+            return {"error": "Not your turn"}
+        
+        property_id = player.position
+        if property_id < 0 or property_id >= len(game.board):
+            return {"error": "Invalid property"}
+        
+        prop = game.board[property_id]
+        
+        if prop.owner_id:
+            return {"error": "Property already owned"}
+        
+        if prop.group in ["Special", "Jail", "FreeParking", "GoToJail", "Chance", "Tax", "Negotiations", "RaiseTax", "Casino"]:
+            return {"error": "Cannot auction this tile"}
+        
+        game.logs.append(f"❌ {player.name} declined {prop.name}")
+        
+        # Start auction
+        return self.start_auction(game_id, property_id)
+    
+    def start_auction(self, game_id: str, property_id: int) -> Dict[str, Any]:
+        """Start auction for a property."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        if property_id < 0 or property_id >= len(game.board):
+            return {"error": "Invalid property"}
+        
+        prop = game.board[property_id]
+        
+        if prop.owner_id is not None:
+            return {"error": "Property already owned"}
+        
+        # Initialize auction state in turn_state
+        game.turn_state["auction_active"] = True
+        game.turn_state["auction_property_id"] = property_id
+        game.turn_state["auction_bids"] = {}
+        game.turn_state["auction_start_time"] = datetime.utcnow().timestamp()
+        game.turn_state["auction_duration"] = 30  # seconds
+        
+        game.logs.append(f"🔨 Auction started for {prop.name}! Minimum bid: ${prop.price}")
+        self._reset_timer(game)
+        
+        return {
+            "success": True,
+            "property": prop.name,
+            "property_id": property_id,
+            "min_bid": prop.price,
+            "game_state": game.dict()
+        }
+    
+    def place_bid(self, game_id: str, player_id: str, amount: int) -> Dict[str, Any]:
+        """Place a bid in active auction."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        if not game.turn_state.get("auction_active"):
+            return {"error": "No active auction"}
+        
+        player = game.players.get(player_id)
+        if not player:
+            return {"error": "Player not found"}
+        
+        property_id = game.turn_state.get("auction_property_id")
+        if property_id is None:
+            return {"error": "Invalid auction state"}
+        
+        prop = game.board[property_id]
+        
+        # Get current highest bid
+        current_bids = game.turn_state.get("auction_bids", {})
+        current_high_bid = max(current_bids.values()) if current_bids else 0
+        min_bid = max(prop.price, current_high_bid + 10)
+        
+        if amount < min_bid:
+            return {"error": f"Bid must be at least ${min_bid}"}
+        
+        if player.money < amount:
+            return {"error": "Insufficient funds"}
+        
+        # Record bid
+        game.turn_state["auction_bids"][player_id] = amount
+        game.logs.append(f"💰 {player.name} bid ${amount} for {prop.name}")
+        self._reset_timer(game)
+        
+        return {
+            "success": True,
+            "amount": amount,
+            "player": player.name,
+            "game_state": game.dict()
+        }
+    
+    def resolve_auction(self, game_id: str) -> Dict[str, Any]:
+        """Resolve auction and award property to highest bidder."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        if not game.turn_state.get("auction_active"):
+            return {"error": "No active auction"}
+        
+        property_id = game.turn_state.get("auction_property_id")
+        if property_id is None:
+            return {"error": "Invalid auction state"}
+        
+        prop = game.board[property_id]
+        current_bids = game.turn_state.get("auction_bids", {})
+        
+        if not current_bids:
+            # No bids - property remains unowned
+            game.logs.append(f"🔨 No bids for {prop.name}. Property remains unowned.")
+            game.turn_state["auction_active"] = False
+            game.turn_state["auction_property_id"] = None
+            game.turn_state["auction_bids"] = {}
+            
+            # Auto-advance turn
+            self._next_turn(game)
+            
+            return {
+                "success": True,
+                "winner": None,
+                "game_state": game.dict()
+            }
+        
+        # Find highest bidder
+        winner_id = max(current_bids, key=current_bids.get)
+        winning_bid = current_bids[winner_id]
+        winner = game.players[winner_id]
+        
+        # Award property
+        winner.money -= winning_bid
+        prop.owner_id = winner_id
+        winner.properties.append(property_id)
+        
+        # Update monopoly status
+        self._update_group_monopoly(game, prop.group)
+        if prop.is_monopoly:
+            game.logs.append(f"🎉 {winner.name} completed the {prop.group} MONOPOLY!")
+        
+        game.logs.append(f"🎉 {winner.name} won {prop.name} for ${winning_bid}!")
+        
+        # Clear auction state
+        game.turn_state["auction_active"] = False
+        game.turn_state["auction_property_id"] = None
+        game.turn_state["auction_bids"] = {}
+        
+        # Auto-advance turn
+        self._next_turn(game)
+        self._reset_timer(game)
+        
+        return {
+            "success": True,
+            "winner": winner.name,
+            "winner_id": winner_id,
+            "amount": winning_bid,
+            "property": prop.name,
+            "game_state": game.dict()
+        }
+    
     def pay_rent(self, game_id: str, player_id: str, property_id: int) -> Dict[str, Any]:
         """Pay rent to property owner."""
         game = self.games.get(game_id)
@@ -1224,6 +1432,7 @@ class GameEngine:
             
         mortgage_value = int(prop.price * 0.7)
         prop.is_mortgaged = True
+        prop.mortgage_turn = game.turn_number  # Track when mortgaged for expiration
         player.money += mortgage_value
         
         game.logs.append(f"🏦 {player.name} mortgaged {prop.name} for ${mortgage_value}")
@@ -1252,6 +1461,7 @@ class GameEngine:
             
         player.money -= cost
         prop.is_mortgaged = False
+        prop.mortgage_turn = None  # Clear mortgage timer
         
         game.logs.append(f"🔓 {player.name} unmortgaged {prop.name} for ${cost}")
         
@@ -1517,10 +1727,12 @@ class GameEngine:
             result = self._ability_isolation(game, player, target_id)
         elif ability_type == "SANCTIONS":
             result = self._ability_sanctions(game, player, target_id)
-        elif ability_type == "BELT_ROAD":
-            result = self._ability_belt_road(game, player)
+        elif ability_type == "CONSTRUCTION":
+            result = self._ability_construction(game, player, target_id)
         elif ability_type == "TELEPORT":
             result = self._ability_teleport(game, player, target_id)
+        elif ability_type == "SEPTEMBER_11":
+            result = self._ability_september_11(game, player, target_id)
         else:
             return {"error": "Unknown ability"}
         
@@ -1716,25 +1928,97 @@ class GameEngine:
             **landing_result
         }
     
-    def _ability_belt_road(self, game: GameState, player: Player) -> Dict[str, Any]:
-        """Xi's Belt & Road: Collect bonus from passed properties."""
-        # Give flat bonus of $50 per owned property
-        owned_count = len(player.properties)
-        bonus = owned_count * 50
+    def _ability_construction(self, game: GameState, player: Player, target_id: int = None) -> Dict[str, Any]:
+        """Xi's Construction: Rebuild destroyed property OR build 1 house on monopoly street."""
+        if target_id is None:
+            return {"error": "Must select a property to use Construction ability"}
         
-        if bonus == 0:
-            bonus = 100  # Minimum
+        if target_id < 0 or target_id >= len(game.board):
+            return {"error": "Invalid property ID"}
         
-        player.money += bonus
+        tile = game.board[target_id]
         
-        game.logs.append(f"🛤️ {player.name} activated BELT & ROAD Initiative: Collected ${bonus}!")
+        # Case 1: Rebuild destroyed property
+        if tile.is_destroyed:
+            tile.is_destroyed = False
+            tile.destruction_turn = None
+            game.logs.append(f"🏗️ {player.name} used CONSTRUCTION to rebuild {tile.name}!")
+            
+            return {
+                "success": True,
+                "type": "CONSTRUCTION",
+                "action": "rebuild",
+                "target_id": target_id,
+                "target_name": tile.name
+            }
+        
+        # Case 2: Build house on monopoly property owned by Xi
+        if tile.owner_id == player.id and tile.is_monopoly and not tile.is_mortgaged:
+            # Check if can build (max 5 houses/hotel)
+            if tile.houses >= 5:
+                return {"error": "Property already has maximum buildings"}
+            
+            # Check if it's a buildable property type
+            if tile.type not in ["property"]:
+                return {"error": "Cannot build houses on this type of property"}
+            
+            tile.houses += 1
+            game.logs.append(f"🏗️ {player.name} used CONSTRUCTION to build a house on {tile.name}!")
+            
+            return {
+                "success": True,
+                "type": "CONSTRUCTION",
+                "action": "build_house",
+                "target_id": target_id,
+                "target_name": tile.name
+            }
+        
+        return {"error": "Target must be either a destroyed property OR your own monopoly property"}
+    
+    def _ability_september_11(self, game: GameState, player: Player, target_id: int = None) -> Dict[str, Any]:
+        """Bin Laden's September 11: Destroy 2 adjacent properties (Twin Towers)."""
+        if target_id is None:
+            return {"error": "Must select a property to target"}
+        
+        if target_id < 0 or target_id >= len(game.board):
+            return {"error": "Invalid property ID"}
+        
+        board_size = len(game.board)
+        
+        # Get target property and adjacent property
+        tile1 = game.board[target_id]
+        tile2_id = (target_id + 1) % board_size  # Next property (wraps around)
+        tile2 = game.board[tile2_id]
+        
+        # Destroy both properties
+        destroyed_names = []
+        
+        if not tile1.is_destroyed:
+            tile1.is_destroyed = True
+            tile1.destruction_turn = game.turn_number
+            tile1.houses = 0  # Remove all houses
+            destroyed_names.append(tile1.name)
+        
+        if not tile2.is_destroyed:
+            tile2.is_destroyed = True
+            tile2.destruction_turn = game.turn_number
+            tile2.houses = 0  # Remove all houses
+            destroyed_names.append(tile2.name)
+        
+        if destroyed_names:
+            game.logs.append(f"✈️💥 {player.name} used SEPTEMBER 11 attack! Destroyed: {', '.join(destroyed_names)} (Twin Towers)")
+        else:
+            game.logs.append(f"✈️ {player.name} used SEPTEMBER 11 but targets were already destroyed")
         
         return {
             "success": True,
-            "type": "BELT_ROAD",
-            "bonus": bonus
+            "type": "SEPTEMBER_11",
+            "target_id": target_id,
+            "target_id_2": tile2_id,
+            "destroyed": destroyed_names
         }
     
+
 
     # ============ Trading System ============
 

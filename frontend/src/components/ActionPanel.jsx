@@ -10,6 +10,7 @@ const ActionPanel = ({
     onRoll,
     canBuy,
     onBuy,
+    onDecline,
     onEndTurn,
     character,
     onAbility,
@@ -42,7 +43,7 @@ const ActionPanel = ({
 
     // Logic: ROLL button is always shown, but disabled if rolled && !doubles
     // BUY button is shown if canBuy
-    // END button is shown if hasRolled && !doubles && !rentDetails
+    // END button is shown if hasRolled && !doubles && !rentDetails && !canBuy
 
     const showRoll = true; // Always show roll button in dashboard
     // Disable roll if: rolling animation OR (already rolled AND not doubles) OR jailed without bail option OR payment required
@@ -53,7 +54,8 @@ const ActionPanel = ({
     // Also strictly hide End Turn if currently rolling to prevent premature clicks or if payment is due.
     // ADDED: If jailed and rolled (failed doubles or paid), or jailed and cannot roll again -> show End Turn
     // NOTE: Game engine blocks next roll if jailed+rolled. So we must allow 'End Turn'.
-    const showEndTurn = !isRolling && !rentDetails && (
+    // UPDATED: Hide End Turn when canBuy is true (player must Accept or Decline property)
+    const showEndTurn = !isRolling && !rentDetails && !canBuy && (
         (hasRolled && !isDoubles) ||
         (isJailed && hasRolled) // Explicitly allow end turn if in jail and already tried to roll/pay
     );
@@ -207,30 +209,46 @@ const ActionPanel = ({
                     )}
                 </AnimatePresence>
 
-                {/* 4. Buy Button (Center-Right) */}
+                {/* 4. Property Purchase Buttons (Accept/Decline) */}
                 <AnimatePresence>
                     {canBuy && (
-                        <motion.button
-                            key="buy-prop"
+                        <motion.div
+                            key="property-decision"
                             initial={{ width: 0, opacity: 0, padding: 0 }}
-                            animate={{ width: 'auto', opacity: 1, padding: '0 16px' }}
+                            animate={{ width: 'auto', opacity: 1, padding: 0 }}
                             exit={{ width: 0, opacity: 0, padding: 0 }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={onBuy}
-                            className="h-[64px] bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-black flex items-center gap-3 overflow-hidden shadow-[0_0_20px_rgba(16,185,129,0.4)] border border-emerald-400/50"
+                            className="flex gap-2"
                         >
-                            <div className="p-1.5 bg-white/20 rounded-lg shrink-0">
-                                <ShoppingCart size={20} className="text-white" />
-                            </div>
-                            <div className="flex flex-col items-start leading-tight whitespace-nowrap">
-                                <span className="text-[9px] font-bold uppercase tracking-wider opacity-90">КУПИТЬ</span>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-xs font-bold truncate max-w-[80px]">{currentTileName}</span>
-                                    <span className="text-lg font-mono">${currentTilePrice}</span>
+                            {/* Accept Button */}
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={onBuy}
+                                className="h-[64px] px-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-black flex items-center gap-3 overflow-hidden shadow-[0_0_20px_rgba(16,185,129,0.4)] border border-emerald-400/50"
+                            >
+                                <div className="p-1.5 bg-white/20 rounded-lg shrink-0">
+                                    <Check size={20} className="text-white" />
                                 </div>
-                            </div>
-                        </motion.button>
+                                <div className="flex flex-col items-start leading-tight whitespace-nowrap">
+                                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-90">КУПИТЬ</span>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-xs font-bold truncate max-w-[80px]">{currentTileName}</span>
+                                        <span className="text-lg font-mono">${currentTilePrice}</span>
+                                    </div>
+                                </div>
+                            </motion.button>
+
+                            {/* Decline Button */}
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={onDecline}
+                                className="h-[64px] px-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-2xl font-black flex flex-col items-center justify-center gap-0.5 shadow-[0_0_20px_rgba(249,115,22,0.4)] border border-orange-400/50"
+                            >
+                                <span className="text-2xl">❌</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider">АУКЦИОН</span>
+                            </motion.button>
+                        </motion.div>
                     )}
                 </AnimatePresence>
 

@@ -4,8 +4,9 @@ export const CHARACTERS = {
     Zelensky: { avatar: '/avatars/zelensky.png', color: '#0057B8', ability: 'AID' },
     Kim: { avatar: '/avatars/kim.png', color: '#8B0000', ability: 'NUKE' },
     Biden: { avatar: '/avatars/biden.png', color: '#3C3B6E', ability: 'SANCTIONS' },
-    Xi: { avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT' },
-    Netanyahu: { avatar: '/avatars/israel.png', color: '#0038b8', ability: 'TELEPORT' }
+    Xi: { avatar: '/avatars/xi.png', color: '#DE2910', ability: 'CONSTRUCTION' },
+    Netanyahu: { avatar: '/avatars/israel.png', color: '#0038b8', ability: 'TELEPORT' },
+    BinLaden: { avatar: '/avatars/binladen.png', color: '#2F4F4F', ability: 'SEPTEMBER_11' }
 };
 
 export const ABILITIES = {
@@ -14,6 +15,8 @@ export const ABILITIES = {
     'Zelensky': { id: 'AID', name: 'Попросить Помощь', icon: '🤝', color: 'bg-blue-600', desc: 'Собрать финансовую помощь: забрать 10% наличных у всех оппонентов.' },
     'Kim': { id: 'ISOLATION', name: 'Ядерная Угроза', icon: '☢️', color: 'bg-red-800', desc: 'Блокирует любой город на 3 хода: нельзя купить или собрать аренду.' },
     'Biden': { id: 'SANCTIONS', name: 'Эконом. Санкции', icon: '🚫', color: 'bg-blue-800', desc: 'Заморозка оппонента: выбранный игрок пропускает следующий ход.' },
-    'Xi': { id: 'BELT_ROAD', name: 'Пояс и Путь', icon: '🧧', color: 'bg-red-500', desc: 'Инфраструктурные инвестиции: получить по $50 за каждый свой город.' },
-    'Netanyahu': { id: 'TELEPORT', name: 'Манёвры', icon: '🔯', color: 'bg-blue-700', desc: 'Стратегический ход: переместиться на любое поле на карте.' }
+    'Xi': { id: 'CONSTRUCTION', name: 'Строительство', icon: '🏗️', color: 'bg-red-500', desc: 'Восстановить разрушенное поле ИЛИ построить 1 дом на монополии.' },
+    'Netanyahu': { id: 'TELEPORT', name: 'Манёвры', icon: '🔯', color: 'bg-blue-700', desc: 'Стратегический ход: переместиться на любое поле на карте.' },
+    'BinLaden': { id: 'SEPTEMBER_11', name: '11 Сентября', icon: '✈️', color: 'bg-gray-700', desc: 'Террористическая атака: уничтожить 2 соседних поля (Башни-близнецы).' }
 };
+

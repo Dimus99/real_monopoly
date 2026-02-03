@@ -537,6 +537,31 @@ async def websocket_game(
                     else:
                         await _check_and_run_bot_turn(game_id)
             
+            elif action == "DECLINE_PROPERTY":
+                result = engine.decline_property(game_id, player_id)
+                if result.get("error"):
+                    await websocket.send_json({"type": "ERROR", "message": result["error"]})
+                else:
+                    await manager.broadcast(game_id, {"type": "AUCTION_STARTED", **result})
+            
+            elif action == "PLACE_BID":
+                amount = action_data.get("amount", 0)
+                result = engine.place_bid(game_id, player_id, amount)
+                if result.get("error"):
+                    await websocket.send_json({"type": "ERROR", "message": result["error"]})
+                else:
+                    await manager.broadcast(game_id, {"type": "BID_PLACED", **result})
+            
+            elif action == "RESOLVE_AUCTION":
+                result = engine.resolve_auction(game_id)
+                if result.get("error"):
+                    await websocket.send_json({"type": "ERROR", "message": result["error"]})
+                else:
+                    await manager.broadcast(game_id, {"type": "AUCTION_RESOLVED", **result})
+                    
+                    # Check if next player is bot after auction
+                    await _check_and_run_bot_turn(game_id)
+            
             
             elif action == "SYNC":
                 await websocket.send_json({

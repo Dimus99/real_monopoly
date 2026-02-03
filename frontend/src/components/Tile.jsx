@@ -34,7 +34,9 @@ const CHARACTER_FLAGS = {
     'Zelensky': '🇺🇦',
     'Kim': '🇰🇵',
     'Biden': '🇺🇸',
-    'Xi': '🇨🇳'
+    'Xi': '🇨🇳',
+    'Netanyahu': '🇮🇱',
+    'BinLaden': '🏴'
 };
 
 // Country colors for owned property backgrounds
@@ -44,7 +46,9 @@ const CHARACTER_COLORS = {
     'Zelensky': { bg: 'linear-gradient(180deg, #0057B8 0%, #0057B8 50%, #FFD700 50%, #FFD700 100%)', border: '#0057B8' },
     'Kim': { bg: 'linear-gradient(180deg, #024FA2 0%, #024FA2 20%, #fff 20%, #fff 30%, #ED1C27 30%, #ED1C27 70%, #fff 70%, #fff 80%, #024FA2 80%)', border: '#ED1C27' },
     'Biden': { bg: 'linear-gradient(180deg, #B31942 0%, #B31942 30%, #fff 30%, #fff 50%, #0A3161 50%, #0A3161 100%)', border: '#0A3161' },
-    'Xi': { bg: 'linear-gradient(135deg, #DE2910 0%, #DE2910 100%)', border: '#DE2910' }
+    'Xi': { bg: 'linear-gradient(135deg, #DE2910 0%, #DE2910 100%)', border: '#DE2910' },
+    'Netanyahu': { bg: 'linear-gradient(180deg, #0038b8 0%, #0038b8 50%, #fff 50%, #fff 100%)', border: '#0038b8' },
+    'BinLaden': { bg: 'linear-gradient(135deg, #2F4F4F 0%, #1a1a1a 100%)', border: '#2F4F4F' }
 };
 
 // Special tile icons
@@ -82,7 +86,9 @@ const AVATAR_MAP = {
     Zelensky: { avatar: '/avatars/zelensky.png', color: '#0057B8' },
     Kim: { avatar: '/avatars/kim.png', color: '#8B0000' },
     Biden: { avatar: '/avatars/biden.png', color: '#3C3B6E' },
-    Xi: { avatar: '/avatars/xi.png', color: '#DE2910' }
+    Xi: { avatar: '/avatars/xi.png', color: '#DE2910' },
+    Netanyahu: { avatar: '/avatars/israel.png', color: '#0038b8' },
+    BinLaden: { avatar: '/avatars/binladen.png', color: '#2F4F4F' }
 };
 
 // ... (skipping unchanged functions)

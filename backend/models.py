@@ -79,7 +79,7 @@ class Player(BaseModel):
     id: str
     user_id: Optional[str] = None  # Link to User account
     name: str
-    character: Literal["Putin", "Trump", "Zelensky", "Kim", "Biden", "Xi", "Netanyahu"]
+    character: Literal["Putin", "Trump", "Zelensky", "Kim", "Biden", "Xi", "Netanyahu", "BinLaden"]
     money: int = 1500
     position: int = 0  # 0-39
     properties: List[int] = Field(default_factory=list)
@@ -116,6 +116,7 @@ class Property(BaseModel):
     # Visual state
     destruction_turn: Optional[int] = None  # When it was destroyed
     isolation_turns: int = 0  # For Kim's Isolation
+    mortgage_turn: Optional[int] = None  # When it was mortgaged (for 14-turn expiration)
 
 
 class TileType(BaseModel):
@@ -189,7 +190,7 @@ class CreateGameRequest(BaseModel):
 
 class JoinGameRequest(BaseModel):
     """Request to join a game."""
-    character: Literal["Putin", "Trump", "Zelensky", "Kim", "Biden", "Xi", "Netanyahu"]
+    character: Literal["Putin", "Trump", "Zelensky", "Kim", "Biden", "Xi", "Netanyahu", "BinLaden"]
 
 
 class RollDiceResponse(BaseModel):
