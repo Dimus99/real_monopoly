@@ -252,24 +252,7 @@ const ActionPanel = ({
                     )}
                 </AnimatePresence>
 
-                {/* 5. End Turn Button (Right) */}
-                <AnimatePresence>
-                    {showEndTurn && (
-                        <motion.button
-                            key="end-turn"
-                            initial={{ width: 0, opacity: 0, padding: 0, scale: 0.5 }}
-                            animate={{ width: 'auto', opacity: 1, padding: '0 20px', scale: 1 }}
-                            exit={{ width: 0, opacity: 0, padding: 0, scale: 0.5 }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={onEndTurn}
-                            className="h-[64px] bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl font-black flex flex-col items-center justify-center gap-0.5 shadow-lg border border-white/20 whitespace-nowrap overflow-hidden"
-                        >
-                            <Check size={24} />
-                            <span className="text-[10px] font-black uppercase tracking-wider">ГОТОВО</span>
-                        </motion.button>
-                    )}
-                </AnimatePresence>
+                {/* 5. End Turn Button REMOVED (Auto-End implemented) */}
 
             </motion.div>
         </div>

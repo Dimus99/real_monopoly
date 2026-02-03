@@ -1,47 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Gavel, Clock, TrendingUp } from 'lucide-react';
+import { Gavel, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 
 const AuctionModal = ({
     isOpen,
     property,
-    minBid,
-    currentBids = {},
+    currentBid,
+    currentBidderId,
+    activePlayerId,
     timeLeft,
-    onBid,
-    onClose,
+    onRaise,
+    onPass,
     currentPlayerId,
     players = {}
 }) => {
-    const [bidAmount, setBidAmount] = useState(minBid);
+    // Is it my turn to act?
+    const isMyTurn = activePlayerId === currentPlayerId;
 
-    // Calculate highest bid
-    const highestBid = Object.keys(currentBids).length > 0
-        ? Math.max(...Object.values(currentBids))
-        : 0;
+    // Who is currently winning?
+    const winningPlayerName = currentBidderId ? players[currentBidderId]?.name : "Никто";
+    const isWinning = currentBidderId === currentPlayerId;
 
-    const highestBidder = Object.entries(currentBids)
-        .find(([_, amount]) => amount === highestBid)?.[0];
+    // Who is acting now?
+    const activePlayerName = players[activePlayerId]?.name || "Игрок";
 
-    const highestBidderName = highestBidder ? players[highestBidder]?.name : null;
+    // Status message
+    let statusMessage = "";
+    let statusColor = "text-gray-400";
 
-    // Update bid amount when min bid changes
-    useEffect(() => {
-        const newMinBid = Math.max(minBid, highestBid + 10);
-        if (bidAmount < newMinBid) {
-            setBidAmount(newMinBid);
-        }
-    }, [minBid, highestBid]);
-
-    const handleBid = () => {
-        const requiredBid = Math.max(minBid, highestBid + 10);
-        if (bidAmount >= requiredBid) {
-            onBid(bidAmount);
-        }
-    };
-
-    const isWinning = highestBidder === currentPlayerId;
-    const requiredBid = Math.max(minBid, highestBid + 10);
+    if (isMyTurn) {
+        statusMessage = "Ваш ход! Поднимите ставку или спасуйте.";
+        statusColor = "text-yellow-400";
+    } else {
+        statusMessage = `Ход игрока ${activePlayerName}...`;
+        statusColor = "text-blue-400";
+    }
 
     return (
         <AnimatePresence>
@@ -64,127 +57,69 @@ const AuctionModal = ({
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-black text-white">Аукцион</h2>
-                                    <p className="text-xs text-gray-400">Делайте ставки!</p>
+                                    <p className={`text-xs font-bold ${statusColor}`}>{statusMessage}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 bg-orange-500/20 px-3 py-2 rounded-xl border border-orange-500/30">
-                                <Clock size={20} className="text-orange-400" />
-                                <span className="font-mono font-bold text-xl text-orange-400">{timeLeft}s</span>
+                            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${isMyTurn ? 'bg-red-500/20 border-red-500/40 animate-pulse' : 'bg-gray-700/50 border-white/10'}`}>
+                                <Clock size={20} className={isMyTurn ? "text-red-400" : "text-gray-400"} />
+                                <span className={`font-mono font-bold text-xl ${isMyTurn ? "text-red-400" : "text-gray-400"}`}>{timeLeft}s</span>
                             </div>
                         </div>
 
                         {/* Property Info */}
-                        <div className="relative bg-white/5 border border-white/10 p-4 rounded-xl mb-4">
-                            <div className="text-sm text-gray-400 mb-1">Недвижимость</div>
-                            <div className="text-xl font-bold text-white mb-2">{property.name}</div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-400">Базовая цена:</span>
-                                <span className="font-mono font-bold text-yellow-400">${property.price}</span>
+                        <div className="relative bg-white/5 border border-white/10 p-4 rounded-xl mb-6">
+                            <div className="text-sm text-gray-400 mb-1">Лот</div>
+                            <div className="text-2xl font-bold text-white mb-2">{property.name}</div>
+
+                            <div className="flex items-center justify-between mt-4 p-3 bg-black/40 rounded-lg border border-white/5">
+                                <div>
+                                    <div className="text-xs text-gray-500 uppercase font-bold">Текущая ставка</div>
+                                    <div className="text-3xl font-mono font-black text-yellow-400">${currentBid}</div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-xs text-gray-500 uppercase font-bold">Лидер</div>
+                                    <div className={`font-bold truncate max-w-[120px] ${isWinning ? 'text-green-400' : 'text-white'}`}>
+                                        {winningPlayerName} {isWinning && '(Вы)'}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Current Highest Bid */}
-                        {highestBid > 0 && (
-                            <motion.div
-                                initial={{ scale: 0.95, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                className={`p-4 rounded-xl mb-4 border ${isWinning
-                                        ? 'bg-green-500/10 border-green-500/30'
-                                        : 'bg-red-500/10 border-red-500/30'
+                        {/* Actions */}
+                        <div className="grid grid-cols-2 gap-3 relative">
+                            {/* Pass Button */}
+                            <button
+                                onClick={onPass}
+                                disabled={!isMyTurn}
+                                className={`py-4 rounded-xl font-bold text-lg transition-all ${isMyTurn
+                                        ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30'
+                                        : 'bg-gray-800/50 text-gray-600 cursor-not-allowed border border-white/5'
                                     }`}
                             >
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <div className={`text-sm font-bold ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
-                                            {isWinning ? '🎉 Вы лидируете!' : '⚠️ Вас перебили!'}
-                                        </div>
-                                        {highestBidderName && (
-                                            <div className="text-xs text-gray-400 mt-1">
-                                                Лидер: {highestBidderName}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className={`text-2xl font-black ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
-                                        ${highestBid}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
+                                Пас
+                            </button>
 
-                        {/* Bid Input */}
-                        <div className="relative mb-4">
-                            <label className="text-sm text-gray-400 mb-2 block font-bold">Ваша ставка</label>
-                            <div className="relative">
-                                <input
-                                    type="number"
-                                    value={bidAmount}
-                                    onChange={(e) => setBidAmount(parseInt(e.target.value) || 0)}
-                                    min={requiredBid}
-                                    step={10}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-2xl font-mono font-bold text-white focus:border-yellow-500/50 focus:ring-2 focus:ring-yellow-500/20 transition-all"
-                                />
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2">
-                                    <button
-                                        onClick={() => setBidAmount(Math.max(requiredBid, bidAmount - 10))}
-                                        className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg text-white font-bold transition-colors"
-                                    >
-                                        −
-                                    </button>
-                                    <button
-                                        onClick={() => setBidAmount(bidAmount + 10)}
-                                        className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg text-white font-bold transition-colors"
-                                    >
-                                        +
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                                <TrendingUp size={12} />
-                                Минимальная ставка: ${requiredBid}
-                            </div>
+                            {/* Raise Button */}
+                            <button
+                                onClick={onRaise}
+                                disabled={!isMyTurn}
+                                className={`py-4 rounded-xl font-black text-lg transition-all flex flex-col items-center justify-center leading-tight ${isMyTurn
+                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg hover:scale-105 hover:shadow-xl'
+                                        : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                                    }`}
+                            >
+                                <span>Поднять +$10</span>
+                                <span className="text-xs opacity-70 font-mono">${currentBid + 10}</span>
+                            </button>
                         </div>
 
-                        {/* Bid Button */}
-                        <button
-                            onClick={handleBid}
-                            disabled={bidAmount < requiredBid}
-                            className={`w-full py-4 rounded-xl font-black text-lg transition-all transform ${bidAmount >= requiredBid
-                                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black shadow-lg hover:scale-105 hover:shadow-xl'
-                                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                }`}
-                        >
-                            {bidAmount >= requiredBid
-                                ? `💰 Поставить $${bidAmount}`
-                                : `Минимум $${requiredBid}`
-                            }
-                        </button>
-
-                        {/* Bid History */}
-                        {Object.keys(currentBids).length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-white/10">
-                                <div className="text-xs text-gray-400 mb-2 font-bold">История ставок</div>
-                                <div className="space-y-1 max-h-24 overflow-y-auto custom-scrollbar">
-                                    {Object.entries(currentBids)
-                                        .sort(([, a], [, b]) => b - a)
-                                        .map(([playerId, amount]) => (
-                                            <div
-                                                key={playerId}
-                                                className={`flex items-center justify-between text-xs p-2 rounded-lg ${playerId === currentPlayerId
-                                                        ? 'bg-blue-500/10 text-blue-400'
-                                                        : 'bg-white/5 text-gray-400'
-                                                    }`}
-                                            >
-                                                <span className="font-medium">
-                                                    {players[playerId]?.name || 'Игрок'}
-                                                    {playerId === currentPlayerId && ' (Вы)'}
-                                                </span>
-                                                <span className="font-mono font-bold">${amount}</span>
-                                            </div>
-                                        ))
-                                    }
-                                </div>
+                        {!isMyTurn && (
+                            <div className="mt-4 text-center text-xs text-gray-500 flex items-center justify-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                Ожидание хода игрока {activePlayerName}...
                             </div>
                         )}
+
                     </motion.div>
                 </div>
             )}

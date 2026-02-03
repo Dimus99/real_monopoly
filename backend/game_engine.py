@@ -387,6 +387,11 @@ class GameEngine:
         current_id = game.player_order[game.current_turn_index]
         return game.players.get(current_id)
     
+    def _maybe_end_turn(self, game: GameState):
+        """Automatically end turn if player hasn't rolled doubles."""
+        if game.turn_state.get("has_rolled"):
+            self._next_turn(game)
+            
     def roll_dice(self, game_id: str, player_id: str) -> Dict[str, Any]:
         """Roll dice and move player."""
         game = self.games.get(game_id)
@@ -411,15 +416,7 @@ class GameEngine:
             player.skipped_turns -= 1
             game.logs.append(f"🚫 {player.name} is sanctioned in this turn! Skipping...")
             
-            # Immediately end turn since their action involves doing nothing
-            # Return special status so frontend knows to just end
-            # Actually, let's just create a dummy result that forces end turn
-            # But we need to ensure the turn advances.
-            # Best approach: Return a result that indicates skipped, and auto-call next_turn or let frontend do it?
-            # It's better if we just return the state and let frontend see the log, 
-            # OR we execute next_turn here and return "turn_skipped".
-            
-            # Let's perform the "skip" action:
+            # Immediately end turn
             self._next_turn(game)
             return {
                 "dice": [0, 0],
@@ -462,6 +459,7 @@ class GameEngine:
                     game.logs.append(f"{player.name} is still in jail ({player.jail_turns}/3 turns)")
                     game.turn_state["has_rolled"] = True
                     result["game_state"] = game.dict()
+                    self._maybe_end_turn(game) # Auto end turn in jail
                     return result
         
         # Handle consecutive doubles (go to jail on 3rd)
@@ -473,6 +471,7 @@ class GameEngine:
                 game.logs.append(f"{player.name} rolled 3 doubles in a row - sent to jail!")
                 game.turn_state["has_rolled"] = True
                 result["game_state"] = game.dict()
+                self._maybe_end_turn(game) # Auto end turn
                 return result
         else:
             game.doubles_count = 0
@@ -490,7 +489,6 @@ class GameEngine:
         game.logs.append(f"{player.name} rolled {d1}+{d2} and moved to {tile.name}")
         
         # Check if passed GO
-        # Standard: if crossed 0. Also handles landing exactly on 0.
         if (new_position < old_position) or (new_position == 0 and old_position != 0):
             go_money = 200
             player.money += go_money
@@ -519,9 +517,456 @@ class GameEngine:
             game.turn_state.pop("awaiting_payment", None)
             game.turn_state.pop("awaiting_payment_amount", None)
             game.turn_state.pop("awaiting_payment_owner", None)
+            
+            # Auto-End Turn for non-interactive actions
+            interactive_actions = ["can_buy", "pay_rent", "tax", "casino_prompt"]
+            if result.get("action") not in interactive_actions:
+                 self._maybe_end_turn(game)
         
         result["game_state"] = game.dict()
         return result
+
+    def buy_property(self, game_id: str, player_id: str, property_id: int) -> Dict[str, Any]:
+        """Buy a property."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        player = game.players.get(player_id)
+        if not player:
+            return {"error": "Player not found"}
+        
+        # Turn Check
+        if not game.player_order or game.player_order[game.current_turn_index] != player_id:
+            return {"error": "Not your turn"}
+        
+        if player.position != property_id:
+            return {"error": "Must be on the tile to buy it"}
+        
+        if property_id < 0 or property_id >= len(game.board):
+            return {"error": "Invalid property"}
+        
+        prop = game.board[property_id]
+        
+        if prop.owner_id:
+            return {"error": "Property already owned"}
+        
+        if prop.is_destroyed:
+            return {"error": "Cannot buy destroyed property"}
+            
+        if prop.isolation_turns > 0:
+            return {"error": "Property is Isolated (Kim's Nuke Threat) - Cannot buy!"}
+        
+        if prop.group in ["Special", "Jail", "FreeParking", "GoToJail", "Chance", "Tax", "Negotiations", "RaiseTax", "Casino"]:
+            return {"error": "Cannot buy this tile"}
+        
+        if player.money < prop.price:
+            return {"error": "Not enough money"}
+        
+        # Buy it
+        player.money -= prop.price
+        prop.owner_id = player_id
+        player.properties.append(property_id)
+        
+        # Check for Monopoly Completion (Trigger)
+        self._update_group_monopoly(game, prop.group)
+        if prop.is_monopoly:
+             game.logs.append(f"🎉 {player.name} completed the {prop.group} MONOPOLY!")
+        
+        game.logs.append(f"{player.name} bought {prop.name} for ${prop.price}")
+        
+        # Auto-End Turn if no doubles
+        self._maybe_end_turn(game)
+        self._reset_timer(game)
+        
+        return {
+            "success": True,
+            "player_id": player_id,
+            "property": prop.dict(),
+            "game_state": game.dict()
+        }
+
+    def decline_property(self, game_id: str, player_id: str) -> Dict[str, Any]:
+        """Player declines property purchase, triggering auction."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        player = game.players.get(player_id)
+        if not player:
+            return {"error": "Player not found"}
+        
+        # Turn Check
+        if not game.player_order or game.player_order[game.current_turn_index] != player_id:
+            return {"error": "Not your turn"}
+        
+        property_id = player.position
+        if property_id < 0 or property_id >= len(game.board):
+            return {"error": "Invalid property"}
+        
+        prop = game.board[property_id]
+        
+        if prop.owner_id:
+            return {"error": "Property already owned"}
+        
+        if prop.group in ["Special", "Jail", "FreeParking", "GoToJail", "Chance", "Tax", "Negotiations", "RaiseTax", "Casino"]:
+            return {"error": "Cannot auction this tile"}
+        
+        game.logs.append(f"❌ {player.name} declined {prop.name}")
+        
+        # Start auction, excluding the declining player
+        return self.start_auction(game_id, property_id, declining_player_id=player_id)
+    
+    def start_auction(self, game_id: str, property_id: int, declining_player_id: str = None) -> Dict[str, Any]:
+        """Start sequential auction for a property."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        if property_id < 0 or property_id >= len(game.board):
+            return {"error": "Invalid property"}
+        
+        prop = game.board[property_id]
+        
+        if prop.owner_id is not None:
+            return {"error": "Property already owned"}
+        
+        # Get all players except the one who declined
+        eligible_players = [pid for pid in game.player_order if pid != declining_player_id]
+        
+        if not eligible_players:
+            # No one to auction to
+            game.logs.append(f"🔨 No eligible bidders for {prop.name}. Property remains unowned.")
+            
+            # This counts as interaction done, so maybe end turn?
+            # Yes, if the original player triggered auction and no one bid, it's end of interaction.
+            # But start_auction is called by decline_property.
+            # The player who declined is done.
+            self._maybe_end_turn(game)
+            return {"success": True, "winner": None, "game_state": game.dict()}
+        
+        # Initialize sequential auction state
+        game.turn_state["auction_active"] = True
+        game.turn_state["auction_property_id"] = property_id
+        game.turn_state["auction_current_bid"] = prop.price  # Start at base price
+        game.turn_state["auction_current_bidder"] = None  # No bidder yet
+        game.turn_state["auction_eligible_players"] = eligible_players  # Players still in auction
+        game.turn_state["auction_current_player_index"] = 0  # Index in eligible_players list
+        game.turn_state["auction_turn_start_time"] = datetime.utcnow().timestamp()
+        game.turn_state["auction_turn_duration"] = 10  # 10 seconds per turn
+        
+        current_player_id = eligible_players[0]
+        current_player = game.players[current_player_id]
+        
+        game.logs.append(f"🔨 Auction started for {prop.name}! Starting bid: ${prop.price}")
+        game.logs.append(f"⏰ {current_player.name}'s turn to bid (+$10 or Pass)")
+        self._reset_timer(game)
+        
+        return {
+            "success": True,
+            "property": prop.name,
+            "property_id": property_id,
+            "current_bid": prop.price,
+            "current_player": current_player_id,
+            "game_state": game.dict()
+        }
+    
+    def raise_bid(self, game_id: str, player_id: str) -> Dict[str, Any]:
+        """Raise bid by $10 in sequential auction."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        if not game.turn_state.get("auction_active"):
+            return {"error": "No active auction"}
+        
+        player = game.players.get(player_id)
+        if not player:
+            return {"error": "Player not found"}
+        
+        # Check if it's this player's turn in auction
+        eligible_players = game.turn_state.get("auction_eligible_players", [])
+        current_index = game.turn_state.get("auction_current_player_index", 0)
+        
+        if not eligible_players or current_index >= len(eligible_players):
+            return {"error": "Invalid auction state"}
+        
+        current_player_id = eligible_players[current_index]
+        if player_id != current_player_id:
+            return {"error": "Not your turn in auction"}
+        
+        property_id = game.turn_state.get("auction_property_id")
+        if property_id is None:
+            return {"error": "Invalid auction state"}
+        
+        prop = game.board[property_id]
+        current_bid = game.turn_state.get("auction_current_bid", prop.price)
+        new_bid = current_bid + 10
+        
+        if player.money < new_bid:
+            return {"error": "Insufficient funds"}
+        
+        # Update bid
+        game.turn_state["auction_current_bid"] = new_bid
+        game.turn_state["auction_current_bidder"] = player_id
+        game.logs.append(f"💰 {player.name} raised bid to ${new_bid}")
+        
+        # Move to next player
+        return self._next_auction_player(game)
+    
+    def pass_auction(self, game_id: str, player_id: str) -> Dict[str, Any]:
+        """Player passes in sequential auction."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        if not game.turn_state.get("auction_active"):
+            return {"error": "No active auction"}
+        
+        player = game.players.get(player_id)
+        if not player:
+            return {"error": "Player not found"}
+        
+        # Check if it's this player's turn in auction
+        eligible_players = game.turn_state.get("auction_eligible_players", [])
+        current_index = game.turn_state.get("auction_current_player_index", 0)
+        
+        if not eligible_players or current_index >= len(eligible_players):
+            return {"error": "Invalid auction state"}
+        
+        current_player_id = eligible_players[current_index]
+        if player_id != current_player_id:
+            return {"error": "Not your turn in auction"}
+        
+        game.logs.append(f"🚫 {player.name} passed")
+        
+        # Remove player from eligible list
+        eligible_players.pop(current_index)
+        game.turn_state["auction_eligible_players"] = eligible_players
+        
+        # Check if auction should end
+        if len(eligible_players) == 0:
+            # No one left, resolve auction
+            return self.resolve_auction(game_id)
+        
+        # Adjust index if needed
+        if current_index >= len(eligible_players):
+            game.turn_state["auction_current_player_index"] = 0
+        
+        # Move to next player
+        return self._next_auction_player(game)
+    
+    def _next_auction_player(self, game: Any) -> Dict[str, Any]:
+        """Move to next player in auction."""
+        eligible_players = game.turn_state.get("auction_eligible_players", [])
+        current_index = game.turn_state.get("auction_current_player_index", 0)
+        
+        if not eligible_players:
+            return self.resolve_auction(game.game_id)
+        
+        # Move to next player (circular)
+        next_index = (current_index + 1) % len(eligible_players)
+        game.turn_state["auction_current_player_index"] = next_index
+        game.turn_state["auction_turn_start_time"] = datetime.utcnow().timestamp()
+        
+        next_player_id = eligible_players[next_index]
+        next_player = game.players[next_player_id]
+        current_bid = game.turn_state.get("auction_current_bid", 0)
+        
+        game.logs.append(f"⏰ {next_player.name}'s turn (Current: ${current_bid}, Raise: ${current_bid + 10})")
+        self._reset_timer(game)
+        
+        return {
+            "success": True,
+            "next_player": next_player_id,
+            "current_bid": current_bid,
+            "game_state": game.dict()
+        }
+    
+    def resolve_auction(self, game_id: str) -> Dict[str, Any]:
+        """Resolve auction and award property to highest bidder."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        if not game.turn_state.get("auction_active"):
+            return {"error": "No active auction"}
+        
+        property_id = game.turn_state.get("auction_property_id")
+        if property_id is None:
+            return {"error": "Invalid auction state"}
+        
+        prop = game.board[property_id]
+        winner_id = game.turn_state.get("auction_current_bidder")
+        
+        if not winner_id:
+            # No bids - property remains unowned
+            game.logs.append(f"🔨 No bids for {prop.name}. Property remains unowned.")
+            
+            # Clear auction state
+            game.turn_state["auction_active"] = False
+            game.turn_state["auction_property_id"] = None
+            game.turn_state["auction_current_bid"] = None
+            game.turn_state["auction_current_bidder"] = None
+            game.turn_state["auction_eligible_players"] = []
+            game.turn_state["auction_current_player_index"] = 0
+            
+            # Auto-advance turn (if not double)
+            self._maybe_end_turn(game)
+            
+            return {
+                "success": True,
+                "winner": None,
+                "game_state": game.dict()
+            }
+        
+        # Award property to winner
+        winning_bid = game.turn_state.get("auction_current_bid")
+        winner = game.players[winner_id]
+        
+        winner.money -= winning_bid
+        prop.owner_id = winner_id
+        winner.properties.append(property_id)
+        
+        # Update monopoly status
+        self._update_group_monopoly(game, prop.group)
+        if prop.is_monopoly:
+            game.logs.append(f"🎉 {winner.name} completed the {prop.group} MONOPOLY!")
+        
+        game.logs.append(f"🎉 {winner.name} won {prop.name} for ${winning_bid}!")
+        
+        # Clear auction state
+        game.turn_state["auction_active"] = False
+        game.turn_state["auction_property_id"] = None
+        game.turn_state["auction_current_bid"] = None
+        game.turn_state["auction_current_bidder"] = None
+        game.turn_state["auction_eligible_players"] = []
+        game.turn_state["auction_current_player_index"] = 0
+        
+        # Auto-advance turn (if not double)
+        self._maybe_end_turn(game)
+        self._reset_timer(game)
+        
+        return {
+            "success": True,
+            "winner": winner.name,
+            "winner_id": winner_id,
+            "amount": winning_bid,
+            "property": prop.name,
+            "game_state": game.dict()
+        }
+
+    def pay_rent(self, game_id: str, player_id: str, property_id: int) -> Dict[str, Any]:
+        """Pay rent to property owner."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        player = game.players.get(player_id)
+        if not player:
+            return {"error": "Player not found"}
+
+        # Turn Check
+        if not game.player_order or game.player_order[game.current_turn_index] != player_id:
+            return {"error": "Not your turn"}
+
+        prop = game.board[property_id]
+        
+        if not prop.owner_id or prop.owner_id == player_id:
+            return {"error": "No rent to pay"}
+        
+        owner = game.players.get(prop.owner_id)
+        if not owner:
+            return {"error": "Owner not found"}
+        
+        rent = self._calculate_rent(game, prop, game.dice, player)
+        
+        if player.money < rent:
+            # Check if they can raise money
+            assets_value = self._calculate_assets(game, player)
+            
+            if assets_value < rent:
+                # BANKRUPTCY
+                game.turn_state.pop("awaiting_payment", None)
+                game.turn_state.pop("awaiting_payment_amount", None)
+                game.turn_state.pop("awaiting_payment_owner", None)
+                return self._handle_bankruptcy(game, player, owner, rent)
+            else:
+                # Force liquidation - mark that payment is required
+                game.turn_state["awaiting_payment"] = True
+                game.turn_state["awaiting_payment_amount"] = rent
+                game.turn_state["awaiting_payment_owner"] = owner.id
+                return {
+                    "success": False,
+                    "error": "Insufficient funds! You must sell houses or mortgage properties to pay rent.",
+                    "required_amount": rent,
+                    "current_money": player.money,
+                    "rent_paid": 0,
+                    "game_state": game.dict()
+                }
+        
+        # Payment path
+        player.money -= rent
+        owner.money += rent
+        
+        # Clear payment requirement
+        game.turn_state.pop("awaiting_payment", None)
+        game.turn_state.pop("awaiting_payment_amount", None)
+        game.turn_state.pop("awaiting_payment_owner", None)
+        
+        game.logs.append(f"{player.name} paid ${rent} rent to {owner.name}")
+        
+        # Auto-End Turn
+        self._maybe_end_turn(game)
+        self._reset_timer(game)
+        
+        return {
+            "success": True,
+            "player_id": player_id,
+            "rent_paid": rent,
+            "game_state": game.dict()
+        }
+
+    def pay_tax(self, game_id: str, player_id: str) -> Dict[str, Any]:
+        """Pay tax for the current tile (Manual after liquidation)."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        player = game.players.get(player_id)
+        if not player:
+            return {"error": "Player not found"}
+            
+        tile = game.board[player.position]
+        if tile.group != "Tax":
+             return {"error": "Not a tax tile"}
+             
+        amount = tile.rent[0] if tile.rent else 100
+        
+        if player.money < amount:
+             return {"error": f"You still need ${amount - player.money} to pay taxes! Sell more houses or mortgage properties."}
+             
+        player.money -= amount
+        game.pot += amount
+        
+        log_msg = f"💸 {player.name} paid ${amount} in UN Membership Fees (Taxes)"
+        game.logs.append(log_msg)
+        
+        # Clear payment requirement
+        game.turn_state.pop("awaiting_payment", None)
+        game.turn_state.pop("awaiting_payment_amount", None)
+        game.turn_state.pop("awaiting_payment_owner", None)
+        
+        # Auto-End Turn
+        self._maybe_end_turn(game)
+        self._reset_timer(game)
+        
+        return {
+            "success": True,
+            "player_id": player_id,
+            "amount": amount,
+            "game_state": game.dict()
+        }
     
     def _handle_landing(self, game: GameState, player: Player, tile: Property) -> Dict[str, Any]:
         """Handle player landing on a tile."""
@@ -1200,11 +1645,11 @@ class GameEngine:
         
         game.logs.append(f"❌ {player.name} declined {prop.name}")
         
-        # Start auction
-        return self.start_auction(game_id, property_id)
+        # Start auction, excluding the declining player
+        return self.start_auction(game_id, property_id, declining_player_id=player_id)
     
-    def start_auction(self, game_id: str, property_id: int) -> Dict[str, Any]:
-        """Start auction for a property."""
+    def start_auction(self, game_id: str, property_id: int, declining_player_id: str = None) -> Dict[str, Any]:
+        """Start sequential auction for a property."""
         game = self.games.get(game_id)
         if not game:
             return {"error": "Game not found"}
@@ -1217,26 +1662,42 @@ class GameEngine:
         if prop.owner_id is not None:
             return {"error": "Property already owned"}
         
-        # Initialize auction state in turn_state
+        # Get all players except the one who declined
+        eligible_players = [pid for pid in game.player_order if pid != declining_player_id]
+        
+        if not eligible_players:
+            # No one to auction to
+            game.logs.append(f"🔨 No eligible bidders for {prop.name}. Property remains unowned.")
+            return {"success": True, "winner": None, "game_state": game.dict()}
+        
+        # Initialize sequential auction state
         game.turn_state["auction_active"] = True
         game.turn_state["auction_property_id"] = property_id
-        game.turn_state["auction_bids"] = {}
-        game.turn_state["auction_start_time"] = datetime.utcnow().timestamp()
-        game.turn_state["auction_duration"] = 30  # seconds
+        game.turn_state["auction_current_bid"] = prop.price  # Start at base price
+        game.turn_state["auction_current_bidder"] = None  # No bidder yet
+        game.turn_state["auction_eligible_players"] = eligible_players  # Players still in auction
+        game.turn_state["auction_current_player_index"] = 0  # Index in eligible_players list
+        game.turn_state["auction_turn_start_time"] = datetime.utcnow().timestamp()
+        game.turn_state["auction_turn_duration"] = 10  # 10 seconds per turn
         
-        game.logs.append(f"🔨 Auction started for {prop.name}! Minimum bid: ${prop.price}")
+        current_player_id = eligible_players[0]
+        current_player = game.players[current_player_id]
+        
+        game.logs.append(f"🔨 Auction started for {prop.name}! Starting bid: ${prop.price}")
+        game.logs.append(f"⏰ {current_player.name}'s turn to bid (+$10 or Pass)")
         self._reset_timer(game)
         
         return {
             "success": True,
             "property": prop.name,
             "property_id": property_id,
-            "min_bid": prop.price,
+            "current_bid": prop.price,
+            "current_player": current_player_id,
             "game_state": game.dict()
         }
     
-    def place_bid(self, game_id: str, player_id: str, amount: int) -> Dict[str, Any]:
-        """Place a bid in active auction."""
+    def raise_bid(self, game_id: str, player_id: str) -> Dict[str, Any]:
+        """Raise bid by $10 in sequential auction."""
         game = self.games.get(game_id)
         if not game:
             return {"error": "Game not found"}
@@ -1248,32 +1709,102 @@ class GameEngine:
         if not player:
             return {"error": "Player not found"}
         
+        # Check if it's this player's turn in auction
+        eligible_players = game.turn_state.get("auction_eligible_players", [])
+        current_index = game.turn_state.get("auction_current_player_index", 0)
+        
+        if not eligible_players or current_index >= len(eligible_players):
+            return {"error": "Invalid auction state"}
+        
+        current_player_id = eligible_players[current_index]
+        if player_id != current_player_id:
+            return {"error": "Not your turn in auction"}
+        
         property_id = game.turn_state.get("auction_property_id")
         if property_id is None:
             return {"error": "Invalid auction state"}
         
         prop = game.board[property_id]
+        current_bid = game.turn_state.get("auction_current_bid", prop.price)
+        new_bid = current_bid + 10
         
-        # Get current highest bid
-        current_bids = game.turn_state.get("auction_bids", {})
-        current_high_bid = max(current_bids.values()) if current_bids else 0
-        min_bid = max(prop.price, current_high_bid + 10)
-        
-        if amount < min_bid:
-            return {"error": f"Bid must be at least ${min_bid}"}
-        
-        if player.money < amount:
+        if player.money < new_bid:
             return {"error": "Insufficient funds"}
         
-        # Record bid
-        game.turn_state["auction_bids"][player_id] = amount
-        game.logs.append(f"💰 {player.name} bid ${amount} for {prop.name}")
+        # Update bid
+        game.turn_state["auction_current_bid"] = new_bid
+        game.turn_state["auction_current_bidder"] = player_id
+        game.logs.append(f"💰 {player.name} raised bid to ${new_bid}")
+        
+        # Move to next player
+        return self._next_auction_player(game)
+    
+    def pass_auction(self, game_id: str, player_id: str) -> Dict[str, Any]:
+        """Player passes in sequential auction."""
+        game = self.games.get(game_id)
+        if not game:
+            return {"error": "Game not found"}
+        
+        if not game.turn_state.get("auction_active"):
+            return {"error": "No active auction"}
+        
+        player = game.players.get(player_id)
+        if not player:
+            return {"error": "Player not found"}
+        
+        # Check if it's this player's turn in auction
+        eligible_players = game.turn_state.get("auction_eligible_players", [])
+        current_index = game.turn_state.get("auction_current_player_index", 0)
+        
+        if not eligible_players or current_index >= len(eligible_players):
+            return {"error": "Invalid auction state"}
+        
+        current_player_id = eligible_players[current_index]
+        if player_id != current_player_id:
+            return {"error": "Not your turn in auction"}
+        
+        game.logs.append(f"🚫 {player.name} passed")
+        
+        # Remove player from eligible list
+        eligible_players.pop(current_index)
+        game.turn_state["auction_eligible_players"] = eligible_players
+        
+        # Check if auction should end
+        if len(eligible_players) == 0:
+            # No one left, resolve auction
+            return self.resolve_auction(game_id)
+        
+        # Adjust index if needed
+        if current_index >= len(eligible_players):
+            game.turn_state["auction_current_player_index"] = 0
+        
+        # Move to next player
+        return self._next_auction_player(game)
+    
+    def _next_auction_player(self, game: Any) -> Dict[str, Any]:
+        """Move to next player in auction."""
+        eligible_players = game.turn_state.get("auction_eligible_players", [])
+        current_index = game.turn_state.get("auction_current_player_index", 0)
+        
+        if not eligible_players:
+            return self.resolve_auction(game.game_id)
+        
+        # Move to next player (circular)
+        next_index = (current_index + 1) % len(eligible_players)
+        game.turn_state["auction_current_player_index"] = next_index
+        game.turn_state["auction_turn_start_time"] = datetime.utcnow().timestamp()
+        
+        next_player_id = eligible_players[next_index]
+        next_player = game.players[next_player_id]
+        current_bid = game.turn_state.get("auction_current_bid", 0)
+        
+        game.logs.append(f"⏰ {next_player.name}'s turn (Current: ${current_bid}, Raise: ${current_bid + 10})")
         self._reset_timer(game)
         
         return {
             "success": True,
-            "amount": amount,
-            "player": player.name,
+            "next_player": next_player_id,
+            "current_bid": current_bid,
             "game_state": game.dict()
         }
     
@@ -1291,14 +1822,19 @@ class GameEngine:
             return {"error": "Invalid auction state"}
         
         prop = game.board[property_id]
-        current_bids = game.turn_state.get("auction_bids", {})
+        winner_id = game.turn_state.get("auction_current_bidder")
         
-        if not current_bids:
+        if not winner_id:
             # No bids - property remains unowned
             game.logs.append(f"🔨 No bids for {prop.name}. Property remains unowned.")
+            
+            # Clear auction state
             game.turn_state["auction_active"] = False
             game.turn_state["auction_property_id"] = None
-            game.turn_state["auction_bids"] = {}
+            game.turn_state["auction_current_bid"] = None
+            game.turn_state["auction_current_bidder"] = None
+            game.turn_state["auction_eligible_players"] = []
+            game.turn_state["auction_current_player_index"] = 0
             
             # Auto-advance turn
             self._next_turn(game)
@@ -1309,12 +1845,10 @@ class GameEngine:
                 "game_state": game.dict()
             }
         
-        # Find highest bidder
-        winner_id = max(current_bids, key=current_bids.get)
-        winning_bid = current_bids[winner_id]
+        # Award property to winner
+        winning_bid = game.turn_state.get("auction_current_bid")
         winner = game.players[winner_id]
         
-        # Award property
         winner.money -= winning_bid
         prop.owner_id = winner_id
         winner.properties.append(property_id)
@@ -1329,7 +1863,10 @@ class GameEngine:
         # Clear auction state
         game.turn_state["auction_active"] = False
         game.turn_state["auction_property_id"] = None
-        game.turn_state["auction_bids"] = {}
+        game.turn_state["auction_current_bid"] = None
+        game.turn_state["auction_current_bidder"] = None
+        game.turn_state["auction_eligible_players"] = []
+        game.turn_state["auction_current_player_index"] = 0
         
         # Auto-advance turn
         self._next_turn(game)
@@ -2455,6 +2992,9 @@ class GameEngine:
         # Check if they owe money
         if game.turn_state.get("awaiting_payment"):
              return {"error": "Вы должны оплатить аренду или налоги перед завершением хода!"}
+        
+        if game.turn_state.get("auction_active"):
+            return {"error": "Auction in progress!"}
         
         if not game.turn_state.get("has_rolled"):
             return {"error": "Сначала бросьте кубики!"}

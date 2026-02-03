@@ -54,7 +54,8 @@ const GameRoom = () => {
         !currentTile.owner_id &&
         currentTile.price > 0 &&
         !['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Negotiations', 'RaiseTax', 'Casino'].includes(currentTile.group) &&
-        !currentTile.is_destroyed;
+        !currentTile.is_destroyed &&
+        !gameState?.turn_state?.auction_active;
 
     // UI States
     const [showOreshnik, setShowOreshnik] = useState(false);
@@ -232,9 +233,12 @@ const GameRoom = () => {
         sendAction('DECLINE_PROPERTY');
     };
 
-    const handlePlaceBid = (amount) => {
-        console.log("Placing bid:", amount);
-        sendAction('PLACE_BID', { amount });
+    const handleRaiseBid = () => {
+        sendAction('RAISE_BID');
+    };
+
+    const handlePassAuction = () => {
+        sendAction('PASS_AUCTION');
     };
 
     const handleBuildHouse = (propertyId) => {
@@ -341,33 +345,39 @@ const GameRoom = () => {
         return () => clearInterval(interval);
     }, [gameState?.turn_expiry, gameState?.current_turn_index]); // Also update on turn index change
 
-    // Auction timer and state management
+    // Auction Turn timer
     useEffect(() => {
         const auctionActive = gameState?.turn_state?.auction_active;
-        const auctionStartTime = gameState?.turn_state?.auction_start_time;
-        const auctionDuration = gameState?.turn_state?.auction_duration || 30;
+        const turnStartTime = gameState?.turn_state?.auction_turn_start_time;
+        const turnDuration = gameState?.turn_state?.auction_turn_duration || 10;
 
-        if (auctionActive && auctionStartTime) {
+        if (auctionActive && turnStartTime) {
             setShowAuctionModal(true);
 
             const interval = setInterval(() => {
-                const elapsed = Date.now() / 1000 - auctionStartTime;
-                const remaining = Math.max(0, auctionDuration - Math.floor(elapsed));
+                const elapsed = Date.now() / 1000 - turnStartTime;
+                const remaining = Math.max(0, turnDuration - Math.floor(elapsed));
                 setAuctionTimeLeft(remaining);
 
                 if (remaining === 0) {
-                    // Auto-resolve auction when time expires
-                    sendAction('RESOLVE_AUCTION');
-                    clearInterval(interval);
+                    // Check if it's MY turn and auto-pass
+                    const eligiblePlayers = gameState?.turn_state?.auction_eligible_players || [];
+                    const currentIndex = gameState?.turn_state?.auction_current_player_index || 0;
+                    const activePlayerId = eligiblePlayers[currentIndex];
+
+                    if (activePlayerId === playerId) {
+                        sendAction('PASS_AUCTION');
+                        clearInterval(interval);
+                    }
                 }
             }, 1000);
 
             return () => clearInterval(interval);
         } else {
             setShowAuctionModal(false);
-            setAuctionTimeLeft(30);
+            setAuctionTimeLeft(turnDuration);
         }
-    }, [gameState?.turn_state?.auction_active, gameState?.turn_state?.auction_start_time]);
+    }, [gameState?.turn_state?.auction_active, gameState?.turn_state?.auction_turn_start_time, gameState?.turn_state?.auction_eligible_players, gameState?.turn_state?.auction_current_player_index, playerId]);
 
     const [lastRollTime, setLastRollTime] = useState(0);
 
@@ -1737,11 +1747,12 @@ const GameRoom = () => {
                 <AuctionModal
                     isOpen={showAuctionModal}
                     property={gameState.board[gameState.turn_state.auction_property_id]}
-                    minBid={gameState.board[gameState.turn_state.auction_property_id]?.price || 0}
-                    currentBids={gameState.turn_state.auction_bids || {}}
+                    currentBid={gameState.turn_state.auction_current_bid || 0}
+                    currentBidderId={gameState.turn_state.auction_current_bidder}
+                    activePlayerId={gameState.turn_state.auction_eligible_players?.[gameState.turn_state.auction_current_player_index]}
                     timeLeft={auctionTimeLeft}
-                    onBid={handlePlaceBid}
-                    onClose={() => setShowAuctionModal(false)}
+                    onRaise={handleRaiseBid}
+                    onPass={handlePassAuction}
                     currentPlayerId={playerId}
                     players={gameState.players || {}}
                 />

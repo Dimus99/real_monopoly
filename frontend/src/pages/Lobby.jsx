@@ -23,7 +23,8 @@ const LOBBY_CHARACTERS = [
     { id: 'Kim', name: 'Ким', avatar: '/avatars/kim.png', color: '#8B0000', ability: 'NUKE', abilityName: 'Ядерная Угроза', country: 'NK', abilityDesc: 'Ядерная угроза блокирует аренду.' },
     { id: 'Biden', name: 'Байден', avatar: '/avatars/biden.png', color: '#3C3B6E', ability: 'SANCTIONS', abilityName: 'Санкции', country: 'USA', abilityDesc: 'Заморозить оппонента: он пропустит следующий ход.' },
     { id: 'Xi', name: 'Си', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT', abilityName: 'Пояс и Путь', country: 'CN', abilityDesc: 'Получить по $50 за каждый свой город.' },
-    { id: 'Netanyahu', name: 'Нетаньяху', avatar: '/avatars/israel.png', color: '#0038b8', ability: 'TELEPORT', abilityName: 'Манёвры', country: 'IL', abilityDesc: 'Стратегический ход: перемещение в любую точку.' }
+    { id: 'Netanyahu', name: 'Нетаньяху', avatar: '/avatars/israel.png', color: '#0038b8', ability: 'TELEPORT', abilityName: 'Манёвры', country: 'IL', abilityDesc: 'Стратегический ход: перемещение в любую точку.' },
+    { id: 'BinLaden', name: 'Бен Ладен', avatar: '/avatars/binladen.png', color: '#2F4F4F', ability: 'SEPTEMBER_11', abilityName: '11 Сентября', country: 'AF', abilityDesc: 'Уничтожить 2 соседних поля (Башни-близнецы).' }
 ];
 
 const getApiBase = () => {

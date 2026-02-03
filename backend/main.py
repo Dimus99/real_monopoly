@@ -544,13 +544,24 @@ async def websocket_game(
                 else:
                     await manager.broadcast(game_id, {"type": "AUCTION_STARTED", **result})
             
-            elif action == "PLACE_BID":
-                amount = action_data.get("amount", 0)
-                result = engine.place_bid(game_id, player_id, amount)
+            elif action == "RAISE_BID":
+                result = engine.raise_bid(game_id, player_id)
                 if result.get("error"):
                     await websocket.send_json({"type": "ERROR", "message": result["error"]})
                 else:
-                    await manager.broadcast(game_id, {"type": "BID_PLACED", **result})
+                    await manager.broadcast(game_id, {"type": "AUCTION_UPDATED", **result})
+            
+            elif action == "PASS_AUCTION":
+                result = engine.pass_auction(game_id, player_id)
+                if result.get("error"):
+                    await websocket.send_json({"type": "ERROR", "message": result["error"]})
+                else:
+                    # Check if auction was resolved (winner determined or no bids)
+                    if "winner" in result:
+                        await manager.broadcast(game_id, {"type": "AUCTION_RESOLVED", **result})
+                        await _check_and_run_bot_turn(game_id)
+                    else:
+                        await manager.broadcast(game_id, {"type": "AUCTION_UPDATED", **result})
             
             elif action == "RESOLVE_AUCTION":
                 result = engine.resolve_auction(game_id)
