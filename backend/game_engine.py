@@ -2284,7 +2284,10 @@ class GameEngine:
                  char_ability = CHARACTER_ABILITIES.get(player.character)
                  player.ability_cooldown = char_ability.get("cooldown", 5) if char_ability else 5
 
-            self._reset_timer(game)
+             self._reset_timer(game)
+             
+             # Auto-End Turn if player has already rolled (and buttons are gone)
+             self._maybe_end_turn(game)
         
         result["game_state"] = game.dict()
         return result
