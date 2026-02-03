@@ -215,6 +215,17 @@ const GameRoom = () => {
     const handleCloseSanctions = React.useCallback(() => setShowSanctions(false), []);
     const handleCloseBeltRoad = React.useCallback(() => setShowBeltRoad(false), []);
 
+    // Escape to cancel targeting
+    useEffect(() => {
+        const handleEsc = (e) => {
+            if (e.key === 'Escape' && targetingAbility) {
+                setTargetingAbility(null);
+            }
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [targetingAbility]);
+
     const handleBuyProperty = () => {
         if (!isMyTurn || !currentPlayer) {
             console.warn("Cannot buy: not my turn or no player", { isMyTurn, currentPlayer });
@@ -321,7 +332,7 @@ const GameRoom = () => {
             return;
         }
 
-        if (['ORESHNIK', 'BUYOUT', 'ISOLATION', 'SANCTIONS', 'TELEPORT'].includes(abilityType)) {
+        if (['ORESHNIK', 'BUYOUT', 'ISOLATION', 'SANCTIONS', 'TELEPORT', 'SEPTEMBER_11', 'CONSTRUCTION'].includes(abilityType)) {
             setTargetingAbility(abilityType);
         } else {
             sendAction('USE_ABILITY', { ability_type: abilityType });
@@ -898,8 +909,8 @@ const GameRoom = () => {
         }
 
         if (targetingAbility) {
-            // For property-targeting abilities (ORESHNIK, BUYOUT, ISOLATION, TELEPORT)
-            if (['ORESHNIK', 'BUYOUT', 'ISOLATION', 'TELEPORT'].includes(targetingAbility)) {
+            // For property-targeting abilities (ORESHNIK, BUYOUT, ISOLATION, TELEPORT, SEPTEMBER_11, CONSTRUCTION)
+            if (['ORESHNIK', 'BUYOUT', 'ISOLATION', 'TELEPORT', 'SEPTEMBER_11', 'CONSTRUCTION'].includes(targetingAbility)) {
                 sendAction('USE_ABILITY', { ability_type: targetingAbility, target_id: tileId });
                 setTargetingAbility(null);
             }
@@ -1782,6 +1793,29 @@ const GameRoom = () => {
                         </p>
                         {/* Arrow (Pointing Up) */}
                         <div className="absolute -top-1.5 left-4 w-3 h-3 bg-gray-900 border-l border-t border-white/10 rotate-45" />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Targeting Mode Overlay */}
+            <AnimatePresence>
+                {targetingAbility && (
+                    <motion.div
+                        initial={{ y: -50, opacity: 0 }}
+                        animate={{ y: 20, opacity: 1 }}
+                        exit={{ y: -50, opacity: 0 }}
+                        className="fixed top-24 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none"
+                    >
+                        <div className="bg-red-600/90 text-white px-6 py-3 rounded-full shadow-[0_0_30px_rgba(220,38,38,0.6)] backdrop-blur-md border border-red-400/50 font-bold uppercase tracking-widest flex items-center gap-4 pointer-events-auto">
+                            <span className="flex items-center gap-2"><Crosshair className="animate-pulse" /> ВЫБЕРИТЕ ЦЕЛЬ</span>
+                            <button
+                                onClick={() => setTargetingAbility(null)}
+                                className="bg-black/20 hover:bg-black/40 rounded-full p-1 transition-colors"
+                            >
+                                <X size={16} />
+                            </button>
+                            <span className="text-[10px] opacity-70 border-l border-white/20 pl-4 ml-2">ESC ОТМЕНА</span>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
