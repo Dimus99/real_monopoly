@@ -23,6 +23,7 @@ import { BuyoutAnimation, AidAnimation, NukeThreatAnimation, SanctionsAnimation,
 
 // Lazy load to avoid circular dependency/initialization issues
 const OreshnikAnimation = lazy(() => import('../components/OreshnikAnimation'));
+const September11Animation = lazy(() => import('../components/September11Animation'));
 const WhoAmIAnimation = lazy(() => import('../components/WhoAmIAnimation'));
 
 const getApiBase = () => import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
@@ -59,6 +60,7 @@ const GameRoom = () => {
 
     // UI States
     const [showOreshnik, setShowOreshnik] = useState(false);
+    const [showSeptember11, setShowSeptember11] = useState(false);
     const [showWhoAmI, setShowWhoAmI] = useState(false);
     const [selectedTile, setSelectedTile] = useState(null);
     const [isRolling, setIsRolling] = useState(false); // For button disable
@@ -209,6 +211,7 @@ const GameRoom = () => {
     }, []);
 
     const handleCloseOreshnik = React.useCallback(() => setShowOreshnik(false), []);
+    const handleCloseSeptember11 = React.useCallback(() => setShowSeptember11(false), []);
     const handleCloseBuyout = React.useCallback(() => setShowBuyout(false), []);
     const handleCloseAid = React.useCallback(() => setShowAid(false), []);
     const handleCloseNuke = React.useCallback(() => setShowNuke(false), []);
@@ -631,6 +634,7 @@ const GameRoom = () => {
                 setShowDice(false);
                 break;
             case 'ORESHNIK': setShowOreshnik(true); break;
+            case 'SEPTEMBER_11': setShowSeptember11(true); break;
             case 'BUYOUT':
                 setAbilityTargetName(lastAction.target_name);
                 setShowBuyout(true);
@@ -1732,6 +1736,7 @@ const GameRoom = () => {
             <Suspense fallback={null}>
                 {showWhoAmI && <WhoAmIAnimation isVisible={showWhoAmI} onClose={() => setShowWhoAmI(false)} />}
                 {showOreshnik && <OreshnikAnimation onClose={handleCloseOreshnik} />}
+                {showSeptember11 && <September11Animation isVisible={showSeptember11} onComplete={handleCloseSeptember11} />}
             </Suspense>
 
             {/* Global Dice Animation Overlay - Fixed to Viewport */}
