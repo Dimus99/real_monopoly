@@ -252,7 +252,26 @@ const ActionPanel = ({
                     )}
                 </AnimatePresence>
 
-                {/* 5. End Turn Button REMOVED (Auto-End implemented) */}
+                {/* 5. End Turn Button */}
+                <AnimatePresence>
+                    {showEndTurn && (
+                        <motion.button
+                            key="end-turn"
+                            initial={{ width: 0, opacity: 0, padding: 0 }}
+                            animate={{ width: 'auto', opacity: 1, padding: '0 16px' }}
+                            exit={{ width: 0, opacity: 0, padding: 0 }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={onEndTurn}
+                            className="h-[64px] bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-2xl font-black flex items-center gap-3 overflow-hidden shadow-lg border border-white/10"
+                        >
+                            <div className="flex flex-col items-center leading-tight whitespace-nowrap">
+                                <span className="text-xl">✅</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider">ГОТОВО</span>
+                            </div>
+                        </motion.button>
+                    )}
+                </AnimatePresence>
 
             </motion.div>
         </div>

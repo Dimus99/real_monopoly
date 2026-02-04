@@ -2,6 +2,15 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const September11Animation = ({ isVisible, onComplete }) => {
+    React.useEffect(() => {
+        if (isVisible) {
+            const timer = setTimeout(() => {
+                onComplete();
+            }, 6000);
+            return () => clearTimeout(timer);
+        }
+    }, [isVisible, onComplete]);
+
     return (
         <AnimatePresence>
             {isVisible && (
@@ -10,7 +19,6 @@ const September11Animation = ({ isVisible, onComplete }) => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 z-[150] pointer-events-none overflow-hidden bg-black/90 flex items-center justify-center"
-                    onAnimationComplete={() => setTimeout(onComplete, 1000)} // Wait 1s after global animation
                 >
                     {/* Sky Background */}
                     <div className="absolute inset-0 bg-gradient-to-b from-blue-900 via-blue-800 to-orange-900 opacity-50" />

@@ -1138,16 +1138,13 @@ const GameRoom = () => {
                     </button>
                 )}
                 {/* Top Info Bar */}
-                <div className="p-4 border-b border-white/10 bg-[#13131f] flex items-center justify-between">
+                <div className={`border-b border-white/10 bg-[#13131f] flex items-center justify-between transition-all ${sidebarCollapsed ? 'p-2 flex-col gap-3' : 'p-4'}`}>
                     <div className="flex items-center gap-2">
                         {!sidebarCollapsed && (
                             <button onClick={() => navigate('/')} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400">
                                 <ArrowLeft size={16} />
                             </button>
                         )}
-                        <button onClick={toggleFullScreen} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400" title={isFullScreen ? "Свернуть" : "На весь экран"}>
-                            {isFullScreen ? <Minimize size={16} /> : <Maximize size={16} />}
-                        </button>
                         {/* Persistent Surrender Button */}
 
                     </div>
@@ -1348,8 +1345,15 @@ const GameRoom = () => {
                 </div>
 
                 {/* Sidebar Footer - Bottom Actions */}
-                <div className="p-3 border-t border-white/10 bg-[#0c0c14]">
-                    {/* Full screen button moved to fixed position */}
+                <div className="p-3 border-t border-white/10 bg-[#0c0c14] flex justify-center">
+                    <button
+                        onClick={toggleFullScreen}
+                        className="w-full py-2 flex items-center justify-center gap-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 transition-all hover:scale-[1.02]"
+                        title={isFullScreen ? "Свернуть" : "На весь экран"}
+                    >
+                        {isFullScreen ? <Minimize size={18} /> : <Maximize size={18} />}
+                        {!sidebarCollapsed && <span className="text-xs font-bold uppercase tracking-widest">{isFullScreen ? 'Свернуть' : 'На весь экран'}</span>}
+                    </button>
                 </div>
             </motion.div >
 

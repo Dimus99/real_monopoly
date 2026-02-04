@@ -382,12 +382,20 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                 const owner = players?.[tile.owner_id];
                 const isTargetable = targetingAbility === 'SEPTEMBER_11' && !['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Negotiations', 'RaiseTax', 'Casino'].includes(tile.group);
 
+                let isTargetHighlighted = false;
+                if (hoveredTileId !== null && targetingAbility === 'SEPTEMBER_11') {
+                    if (tile.id === hoveredTileId || tile.id === (hoveredTileId + 1) % tiles.length) {
+                        isTargetHighlighted = true;
+                    }
+                }
+
                 return (
                     <div key={tile.id} style={getTileStyle(tile.id)} className="w-full h-full">
                         <Tile
                             property={tile}
                             isCurrentPlayerHere={players?.[currentPlayerId]?.position === tile.id}
                             isTargetable={isTargetable}
+                            isTargetHighlighted={isTargetHighlighted}
                             onClick={handleTileInteraction}
                             image={TILE_IMAGES[tile.name]}
                             isCorner={[0, 10, 20, 30].includes(tile.id)}
