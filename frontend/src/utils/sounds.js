@@ -1,30 +1,30 @@
 
 const SOUND_URLS = {
-    // MP3s for better compatibility (Safari/Mac)
-    roll: 'https://assets.mixkit.co/sfx/preview/mixkit-rpg-dice-throw-2652.mp3',
-    roll_start: 'https://assets.mixkit.co/sfx/preview/mixkit-dice-shake-2651.mp3', // Realistic shake
-    turn_switch: 'https://assets.mixkit.co/sfx/preview/mixkit-interface-click-1126.mp3',
+    // Switching to MyInstants MP3s for better browser compatibility (Safari/Mac)
+    roll: 'https://www.myinstants.com/media/sounds/dice-roll.mp3',
+    roll_start: 'https://www.myinstants.com/media/sounds/rattle-dice.mp3',
+    turn_switch: 'https://www.myinstants.com/media/sounds/notification.mp3',
 
-    dice_shake: 'https://assets.mixkit.co/sfx/preview/mixkit-dice-shake-2651.mp3',
-    dice_land: 'https://assets.mixkit.co/sfx/preview/mixkit-game-ball-tap-2073.mp3',
+    dice_shake: 'https://www.myinstants.com/media/sounds/rattle-dice.mp3',
+    dice_land: 'https://www.myinstants.com/media/sounds/dice-hit-table.mp3', // Fallback
 
-    buy: 'https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3',
-    yes: 'https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3',
+    buy: 'https://www.myinstants.com/media/sounds/ka-ching.mp3',
+    yes: 'https://www.myinstants.com/media/sounds/ka-ching.mp3',
 
-    money: 'https://assets.mixkit.co/sfx/preview/mixkit-coins-handling-1939.mp3',
+    money: 'https://www.myinstants.com/media/sounds/coins.mp3',
 
-    explosion: 'https://assets.mixkit.co/sfx/preview/mixkit-short-explosion-1694.mp3',
-    oreshnik: 'https://assets.mixkit.co/sfx/preview/mixkit-massive-explosion-1680.mp3', // BIG explosion
+    explosion: 'https://www.myinstants.com/media/sounds/explosion.mp3',
+    oreshnik: 'https://www.myinstants.com/media/sounds/nuclear-explosion.mp3',
 
-    click: 'https://assets.mixkit.co/sfx/preview/mixkit-ui-click-1135.mp3',
+    click: 'https://www.myinstants.com/media/sounds/click.mp3',
 
-    bankruptcy: 'https://assets.mixkit.co/sfx/preview/mixkit-cartoon-failure-piano-573.mp3',
-    success: 'https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3',
-    error: 'https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3',
-    jail: 'https://assets.mixkit.co/sfx/preview/mixkit-cartoon-toy-whistle-616.mp3',
-    paper: 'https://assets.mixkit.co/sfx/preview/mixkit-paper-slide-1530.mp3',
+    bankruptcy: 'https://www.myinstants.com/media/sounds/spongebob-fail.mp3',
+    success: 'https://www.myinstants.com/media/sounds/tada-fanfare-a.mp3',
+    error: 'https://www.myinstants.com/media/sounds/error.mp3',
+    jail: 'https://www.myinstants.com/media/sounds/jail-door-close.mp3',
+    paper: 'https://www.myinstants.com/media/sounds/paper-crunch.mp3',
 
-    bgm: 'https://assets.mixkit.co/music/preview/mixkit-driving-ambition-32.mp3',
+    bgm: 'https://cdn.pixabay.com/audio/2022/01/18/audio_dcdc1b9d42.mp3', // Classic upbeat BGM
 };
 
 class SoundManager {
@@ -40,7 +40,7 @@ class SoundManager {
         if (this.initialized) return;
         Object.entries(SOUND_URLS).forEach(([key, url]) => {
             const audio = new Audio(url);
-            audio.preload = 'auto'; // Preload
+            audio.preload = 'auto';
 
             if (key === 'bgm') {
                 audio.loop = true;
@@ -49,9 +49,11 @@ class SoundManager {
 
             this.sounds[key] = audio;
 
-            // Debug load
             audio.oncanplaythrough = () => console.log(`Sound loaded: ${key}`);
             audio.onerror = (e) => console.warn(`Failed to load sound: ${key}`, e);
+
+            // Attempt to load to check for errors early
+            audio.load();
         });
         this.initialized = true;
     }
@@ -59,13 +61,17 @@ class SoundManager {
     play(key, volume = 0.5) {
         if (this.muted && key !== 'bgm') return;
 
+        // Map keys if needed
         let finalKey = key;
         if (key === 'roll') finalKey = 'roll_start';
+
+        // If 'start' missing, fallback to 'roll'
+        if (finalKey === 'roll_start' && !this.sounds['roll_start']) finalKey = 'roll';
 
         const sound = this.sounds[finalKey] || this.sounds[key];
 
         if (!sound) {
-            console.warn(`Sound not found: ${key}`);
+            // Silently fail if not found to avoid console spam
             return;
         }
 
@@ -77,7 +83,7 @@ class SoundManager {
                     const playPromise = sound.play();
                     if (playPromise !== undefined) {
                         playPromise.catch(error => {
-                            console.warn("Music auto-play prevented:", error);
+                            // Suppress auto-play errors
                         });
                     }
                 }
@@ -87,7 +93,7 @@ class SoundManager {
                 const playPromise = clone.play();
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
-                        console.warn(`SFX play failed (${key}):`, error);
+                        // Suppress SFX errors
                     });
                 }
             }
