@@ -51,7 +51,7 @@ const GameRoom = () => {
 
     // Can buy only if on the tile (UI Logic)
     const canBuy = isMyTurn &&
-        gameState?.turn_state?.has_rolled &&
+        (gameState?.turn_state?.has_rolled || gameState?.turn_state?.action === 'can_buy') &&
         currentTile &&
         !currentTile.owner_id &&
         currentTile.price > 0 &&
@@ -98,15 +98,18 @@ const GameRoom = () => {
     // Board Scaling Effect (Desktop)
     useEffect(() => {
         const handleScale = () => {
-            if (window.innerWidth >= 1024) {
-                const h = window.innerHeight;
-                const availableHeight = h - 40; // Padding
-                const baseSize = 850; // Ideal board size
-                const s = Math.min(1, availableHeight / baseSize);
-                setBoardScale(s < 0.6 ? 0.6 : s);
-            } else {
-                setBoardScale(1);
-            }
+            const h = window.innerHeight;
+            const w = window.innerWidth;
+            const sidebarWidth = sidebarCollapsed ? 80 : 320;
+            const availableWidth = w - (isMobile ? 0 : sidebarWidth);
+            const availableHeight = h - 60; // Padding for header/footer
+
+            // We want the board to be as large as possible but fit both
+            const size = Math.min(availableWidth, availableHeight) - 40;
+
+            // Set scale based on the 850px base size in the style object
+            // or just use 1 if we are handling size in style
+            setBoardScale(1);
         };
         window.addEventListener('resize', handleScale);
         handleScale();
@@ -1362,24 +1365,19 @@ const GameRoom = () => {
             </motion.div >
 
             {/* MAIN BOARD AREA */}
-            < div className={`flex-1 relative bg-[#0c0c14] flex flex-col ${isMobile ? 'items-start overflow-auto pr-[50px] pb-24' : 'items-center overflow-x-auto overflow-y-hidden pr-24'}`}>
+            < div className={`flex-1 relative bg-[#0c0c14] flex items-center justify-center overflow-hidden`}>
                 {/* Background */}
                 < div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
-                <div className={`relative z-10 shadow-2xl transition-all duration-300 my-auto py-8 ${isMobile ? 'overflow-visible' : 'mx-12'}`}
+                <div className={`relative z-10 shadow-2xl transition-all duration-300`}
                     style={{
-                        width: isMobile ? '800px' : '85%',
-                        maxWidth: '1000px',
+                        width: isMobile
+                            ? 'min(92vh, 98vw)'
+                            : 'min(92vh, calc(100vw - ' + (sidebarCollapsed ? '120px' : '360px') + '))',
                         aspectRatio: '1/1',
-                        minHeight: isMobile ? '800px' : 'auto',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        // Mobile: Force min-width to allow scroll if parent is scrolling
-                        minWidth: isMobile ? '800px' : 'auto',
-                        paddingRight: isMobile ? '50px' : '0', // Allow scrolling extra to right
-                        paddingLeft: isMobile ? '50px' : '0',  // Allow scrolling extra to left (expose sidebar hint)
-                        marginRight: isMobile ? '0' : '150px', // Increased extra space for desktop scroll
                         transform: !isMobile ? `scale(${boardScale})` : 'none',
                         transformOrigin: 'center center'
                     }}
@@ -1408,6 +1406,7 @@ const GameRoom = () => {
                         isMyTurn={isMyTurn}
                         lastAction={lastAction}
                         playersPos={delayedPlayers || gameState.players}
+                        turnNumber={gameState.turn_number}
                     />
 
                     {/* Chat relative to Board Center (Bottom) */}

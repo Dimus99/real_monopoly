@@ -20,13 +20,25 @@ const GROUP_COLORS = {
     Special: { bg: '#1a1a2e', text: '#FFD700', gradient: 'linear-gradient(180deg, #1a1a2e, #0a0a1a)' }
 };
 
-// Tile images fallbacks
+// Tile images mapping (synchronized with Board.jsx)
 const TILE_IMAGES = {
-    'Moscow': '/tiles/moscow.png',
-    'Washington': '/tiles/washington.png',
-    'Kyiv': '/tiles/kyiv.png',
-    'Beijing': '/tiles/beijing.png',
-    'Greenland': '/tiles/greenland.png'
+    'Москва': '/tiles/moscow.png',
+    'Вашингтон': '/tiles/washington.png',
+    'Киев': '/tiles/kyiv.png',
+    'Пекин': '/tiles/beijing.png',
+    'Гренландия': '/tiles/greenland.png',
+    'Токио': '/tiles/tokyo.png',
+    'Берлин': '/tiles/berlin.png',
+    'Иерусалим': '/tiles/jerusalem.png',
+    'Газпром': '/tiles/gazprom.png',
+    'Аэропорт Шереметьево': '/tiles/airport.png',
+    'Аэропорт Дасин': '/tiles/airport.png',
+    'Аэропорт Кеннеди': '/tiles/airport.png',
+    'Аэропорт Хитроу': '/tiles/airport.png',
+    'Киевский Вокзал': '/tiles/airport.png',
+    'Одесский Порт': '/tiles/airport.png',
+    'ГП Антонов': '/tiles/airport.png',
+    'Аэропорт Борисполь': '/tiles/airport.png'
 };
 
 const DISPLAY_NAMES = {
@@ -37,6 +49,8 @@ const DISPLAY_NAMES = {
 
 const getTileImage = (property) => {
     if (TILE_IMAGES[property.name]) return TILE_IMAGES[property.name];
+
+    // Fallbacks for groups if specific name not found
     const groupMap = {
         'Brown': '/tiles/moscow.png',
         'LightBlue': '/tiles/moscow.png',
@@ -46,10 +60,10 @@ const getTileImage = (property) => {
         'Yellow': '/tiles/beijing.png',
         'Green': '/tiles/washington.png',
         'DarkBlue': '/tiles/washington.png',
-        'Station': '/tiles/greenland.png',
-        'Utility': '/tiles/greenland.png'
+        'Station': '/tiles/airport.png',
+        'Utility': '/tiles/gazprom.png'
     };
-    return groupMap[property.group] || '/tiles/greenland.png';
+    return groupMap[property.group];
 };
 
 const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, currentPlayerId }) => {
@@ -88,7 +102,7 @@ const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, 
                     <img
                         src={image}
                         alt={displayName}
-                        className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay scale-110"
+                        className="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-overlay scale-110"
                     />
                 )}
 
@@ -113,8 +127,15 @@ const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, 
                 </div>
             </div>
 
-            {/* Card Content */}
-            <div className="flex-1 p-6 space-y-4 bg-gradient-to-b from-[#1a1a2e] to-[#0c0c14] overflow-y-auto custom-scrollbar">
+            {/* Card Content with subtle background logo */}
+            <div className="flex-1 p-6 space-y-4 bg-gradient-to-b from-[#1a1a2e] to-[#0c0c14] overflow-y-auto custom-scrollbar relative">
+                {image && (
+                    <img
+                        src={image}
+                        alt=""
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] h-auto opacity-[0.03] pointer-events-none mix-blend-screen scale-150 rotate-12"
+                    />
+                )}
                 {isPropertyType ? (
                     <>
                         {/* Price & Stats */}

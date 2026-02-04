@@ -409,6 +409,11 @@ class GameEngine:
              # If backend still sees has_rolled=True, then it's a double-click or bug.
              return {"error": "You have already rolled this turn!"}
         
+        # Clear previous roll state
+        game.turn_state.pop("action", None)
+        game.turn_state.pop("price", None)
+        game.turn_state.pop("property_id", None)
+        
         player = game.players[player_id]
         
         # Handle Sanctions (Skip Turn)
@@ -508,15 +513,23 @@ class GameEngine:
         if is_doubles:
             game.logs.append(f"{player.name} rolled doubles - roll again!")
             game.turn_state["has_rolled"] = False
+            # Reset build limit for doubles as requested
+            game.turn_state.pop("build_counts", None)
         else:
             game.turn_state["has_rolled"] = True
             
-        # Track if payment is required to block ending turn
-        if result.get("action") == "pay_rent" or result.get("action") == "tax":
+        # Track action in turn_state for persistence (refresh/sync)
+        if result.get("action") == "can_buy":
+            game.turn_state["action"] = "can_buy"
+            game.turn_state["price"] = result.get("price")
+            game.turn_state["property_id"] = player.position
+        elif result.get("action") == "pay_rent" or result.get("action") == "tax":
+            game.turn_state["action"] = result.get("action")
             game.turn_state["awaiting_payment"] = True
             game.turn_state["awaiting_payment_amount"] = result.get("amount") or result.get("tax_paid")
             game.turn_state["awaiting_payment_owner"] = result.get("owner_id") or "BANK"
         else:
+            game.turn_state.pop("action", None)
             game.turn_state.pop("awaiting_payment", None)
             game.turn_state.pop("awaiting_payment_amount", None)
             game.turn_state.pop("awaiting_payment_owner", None)
@@ -2080,6 +2093,10 @@ class GameEngine:
         if tile.is_destroyed:
             tile.is_destroyed = False
             tile.destruction_turn = None
+            
+            # Recalculate Monopoly Status
+            self._update_group_monopoly(game, tile.group)
+            
             game.logs.append(f"🏗️ {player.name} used CONSTRUCTION to rebuild {tile.name}!")
             
             return {
@@ -2487,6 +2504,12 @@ class GameEngine:
                 buy_result = self.buy_property(game_id, player_id, player.position)
                 if buy_result.get("success"):
                     actions.append({"type": "PROPERTY_BOUGHT", **buy_result})
+            else:
+                # Trigger auction if bot refuses to buy
+                res = self.decline_property(game_id, player_id)
+                if not res.get("error"):
+                    actions.append({"type": "PROPERTY_DECLINED", **res})
+                    game.logs.append(f"🤖 Bot {player.name} declined to buy {tile.name}. Auction started!")
 
         # 4. BUILD Logic (If owns monopoly)
         owned_groups = set()

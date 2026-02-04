@@ -123,7 +123,7 @@ const getColorBarStyle = (tileId) => {
 };
 
 // Memoize Tile component to prevent flashing and unnecessary rerenders
-const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, isTargetable, isTargetHighlighted, style, image, isCorner, isMonopoly, ownerInfo }) => {
+const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, isTargetable, isTargetHighlighted, style, image, isCorner, isMonopoly, ownerInfo, turnNumber }) => {
     const groupStyle = GROUP_STYLES[property.group] || GROUP_STYLES.Special;
     const specialIcon = SPECIAL_ICONS[property.name];
     const isPropertyTile = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking', 'Negotiations', 'RaiseTax', 'Casino'].includes(property.group) && !isCorner;
@@ -132,6 +132,11 @@ const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, isTargetable,
     const orientation = getTileOrientation(property.id);
 
     const ownerColors = ownerInfo ? CHARACTER_COLORS[ownerInfo.character] : null;
+
+    // Mortgage Countdown
+    const movesLeft = property.is_mortgaged && property.mortgage_turn !== null
+        ? Math.max(0, 14 - (turnNumber - property.mortgage_turn))
+        : null;
 
     // Dynamic padding for content to avoid overlap with color bar
     let contentPaddingClass = 'p-1';
@@ -263,8 +268,13 @@ const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, isTargetable,
             )}
 
             {property.is_mortgaged && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center z-[25] backdrop-blur-[1px]">
-                    <div className="bg-orange-500/80 text-white text-[7px] font-black px-1 py-0.5 rounded shadow-lg uppercase tracking-widest border border-white/20">ЗАЛОЖЕНО</div>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-[25] backdrop-blur-[1px]">
+                    <div className="bg-orange-500/90 text-white text-[7px] font-black px-1.5 py-1 rounded shadow-lg uppercase tracking-widest border border-white/20 flex flex-col items-center gap-0.5">
+                        <span>ЗАЛОЖЕНО</span>
+                        {movesLeft !== null && (
+                            <span className="text-[10px] text-yellow-300 font-mono">⌛ {movesLeft}</span>
+                        )}
+                    </div>
                 </motion.div>
             )}
 

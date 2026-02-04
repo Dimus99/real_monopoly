@@ -320,16 +320,13 @@ body {
   aspect-ratio: 1/1;
   width: 100%;
   height: 100%;
-  border: 4px solid rgba(255, 215, 0, 0.4);
+  border: 2px solid rgba(255, 215, 0, 0.4);
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.9);
   background: #08080f;
   border-radius: 4px;
   overflow: visible;
-  /* Don't clip! */
   position: relative;
   gap: 2px;
-  /* Minimum width for desktop to enable horizontal scroll if needed */
-  min-width: 600px;
 }
 
 @media (max-width: 768px) {

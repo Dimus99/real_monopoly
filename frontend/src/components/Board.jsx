@@ -40,6 +40,7 @@ const TILE_IMAGES = {
     'Киев': '/tiles/kyiv.png',
     'Пекин': '/tiles/beijing.png',
     'Гренландия': '/tiles/greenland.png',
+    'Токио': '/tiles/tokyo.png',
     'Берлин': '/tiles/berlin.png',
     'Иерусалим': '/tiles/jerusalem.png',
     'Газпром': '/tiles/gazprom.png',
@@ -105,7 +106,7 @@ const getTileCoordinates = (tileId, boardRef, gap = 2) => {
 };
 
 
-const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, isMyTurn, lastAction, playersPos, targetingAbility }) => {
+const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, isMyTurn, lastAction, playersPos, targetingAbility, turnNumber }) => {
     // Character colors for player tokens (derived from BOARD_CHARACTERS)
     const PLAYER_COLORS = React.useMemo(() => Object.fromEntries(
         Object.entries(BOARD_CHARACTERS).map(([k, v]) => [k, v.color])
@@ -412,6 +413,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                             isCorner={[0, 10, 20, 30].includes(tile.id)}
                             isMonopoly={groupMonopolies[tile.group]}
                             ownerInfo={owner ? { character: owner.character, name: owner.name } : null}
+                            turnNumber={turnNumber}
                         />
                     </div>
                 );
