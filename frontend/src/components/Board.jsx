@@ -94,7 +94,7 @@ const getTileCoordinates = (tileId, boardRef, gap = 2) => {
 };
 
 
-const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, isMyTurn, lastAction, playersPos }) => {
+const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, externalRef, onAvatarClick, winner, selectedTileId, onBuy, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, isMyTurn, lastAction, playersPos, targetingAbility }) => {
     // Character colors for player tokens (derived from BOARD_CHARACTERS)
     const PLAYER_COLORS = React.useMemo(() => Object.fromEntries(
         Object.entries(BOARD_CHARACTERS).map(([k, v]) => [k, v.color])
@@ -380,11 +380,14 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
             {/* Render all tiles - Optimized Loop */}
             {tiles.map((tile) => {
                 const owner = players?.[tile.owner_id];
+                const isTargetable = targetingAbility === 'SEPTEMBER_11' && !['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Negotiations', 'RaiseTax', 'Casino'].includes(tile.group);
+
                 return (
                     <div key={tile.id} style={getTileStyle(tile.id)} className="w-full h-full">
                         <Tile
                             property={tile}
                             isCurrentPlayerHere={players?.[currentPlayerId]?.position === tile.id}
+                            isTargetable={isTargetable}
                             onClick={handleTileInteraction}
                             image={TILE_IMAGES[tile.name]}
                             isCorner={[0, 10, 20, 30].includes(tile.id)}

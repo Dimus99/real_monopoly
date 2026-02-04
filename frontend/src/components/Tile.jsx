@@ -123,7 +123,7 @@ const getColorBarStyle = (tileId) => {
 };
 
 // Memoize Tile component to prevent flashing and unnecessary rerenders
-const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, style, image, isCorner, isMonopoly, ownerInfo }) => {
+const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, isTargetable, style, image, isCorner, isMonopoly, ownerInfo }) => {
     const groupStyle = GROUP_STYLES[property.group] || GROUP_STYLES.Special;
     const specialIcon = SPECIAL_ICONS[property.name];
     const isPropertyTile = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking', 'Negotiations', 'RaiseTax', 'Casino'].includes(property.group) && !isCorner;
@@ -153,7 +153,7 @@ const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, style, image,
             onMouseLeave={() => onClick(null, 'leave')}
             onClick={() => onClick(property.id, 'click')}
             data-tile-id={property.id}
-            className={`tile relative w-full h-full border transition-shadow duration-300 ${property.is_destroyed ? 'tile-destroyed' : ''} ${isCurrentPlayerHere ? 'ring-2 ring-yellow-400 z-20 shadow-[0_0_15px_rgba(250,204,21,0.5)]' : ''}`}
+            className={`tile relative w-full h-full border transition-shadow duration-300 ${property.is_destroyed ? 'tile-destroyed' : ''} ${isTargetable ? 'ring-4 ring-red-600 animate-pulse z-40 cursor-crosshair shadow-[0_0_20px_rgba(220,38,38,0.8)]' : (isCurrentPlayerHere ? 'ring-2 ring-yellow-400 z-20 shadow-[0_0_15px_rgba(250,204,21,0.5)]' : '')}`}
             style={{
                 ...style,
                 background: isCorner ? groupStyle.gradient : (isMonopoly && hasOwner && ownerColors ? ownerColors.bg : '#1a1a2e'),

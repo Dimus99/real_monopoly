@@ -1304,6 +1304,10 @@ class GameEngine:
         active_games = [g for g in self.games.values() if g.game_status == "active"]
         
         for game in active_games:
+            # Skip timeout check if auction is active (Auction pauses turn timer)
+            if game.auction_active:
+                continue
+                
             # Check timeout (with 5s grace period)
             if game.turn_expiry and datetime.utcnow() > game.turn_expiry + timedelta(seconds=5):
                 current_pid = game.player_order[game.current_turn_index]
@@ -2286,8 +2290,8 @@ class GameEngine:
 
             self._reset_timer(game)
             
-            # Auto-End Turn if player has already rolled (and buttons are gone)
-            self._maybe_end_turn(game)
+            # Ability does NOT end turn automatically now (User request)
+            # self._maybe_end_turn(game)
         
         result["game_state"] = game.dict()
         return result

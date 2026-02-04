@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Star, Shield, Info } from 'lucide-react';
+import { Check, Star, Shield, Info, X } from 'lucide-react';
 
-const CharacterSelection = ({ characters, selectedId, onSelect }) => {
+const CharacterSelection = ({ characters, selectedId, onSelect, disabledCharacters = [] }) => {
     const selectedChar = characters.find(c => c.id === selectedId) || characters[0];
 
     return (
@@ -90,19 +90,26 @@ const CharacterSelection = ({ characters, selectedId, onSelect }) => {
                 <div className="flex gap-3 overflow-x-auto pb-2 px-1 snap-x scrollbar-hide mask-fade-sides">
                     {characters.map((char) => {
                         const isSelected = selectedId === char.id;
+                        const isDisabled = disabledCharacters.includes(char.id) && !isSelected; // Don't disable if currently selected (to allow viewing), but generally shouldn't happen if handled upstream. Actually better to disable completely.
+                        const isTaken = disabledCharacters.includes(char.id);
+
                         return (
                             <motion.button
                                 key={char.id}
-                                onClick={() => onSelect(char.id)}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                                onClick={() => !isTaken && onSelect(char.id)}
+                                whileHover={!isTaken ? { scale: 1.05 } : {}}
+                                whileTap={!isTaken ? { scale: 0.95 } : {}}
+                                disabled={isTaken}
                                 className={`
                                     relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden transition-all duration-300
                                     snap-start border-2
-                                    ${isSelected ? 'ring-2 ring-offset-1 ring-offset-black/50 opacity-100' : 'opacity-50 hover:opacity-100 grayscale hover:grayscale-0'}
+                                    ${isTaken
+                                        ? 'opacity-40 grayscale cursor-not-allowed border-white/5'
+                                        : (isSelected ? 'ring-2 ring-offset-1 ring-offset-black/50 opacity-100' : 'opacity-50 hover:opacity-100 grayscale hover:grayscale-0')
+                                    }
                                 `}
                                 style={{
-                                    borderColor: isSelected ? char.color : 'rgba(255,255,255,0.1)',
+                                    borderColor: isSelected ? char.color : (isTaken ? '#333' : 'rgba(255,255,255,0.1)'),
                                     '--tw-ring-color': char.color,
                                     width: '48px',
                                     height: '48px',
@@ -119,6 +126,13 @@ const CharacterSelection = ({ characters, selectedId, onSelect }) => {
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center pb-1">
                                         <div className="bg-white/20 backdrop-blur-sm rounded-full p-0.5">
                                             <Check size={10} className="text-white" />
+                                        </div>
+                                    </div>
+                                )}
+                                {isTaken && (
+                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                        <div className="bg-red-500/80 rounded-full p-0.5">
+                                            <X size={12} className="text-white" />
                                         </div>
                                     </div>
                                 )}

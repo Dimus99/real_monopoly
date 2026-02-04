@@ -544,6 +544,7 @@ async def websocket_game(
                     await websocket.send_json({"type": "ERROR", "message": result["error"]})
                 else:
                     await manager.broadcast(game_id, {"type": "AUCTION_STARTED", **result})
+                    await _check_and_run_bot_turn(game_id)
             
             elif action == "RAISE_BID":
                 result = engine.raise_bid(game_id, player_id)
@@ -551,6 +552,7 @@ async def websocket_game(
                     await websocket.send_json({"type": "ERROR", "message": result["error"]})
                 else:
                     await manager.broadcast(game_id, {"type": "AUCTION_UPDATED", **result})
+                    await _check_and_run_bot_turn(game_id)
             
             elif action == "PASS_AUCTION":
                 result = engine.pass_auction(game_id, player_id)
@@ -563,6 +565,7 @@ async def websocket_game(
                         await _check_and_run_bot_turn(game_id)
                     else:
                         await manager.broadcast(game_id, {"type": "AUCTION_UPDATED", **result})
+                        await _check_and_run_bot_turn(game_id)
             
             elif action == "RESOLVE_AUCTION":
                 result = engine.resolve_auction(game_id)

@@ -155,7 +155,8 @@ async def list_games(
             "host_id": game.host_id,
             "host_name": host_name,
             "host_avatar": host_avatar,
-            "created_at": game.created_at.isoformat() if game.created_at else None
+            "created_at": game.created_at.isoformat() if game.created_at else None,
+            "taken_characters": [p.character for p in game.players.values() if p.character]
         })
     
     return {"games": games}

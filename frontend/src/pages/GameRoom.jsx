@@ -79,6 +79,8 @@ const GameRoom = () => {
     const [isLoadingProfile, setIsLoadingProfile] = useState(false);
     const [myUser, setMyUser] = useState(null);
     const [hoveredAbility, setHoveredAbility] = useState(null);
+    const [boardScale, setBoardScale] = useState(1);
+    const [isFullScreen, setIsFullScreen] = useState(false);
 
     useEffect(() => {
         const handleResize = () => {
@@ -89,7 +91,41 @@ const GameRoom = () => {
         window.addEventListener('resize', handleResize);
         handleResize(); // Initial check
         return () => window.removeEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // Board Scaling Effect (Desktop)
+    useEffect(() => {
+        const handleScale = () => {
+            if (window.innerWidth >= 1024) {
+                const h = window.innerHeight;
+                const availableHeight = h - 40; // Padding
+                const baseSize = 850; // Ideal board size
+                const s = Math.min(1, availableHeight / baseSize);
+                setBoardScale(s < 0.6 ? 0.6 : s);
+            } else {
+                setBoardScale(1);
+            }
+        };
+        window.addEventListener('resize', handleScale);
+        handleScale();
+        return () => window.removeEventListener('resize', handleScale);
+    }, []);
+
+    // Full Screen Sync Effect
+    useEffect(() => {
+        const handleFS = () => setIsFullScreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', handleFS);
+        return () => document.removeEventListener('fullscreenchange', handleFS);
+    }, []);
+
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(e => console.error(e));
+        } else {
+            document.exitFullscreen().catch(e => console.error(e));
+        }
+    };
 
     // Dice Animation States
     const [showDice, setShowDice] = useState(false);
@@ -185,30 +221,6 @@ const GameRoom = () => {
 
     // Targeting State
     const [targetingAbility, setTargetingAbility] = useState(null);
-    const [isFullScreen, setIsFullScreen] = useState(false);
-
-    const toggleFullScreen = () => {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(err => {
-                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-            });
-            setIsFullScreen(true);
-        } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-                setIsFullScreen(false);
-            }
-        }
-    };
-
-    // Sync fullscreen state on escape key etc.
-    useEffect(() => {
-        const handleFsChange = () => {
-            setIsFullScreen(!!document.fullscreenElement);
-        };
-        document.addEventListener('fullscreenchange', handleFsChange);
-        return () => document.removeEventListener('fullscreenchange', handleFsChange);
-    }, []);
 
     const handleCloseOreshnik = React.useCallback(() => setShowOreshnik(false), []);
     const handleCloseSeptember11 = React.useCallback(() => setShowSeptember11(false), []);
@@ -1356,7 +1368,9 @@ const GameRoom = () => {
                         minWidth: isMobile ? '800px' : 'auto',
                         paddingRight: isMobile ? '50px' : '0', // Allow scrolling extra to right
                         paddingLeft: isMobile ? '50px' : '0',  // Allow scrolling extra to left (expose sidebar hint)
-                        marginRight: isMobile ? '0' : '150px' // Increased extra space for desktop scroll
+                        marginRight: isMobile ? '0' : '150px', // Increased extra space for desktop scroll
+                        transform: !isMobile ? `scale(${boardScale})` : 'none',
+                        transformOrigin: 'center center'
                     }}
                 >
                     <Board
@@ -1365,6 +1379,7 @@ const GameRoom = () => {
                         onTileClick={handleTileClick}
                         mapType={gameState.map_type}
                         currentPlayerId={playerId}
+                        targetingAbility={targetingAbility}
                         // logs and onSendMessage removed from here as we moved the component up
 
                         externalRef={boardRef}
@@ -1508,6 +1523,10 @@ const GameRoom = () => {
                     <WhoAmIAnimation
                         isVisible={showWhoAmI}
                         onClose={() => setShowWhoAmI(false)}
+                    />
+                    <September11Animation
+                        isVisible={showSeptember11}
+                        onComplete={handleCloseSeptember11}
                     />
                 </Suspense>
                 <BuyoutAnimation isVisible={showBuyout} onComplete={handleCloseBuyout} targetProperty={abilityTargetName} />

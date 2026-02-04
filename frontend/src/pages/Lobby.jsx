@@ -605,7 +605,6 @@ const Lobby = () => {
                 </div>
                 <div className="flex gap-4">
                     <div className="text-right hidden sm:block max-w-xs">
-                        <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">Анекдот</div>
                         <div className="text-sm font-mono font-bold text-green-400 leading-tight italic">"{randomAnecdote}"</div>
                     </div>
                 </div>
@@ -1025,7 +1024,18 @@ const Lobby = () => {
 
                             <div>
                                 <label className="label uppercase text-[10px] tracking-widest text-gray-400 font-bold mb-2 block">Выберите лидера</label>
-                                <CharacterSelection characters={LOBBY_CHARACTERS} selectedId={character} onSelect={setCharacter} />
+                                {(() => {
+                                    const targetGame = activeGames.find(g => g.game_id === gameIdInput);
+                                    const disabledChars = targetGame ? (targetGame.taken_characters || []) : [];
+                                    return (
+                                        <CharacterSelection
+                                            characters={LOBBY_CHARACTERS}
+                                            selectedId={character}
+                                            onSelect={setCharacter}
+                                            disabledCharacters={disabledChars}
+                                        />
+                                    );
+                                })()}
                             </div>
 
                             <button
