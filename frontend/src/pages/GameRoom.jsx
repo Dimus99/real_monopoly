@@ -1145,6 +1145,9 @@ const GameRoom = () => {
                                 <ArrowLeft size={16} />
                             </button>
                         )}
+                        <button onClick={toggleFullScreen} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400" title={isFullScreen ? "Свернуть" : "На весь экран"}>
+                            {isFullScreen ? <Minimize size={16} /> : <Maximize size={16} />}
+                        </button>
                         {/* Persistent Surrender Button */}
 
                     </div>
@@ -1814,10 +1817,10 @@ const GameRoom = () => {
             <AnimatePresence>
                 {targetingAbility && (
                     <motion.div
-                        initial={{ y: -50, opacity: 0 }}
-                        animate={{ y: 20, opacity: 1 }}
-                        exit={{ y: -50, opacity: 0 }}
-                        className="fixed top-24 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none"
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] pointer-events-none"
                     >
                         <div className="bg-red-600/90 text-white px-6 py-3 rounded-full shadow-[0_0_30px_rgba(220,38,38,0.6)] backdrop-blur-md border border-red-400/50 font-bold uppercase tracking-widest flex items-center gap-4 pointer-events-auto">
                             <span className="flex items-center gap-2"><Crosshair className="animate-pulse" /> ВЫБЕРИТЕ ЦЕЛЬ</span>

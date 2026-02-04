@@ -1557,6 +1557,8 @@ class GameEngine:
         game.turn_state.pop("awaiting_payment_owner", None)
         self._reset_timer(game)
         
+        self._maybe_end_turn(game)
+        
         return {
             "success": True,
             "player_id": player_id,
@@ -1945,6 +1947,8 @@ class GameEngine:
         
         game.logs.append(f"{player.name} paid ${rent} rent to {owner.name}")
         self._reset_timer(game)
+        
+        self._maybe_end_turn(game)
         
         return {
             "success": True,

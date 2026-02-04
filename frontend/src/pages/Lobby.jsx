@@ -627,8 +627,14 @@ const Lobby = () => {
                                         {friendRequests.map(req => (
                                             <div key={req.id} className="bg-black/40 p-2 rounded-lg flex items-center justify-between border border-white/5 backdrop-blur-sm">
                                                 <div className="flex items-center gap-2 overflow-hidden">
-                                                    <div className="w-6 h-6 rounded bg-gray-700 flex items-center justify-center text-xs border border-white/10">👤</div>
-                                                    <span className="text-xs font-bold truncate text-gray-200">{req.from_user_name || 'Неизвестный'}</span>
+                                                    <div className="w-6 h-6 rounded bg-gray-700 flex items-center justify-center text-xs border border-white/10">
+                                                        {req.from_user?.avatar_url && (req.from_user.avatar_url.startsWith('http') || req.from_user.avatar_url.startsWith('/')) ? (
+                                                            <img src={req.from_user.avatar_url} className="w-full h-full object-cover rounded" />
+                                                        ) : (
+                                                            <span>👤</span>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-xs font-bold truncate text-gray-200">{req.from_user?.name || 'Неизвестный'}</span>
                                                 </div>
                                                 <div className="flex gap-1">
                                                     <button onClick={() => respondToFriendRequest(req.id, 'accept')} className="p-1.5 hover:bg-green-500/20 text-green-400 rounded transition-colors"><Check size={12} /></button>
@@ -649,7 +655,7 @@ const Lobby = () => {
                                     <div className="space-y-2">
                                         {gameInvites.map(inv => (
                                             <div key={inv.id} className="bg-black/40 p-3 rounded-lg border border-white/5 backdrop-blur-sm">
-                                                <div className="text-[10px] text-gray-400 mb-1 flex items-center gap-1">🎮 От <span className="text-white font-bold">{inv.from_user_name}</span></div>
+                                                <div className="text-[10px] text-gray-400 mb-1 flex items-center gap-1">🎮 От <span className="text-white font-bold">{inv.from_user?.name || 'Неизвестный'}</span></div>
                                                 <div className="font-mono font-bold text-blue-400 mb-2 bg-blue-500/10 px-2 py-1 rounded inline-block">#{inv.game_id.substring(0, 6)}...</div>
                                                 <div className="flex gap-2">
                                                     <button onClick={() => { setMode('join'); setGameIdInput(inv.game_id); }} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-1.5 rounded text-xs font-bold transition-all shadow-lg shadow-blue-600/20">Войти</button>

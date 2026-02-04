@@ -40,14 +40,23 @@ const September11Animation = ({ isVisible, onComplete }) => {
                     </motion.div>
 
                     {/* Plane */}
+                    {/* Plane */}
                     <motion.div
-                        initial={{ x: '120vw', y: '10vh', rotate: 0, scale: 0.5 }}
-                        animate={{ x: '50%', y: '50%', rotate: -15, scale: 1.5 }}
-                        transition={{ duration: 2.5, ease: "easeIn" }}
-                        className="absolute top-0 right-0 text-[80px] z-20"
-                        style={{ x: '50%', y: '50%' }} // Target center
+                        initial={{ x: '120vw', y: '20vh', scale: 0.8 }}
+                        animate={{ x: '50vw', y: '55vh', scale: 1.5 }}
+                        transition={{ duration: 2.3, ease: "easeIn" }}
+                        className="absolute top-0 left-0 z-20"
                     >
-                        ✈️
+                        {/* 
+                           Emoji ✈️ points roughly NE (45deg). 
+                           We want it pointing SW (225deg) roughly to hit towers from top-right.
+                           scaleX(-1) mirrors it to point NW. Then rotate -45 to point W? 
+                           Let's just use rotation on the emoji itself.
+                           Base: 45deg. 
+                           Target: Left-Down (~200deg).
+                           Rotate 155deg?
+                        */}
+                        <div className="text-[80px] leading-none transform rotate-[200deg]">✈️</div>
                     </motion.div>
 
                     {/* Explosion Effect */}
