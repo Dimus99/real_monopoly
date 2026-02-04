@@ -1188,7 +1188,7 @@ const GameRoom = () => {
     }
 
     return (
-        <div className="flex bg-[#0c0c14] min-h-screen w-full font-sans selection:bg-purple-500/30 relative">
+        <div className="flex bg-[#0c0c14] h-screen w-full font-sans selection:bg-purple-500/30 relative overflow-hidden">
             {/* COLLAPSIBLE SIDEBAR */}
             <motion.div
                 animate={{
