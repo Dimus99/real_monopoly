@@ -98,6 +98,11 @@ const GameRoom = () => {
     const [timeLeft, setTimeLeft] = useState(90);
     const [lastRollTime, setLastRollTime] = useState(0);
 
+    // Trade States
+    const [showTradeModal, setShowTradeModal] = useState(false);
+    const [tradeTarget, setTradeTarget] = useState(null);
+    const [incomingTrade, setIncomingTrade] = useState(null);
+
     useEffect(() => {
         const handleResize = () => {
             const mobile = window.innerWidth < 768;
@@ -106,7 +111,6 @@ const GameRoom = () => {
         };
         window.addEventListener('resize', handleResize);
         handleResize(); // Initial check
-        return () => window.removeEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
@@ -216,9 +220,6 @@ const GameRoom = () => {
     const [showVictory, setShowVictory] = useState(false);
     const boardRef = useRef(null);
 
-    // Trade States
-    const [showTradeModal, setShowTradeModal] = useState(false);
-    const [tradeTarget, setTradeTarget] = useState(null);
     // Bankruptcy States
     const [bankruptPlayer, setBankruptPlayer] = useState(null);
     const prevPlayersRef = useRef({});
