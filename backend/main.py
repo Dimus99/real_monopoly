@@ -365,6 +365,8 @@ async def websocket_game(
                     await websocket.send_json({"type": "ERROR", "message": result["error"]})
                 else:
                     await manager.broadcast(game_id, {"type": "PROPERTY_BOUGHT", **result})
+                    # Check if turn ended (auto-end after buy) and next is bot
+                    await _check_and_run_bot_turn(game_id)
             
             elif action == "PAY_RENT":
                 property_id = action_data.get("property_id")
@@ -378,6 +380,8 @@ async def websocket_game(
                     await websocket.send_json({"type": "ERROR", "message": result["error"]})
                 else:
                     await manager.broadcast(game_id, {"type": "RENT_PAID", **result})
+                    # Turn auto-ended after rent
+                    await _check_and_run_bot_turn(game_id)
 
             elif action == "PAY_TAX":
                 result = engine.pay_tax(game_id, player_id)
@@ -385,6 +389,8 @@ async def websocket_game(
                     await websocket.send_json({"type": "ERROR", "message": result["error"]})
                 else:
                     await manager.broadcast(game_id, {"type": "TAX_PAID", **result})
+                    # Turn auto-ended after tax
+                    await _check_and_run_bot_turn(game_id)
 
             elif action == "PAY_BAIL":
                 result = engine.pay_bail(game_id, player_id)

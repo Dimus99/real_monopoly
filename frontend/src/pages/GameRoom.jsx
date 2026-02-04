@@ -1145,6 +1145,9 @@ const GameRoom = () => {
                                 <ArrowLeft size={16} />
                             </button>
                         )}
+                        <button onClick={toggleFullScreen} className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-500 border border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.2)] transition-all hover:scale-110" title={isFullScreen ? "Свернуть" : "На весь экран"}>
+                            {isFullScreen ? <Minimize size={18} /> : <Maximize size={18} />}
+                        </button>
                         {/* Persistent Surrender Button */}
 
                     </div>
@@ -1494,30 +1497,6 @@ const GameRoom = () => {
                 />
             </div>
 
-            {/* Target Overlay */}
-            <AnimatePresence>
-                {targetingAbility && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[150] pointer-events-none flex flex-col items-center justify-start pt-20"
-                    >
-                        <div className="bg-red-600/90 text-white px-8 py-4 rounded-2xl border-4 border-white shadow-[0_0_50px_rgba(255,0,0,0.5)] pointer-events-auto text-center flex flex-col items-center gap-2">
-                            <div className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
-                                <Crosshair size={32} className="animate-spin-slow" /> ВЫБЕРИТЕ ЦЕЛЬ НА КАРТЕ
-                            </div>
-                            <p className="text-sm font-bold opacity-80 uppercase">Кликните по любому городу противника</p>
-                            <button
-                                onClick={() => setTargetingAbility(null)}
-                                className="mt-2 px-4 py-1 bg-white text-red-600 rounded-lg text-xs font-black hover:bg-gray-100 transition-colors uppercase"
-                            >
-                                Отмена
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             <div className="pointer-events-none fixed inset-0 z-[100]">
                 <Suspense fallback={null}>
