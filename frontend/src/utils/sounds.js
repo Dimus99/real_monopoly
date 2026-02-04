@@ -1,28 +1,35 @@
 
 const SOUND_URLS = {
-    roll: 'https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg',
-    dice_shake: 'https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg', // Simulating shake
-    money: 'https://actions.google.com/sounds/v1/cartoon/cartoon_cowbell.ogg', // Coin sound placeholder
-    explosion: 'https://actions.google.com/sounds/v1/cartoon/cartoon_boom.ogg',
+    roll: 'https://actions.google.com/sounds/v1/cartoon/swipe.ogg',
+    roll_start: 'https://actions.google.com/sounds/v1/cartoon/swipe.ogg',
+    turn_switch: 'https://actions.google.com/sounds/v1/cartoon/pop.ogg',
+
+    dice_shake: 'https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg',
+    dice_land: 'https://actions.google.com/sounds/v1/foley/glasses_clinking.ogg',
+
+    buy: 'https://actions.google.com/sounds/v1/cartoon/magic_chime.ogg',
+    yes: 'https://actions.google.com/sounds/v1/cartoon/magic_chime.ogg',
+
+    money: 'https://actions.google.com/sounds/v1/cartoon/cartoon_cowbell.ogg',
+
+    explosion: 'https://actions.google.com/sounds/v1/explosions/medium_explosion.ogg',
+
     click: 'https://actions.google.com/sounds/v1/cartoon/pop.ogg',
+
     bankruptcy: 'https://actions.google.com/sounds/v1/cartoon/cartoon_whistle.ogg',
     success: 'https://actions.google.com/sounds/v1/cartoon/magic_chime.ogg',
     error: 'https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg',
     jail: 'https://actions.google.com/sounds/v1/cartoon/comedy_trumpet_fail.ogg',
     paper: 'https://actions.google.com/sounds/v1/office/paper_shuffle.ogg',
 
-    // Background Music (Using a reliable external source or placeholder)
-    // Using a placeholder that is definitely accessible. 
-    // If this fails, we might need a local file or a very stable CDN.
-    // Let's try a proven CDN for a royalty free track.
-    bgm: 'https://cdn.pixabay.com/download/audio/2022/11/22/audio_febc508520.mp3?filename=lifelike-126735.mp3', // Chill Lofi
+    bgm: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_dcdc1b9d42.mp3?filename=lofi-hip-hop-114896.mp3',
 };
 
 class SoundManager {
     constructor() {
         this.sounds = {};
         this.muted = false;
-        this.musicMuted = true; // Default OFF
+        this.musicMuted = true;
         this.initialized = false;
         this.currentMusic = null;
     }
@@ -33,10 +40,9 @@ class SoundManager {
             const audio = new Audio(url);
             audio.preload = 'auto'; // Preload
 
-            // Special handling for BGM
             if (key === 'bgm') {
                 audio.loop = true;
-                audio.volume = 0.2; // Low volume background
+                audio.volume = 0.3;
             }
 
             this.sounds[key] = audio;
@@ -51,18 +57,21 @@ class SoundManager {
     play(key, volume = 0.5) {
         if (this.muted && key !== 'bgm') return;
 
-        const sound = this.sounds[key];
+        let finalKey = key;
+        if (key === 'roll') finalKey = 'roll_start';
+
+        const sound = this.sounds[finalKey] || this.sounds[key];
+
         if (!sound) {
             console.warn(`Sound not found: ${key}`);
             return;
         }
 
         try {
-            if (key === 'bgm') {
+            if (finalKey === 'bgm') {
                 if (this.musicMuted) return;
-                // If allowed to play music
                 if (sound.paused) {
-                    sound.volume = 0.2; // Fixed low volume for BGM
+                    sound.volume = 0.3;
                     const playPromise = sound.play();
                     if (playPromise !== undefined) {
                         playPromise.catch(error => {
@@ -71,7 +80,6 @@ class SoundManager {
                     }
                 }
             } else {
-                // SFX - Clone to allow overlapping sounds
                 const clone = sound.cloneNode();
                 clone.volume = volume;
                 const playPromise = clone.play();
@@ -99,16 +107,14 @@ class SoundManager {
         } else {
             this.play('bgm');
         }
-        return !this.musicMuted; // Return current muted state
+        return !this.musicMuted;
     }
 
     setMuted(muted) {
         this.muted = muted;
         if (muted) {
-            // Also stop music if global mute
             this.stopMusic();
         } else if (!this.musicMuted) {
-            // Resume music if unmuted and music was on
             this.play('bgm');
         }
     }

@@ -197,6 +197,18 @@ const GameRoom = () => {
         }
     }, [gameState?.logs]);
 
+    // Play Turn Switch Sound
+    const prevTurnIndex = useRef(gameState?.current_turn_index);
+    useEffect(() => {
+        if (gameState?.current_turn_index !== undefined && gameState.current_turn_index !== prevTurnIndex.current) {
+            // Only play if not first load (optional, but good practice)
+            if (prevTurnIndex.current !== undefined) {
+                soundManager.play('turn_switch');
+            }
+            prevTurnIndex.current = gameState?.current_turn_index;
+        }
+    }, [gameState?.current_turn_index]);
+
     // Auto-sync logs when NOT in a roll sequence
     useEffect(() => {
         if (gameState?.logs && !showDice && !diceRolling && !isRolling) {
@@ -858,20 +870,17 @@ const GameRoom = () => {
                 // Close modal for everyone or at least the current player
                 if (String(lastAction.player_id) === String(playerId)) {
                     setShowCasinoModal(false);
+                    setSelectedTile(null); // Return to board view
+
                     if (lastAction.skipped) {
                         // Just quiet close
                     } else if (lastAction.win) {
                         soundManager.play('success');
-                        // Small delay to allow modal to close before alert
-                        setTimeout(() => alert(`💰 КАЗИНО: Вы выиграли $${lastAction.amount}!`), 100);
-                        setSelectedTile(null);
+                        setTimeout(() => alert(`💰 КАЗИНО: Вы выиграли $${lastAction.amount}!`), 300);
                     } else {
                         soundManager.play('error');
-                        setTimeout(() => alert(`🔥 КАЗИНО: Вы проиграли! В стране произошла РЕВОЛЮЦИЯ.`), 100);
-                        setSelectedTile(null);
+                        setTimeout(() => alert(`🔥 КАЗИНО: Вы проиграли! В стране произошла РЕВОЛЮЦИЯ.`), 300);
                     }
-                } else {
-                    // For others, just ensure visual sync if needed
                 }
                 break;
             case 'TELEPORT':
@@ -1438,10 +1447,10 @@ const GameRoom = () => {
                             const muted = soundManager.toggleMusic();
                             setMusicPlaying(!muted);
                         }}
-                        className={`flex-1 py-2 flex items-center justify-center gap-2 rounded-lg border transition-all hover:scale-[1.02] ${musicPlaying ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-white/5 text-gray-500 border-white/10'}`}
+                        className={`flex-1 py-2 flex items-center justify-center gap-2 rounded-lg border transition-all hover:scale-[1.02] ${musicPlaying ? 'bg-green-500/20 text-green-400 border-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.3)]' : 'bg-white/5 text-gray-500 border-white/10'}`}
                         title={musicPlaying ? "Выключить музыку" : "Включить музыку"}
                     >
-                        {musicPlaying ? <div className="animate-pulse">🎵</div> : <div>🔇</div>}
+                        {musicPlaying ? <div className="animate-pulse">📻</div> : <div>🔇</div>}
                     </button>
                     <button
                         onClick={() => {

@@ -18,7 +18,8 @@ const BankruptcyAnimation = ({ isVisible, playerName, onComplete }) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[1000] pointer-events-none overflow-hidden"
+                    className="fixed inset-0 z-[1000] pointer-events-auto cursor-pointer overflow-hidden"
+                    onClick={() => onComplete && onComplete()}
                 >
                     {/* Darkening Overlay */}
                     <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
