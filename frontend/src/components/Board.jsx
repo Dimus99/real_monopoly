@@ -325,7 +325,7 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
                         style={{ left: 0, top: 0, width: '44px', height: '44px', zIndex: 50 + indexOnTile }}
                     >
                         <div className="absolute rounded-full blur-[3px]" style={{ width: '36px', height: '36px', background: playerId === currentPlayerId ? (char.color || '#FFD700') : 'rgba(0,0,0,0.5)', opacity: 0.6, top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
-                        <motion.div style={{ width: '40px', height: '40px', borderRadius: '50%', border: `2px solid ${char.color || '#fff'}`, position: 'relative', zIndex: 2, backgroundColor: '#1a1a2e', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justify_content: 'center', overflow: 'hidden' }} animate={isMoving ? { scale: [1, 1.2, 1], y: [0, -5, 0] } : { scale: playerId === currentPlayerId ? [1, 1.1, 1] : 1 }} transition={isMoving ? { duration: 0.5, times: [0, 0.5, 1] } : { duration: 2, repeat: Infinity, repeatType: "reverse" }}>
+                        <motion.div style={{ width: '40px', height: '40px', borderRadius: '50%', border: `2px solid ${char.color || '#fff'}`, position: 'relative', zIndex: 2, backgroundColor: '#1a1a2e', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }} animate={isMoving ? { scale: [1, 1.2, 1], y: [0, -5, 0] } : { scale: playerId === currentPlayerId ? [1, 1.1, 1] : 1 }} transition={isMoving ? { duration: 0.5, times: [0, 0.5, 1] } : { duration: 2, repeat: Infinity, repeatType: "reverse" }}>
                             <img src={char.avatar} alt={player.name} className="w-full h-full object-cover" />
                         </motion.div>
                     </motion.div>
@@ -392,12 +392,29 @@ const Board = ({ tiles, players, onTileClick, mapType, currentPlayerId, external
             {/* Render all tiles - Optimized Loop */}
             {tiles.map((tile) => {
                 const owner = players?.[tile.owner_id];
-                const isTargetable = targetingAbility === 'SEPTEMBER_11' && !['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Negotiations', 'RaiseTax', 'Casino'].includes(tile.group);
+                // Optimized Targetable check
+                const isProperty = !['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Negotiations', 'RaiseTax', 'Casino'].includes(tile.group);
+                const isTargetable = targetingAbility && (
+                    (targetingAbility === 'SEPTEMBER_11' && isProperty) ||
+                    (targetingAbility === 'ORESHNIK' && isProperty) ||
+                    (targetingAbility === 'ISOLATION' && isProperty) ||
+                    (targetingAbility === 'BUYOUT' && isProperty && tile.owner_id && tile.owner_id !== currentPlayerId) ||
+                    (targetingAbility === 'CONSTRUCTION' && (tile.is_destroyed || (tile.owner_id === currentPlayerId && tile.is_monopoly)))
+                );
 
                 let isTargetHighlighted = false;
-                if (hoveredTileId !== null && targetingAbility === 'SEPTEMBER_11') {
-                    if (tile.id === hoveredTileId || tile.id === (hoveredTileId + 1) % tiles.length) {
-                        isTargetHighlighted = true;
+                if (hoveredTileId !== null && targetingAbility) {
+                    const hoveredTile = tiles.find(t => t.id === hoveredTileId);
+                    const isHoveredTargetable = hoveredTile && !['Special', 'Jail', 'FreeParking', 'GoToJail', 'Chance', 'Tax', 'Negotiations', 'RaiseTax', 'Casino'].includes(hoveredTile.group);
+
+                    if (targetingAbility === 'SEPTEMBER_11') {
+                        if (isHoveredTargetable && (tile.id === hoveredTileId || tile.id === (hoveredTileId + 1) % tiles.length)) {
+                            isTargetHighlighted = true;
+                        }
+                    } else if (targetingAbility === 'ORESHNIK' || targetingAbility === 'ISOLATION' || targetingAbility === 'BUYOUT' || targetingAbility === 'CONSTRUCTION') {
+                        if (tile.id === hoveredTileId && isHoveredTargetable) {
+                            isTargetHighlighted = true;
+                        }
                     }
                 }
 

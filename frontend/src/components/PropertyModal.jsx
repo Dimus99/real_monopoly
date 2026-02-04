@@ -48,22 +48,7 @@ const DISPLAY_NAMES = {
 };
 
 const getTileImage = (property) => {
-    if (TILE_IMAGES[property.name]) return TILE_IMAGES[property.name];
-
-    // Fallbacks for groups if specific name not found
-    const groupMap = {
-        'Brown': '/tiles/moscow.png',
-        'LightBlue': '/tiles/moscow.png',
-        'Pink': '/tiles/kyiv.png',
-        'Orange': '/tiles/kyiv.png',
-        'Red': '/tiles/beijing.png',
-        'Yellow': '/tiles/beijing.png',
-        'Green': '/tiles/washington.png',
-        'DarkBlue': '/tiles/washington.png',
-        'Station': '/tiles/airport.png',
-        'Utility': '/tiles/gazprom.png'
-    };
-    return groupMap[property.group];
+    return TILE_IMAGES[property.name] || null;
 };
 
 const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, onBuild, onSellHouse, onMortgage, onUnmortgage, canBuild, currentPlayerId }) => {

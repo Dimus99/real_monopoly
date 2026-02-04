@@ -42,8 +42,11 @@ const AuctionModal = ({
                                     <span className="text-yellow-400 font-bold font-mono">${currentBid}</span>
                                 </div>
                                 <div className="h-4 w-px bg-white/20" />
-                                <div className="text-sm text-gray-300">
+                                <div className="text-sm text-gray-300 flex items-center gap-2">
                                     Ход: <span className="text-blue-400 font-bold">{activePlayerName}</span>
+                                    <span className="bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-lg border border-yellow-500/30 text-[11px] font-black font-mono shadow-[0_0_10px_rgba(234,179,8,0.2)]">
+                                        ${currentBid}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-1 text-xs font-mono text-gray-500 bg-black/40 px-2 py-0.5 rounded-md">
                                     <Clock size={12} /> {timeLeft}s
@@ -68,8 +71,13 @@ const AuctionModal = ({
                                             <Gavel className="text-yellow-500" size={20} />
                                         </div>
                                         <div>
-                                            <h2 className="text-xl font-black text-white leading-none">ВАШ ХОД!</h2>
-                                            <p className="text-[10px] text-yellow-400 font-bold uppercase tracking-wider">Аукцион за {property.name}</p>
+                                            <div className="flex items-center gap-3">
+                                                <h2 className="text-xl font-black text-white leading-none">ВАШ ХОД!</h2>
+                                                <span className="bg-yellow-500 text-black px-2 py-0.5 rounded text-xs font-black font-mono shadow-lg">
+                                                    ${currentBid}
+                                                </span>
+                                            </div>
+                                            <p className="text-[10px] text-yellow-400 font-bold uppercase tracking-wider mt-1">Аукцион за {property.name}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 px-2 py-1 bg-red-500/20 border border-red-500/50 rounded-lg animate-pulse">
