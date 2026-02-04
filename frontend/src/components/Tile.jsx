@@ -219,21 +219,24 @@ const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, isTargetable,
                 )}
 
                 <div className="flex flex-col items-center justify-center z-10 w-full">
-                    <div
-                        className={`tile-name leading-tight text-center px-0.5 transition-all duration-300 ${hasOwner ? 'font-serif tracking-wider' : ''}`}
-                        style={{
-                            color: hasOwner ? '#fff' : (isCorner ? groupStyle.textColor : '#e0e0e0'),
-                            fontSize: isCorner ? '14px' : (hasOwner ? (property.name.length > 10 ? '10px' : '12px') : (property.name.length > 12 ? '9px' : '11px')),
-                            lineHeight: '1.0',
-                            fontWeight: hasOwner ? '800' : '900',
-                            textShadow: hasOwner ? '0 2px 8px rgba(0,0,0,0.9)' : '0 1px 2px rgba(0,0,0,0.5)',
-                            maxWidth: '100%',
-                            textTransform: 'uppercase',
-                            transform: hasOwner && !isCorner ? 'scale(1.1)' : 'none'
-                        }}
-                    >
-                        {property.name}
-                    </div>
+                    {/* Only show text if NO owner-image background is present */}
+                    {!(hasOwner && image) && (
+                        <div
+                            className={`tile-name leading-tight text-center px-0.5 transition-all duration-300 ${hasOwner ? 'font-serif tracking-wider' : ''}`}
+                            style={{
+                                color: hasOwner ? '#fff' : (isCorner ? groupStyle.textColor : '#e0e0e0'),
+                                fontSize: isCorner ? '14px' : (hasOwner ? (property.name.length > 10 ? '10px' : '12px') : (property.name.length > 12 ? '9px' : '11px')),
+                                lineHeight: '1.0',
+                                fontWeight: hasOwner ? '800' : '900',
+                                textShadow: hasOwner ? '0 2px 8px rgba(0,0,0,0.9)' : '0 1px 2px rgba(0,0,0,0.5)',
+                                maxWidth: '100%',
+                                textTransform: 'uppercase',
+                                transform: hasOwner && !isCorner ? 'scale(1.1)' : 'none'
+                            }}
+                        >
+                            {property.name}
+                        </div>
+                    )}
                 </div>
 
                 {property.price > 0 && !hasOwner && (

@@ -210,6 +210,7 @@ const GameRoom = () => {
 
     // Animation States
     const [musicPlaying, setMusicPlaying] = useState(false);
+    const [sfxMuted, setSfxMuted] = useState(false);
     const [showBuyout, setShowBuyout] = useState(false);
     const [showAid, setShowAid] = useState(false);
     const [showNuke, setShowNuke] = useState(false);
@@ -417,17 +418,28 @@ const GameRoom = () => {
     useEffect(() => {
         const auctionActive = gameState?.turn_state?.auction_active;
         const turnStartTime = gameState?.turn_state?.auction_turn_start_time;
+        const auctionExpiry = gameState?.turn_state?.auction_expiry;
         const turnDuration = gameState?.turn_state?.auction_turn_duration || 10;
 
-        if (auctionActive && turnStartTime) {
+        if (auctionActive) {
             setShowAuctionModal(true);
 
             const interval = setInterval(() => {
-                const elapsed = Date.now() / 1000 - turnStartTime;
-                const remaining = Math.max(0, turnDuration - Math.floor(elapsed));
-                setAuctionTimeLeft(remaining);
+                let remaining = 0;
 
-                if (remaining === 0) {
+                if (auctionExpiry) {
+                    // Global Timer Mode
+                    const nowSec = Date.now() / 1000;
+                    remaining = Math.max(0, auctionExpiry - nowSec);
+                } else if (turnStartTime) {
+                    // Legacy Turn Mode
+                    const elapsed = Date.now() / 1000 - turnStartTime;
+                    remaining = Math.max(0, turnDuration - Math.floor(elapsed));
+                }
+
+                setAuctionTimeLeft(Math.ceil(remaining));
+
+                if (remaining <= 0) {
                     // Check if it's MY turn and auto-pass
                     const eligiblePlayers = gameState?.turn_state?.auction_eligible_players || [];
                     const currentIndex = gameState?.turn_state?.auction_current_player_index || 0;
@@ -443,9 +455,9 @@ const GameRoom = () => {
             return () => clearInterval(interval);
         } else {
             setShowAuctionModal(false);
-            setAuctionTimeLeft(turnDuration);
+            setAuctionTimeLeft(0);
         }
-    }, [gameState?.turn_state?.auction_active, gameState?.turn_state?.auction_turn_start_time, gameState?.turn_state?.auction_eligible_players, gameState?.turn_state?.auction_current_player_index, playerId]);
+    }, [gameState?.turn_state?.auction_active, gameState?.turn_state?.auction_turn_start_time, gameState?.turn_state?.auction_expiry, gameState?.turn_state?.auction_eligible_players, gameState?.turn_state?.auction_current_player_index, playerId]);
 
 
     const handleRoll = () => {
@@ -1430,6 +1442,17 @@ const GameRoom = () => {
                         title={musicPlaying ? "Выключить музыку" : "Включить музыку"}
                     >
                         {musicPlaying ? <div className="animate-pulse">🎵</div> : <div>🔇</div>}
+                    </button>
+                    <button
+                        onClick={() => {
+                            const newMuted = !sfxMuted;
+                            soundManager.setMuted(newMuted);
+                            setSfxMuted(newMuted);
+                        }}
+                        className={`flex-1 py-2 flex items-center justify-center gap-2 rounded-lg border transition-all hover:scale-[1.02] ${!sfxMuted ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-white/5 text-gray-500 border-white/10'}`}
+                        title={sfxMuted ? "Включить звуки" : "Выключить звуки"}
+                    >
+                        {!sfxMuted ? <div>🔊</div> : <div>🔇</div>}
                     </button>
                     <button
                         onClick={toggleFullScreen}

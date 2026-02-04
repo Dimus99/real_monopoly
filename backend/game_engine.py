@@ -1284,15 +1284,19 @@ class GameEngine:
         game.turn_state["auction_current_bidder"] = None  # No bidder yet
         game.turn_state["auction_eligible_players"] = eligible_players  # Players still in auction
         game.turn_state["auction_current_player_index"] = 0  # Index in eligible_players list
-        game.turn_state["auction_turn_start_time"] = datetime.utcnow().timestamp()
-        game.turn_state["auction_turn_duration"] = 10  # 10 seconds per turn
+        
+        # GLOBAL AUCTION TIMER
+        # 30 seconds initial pool. Bidding adds time if low.
+        game.turn_state["auction_expiry"] = datetime.utcnow().timestamp() + 30
         
         current_player_id = eligible_players[0]
         current_player = game.players[current_player_id]
         
         game.logs.append(f"🔨 Auction started for {prop.name}! Starting bid: ${prop.price}")
-        game.logs.append(f"⏰ {current_player.name}'s turn to bid (+$10 or Pass)")
-        self._reset_timer(game)
+        game.logs.append(f"⏰ {current_player.name}'s turn to bid (Global Timer!)")
+        
+        # Disable standard turn timer during auction to prevent conflict
+        game.turn_expiry = None
         
         return {
             "success": True,
@@ -1342,6 +1346,13 @@ class GameEngine:
         game.turn_state["auction_current_bid"] = new_bid
         game.turn_state["auction_current_bidder"] = player_id
         game.logs.append(f"💰 {player.name} raised bid to ${new_bid}")
+        
+        # EXTEND TIMER IF < 5s
+        current_expiry = game.turn_state.get("auction_expiry", 0)
+        now = datetime.utcnow().timestamp()
+        if current_expiry - now < 5:
+            game.turn_state["auction_expiry"] = now + 5
+            game.logs.append(f"⏱️ Auction timer extended! (+5s)")
         
         # Move to next player
         return self._next_auction_player(game)
@@ -1399,14 +1410,14 @@ class GameEngine:
         # Move to next player (circular)
         next_index = (current_index + 1) % len(eligible_players)
         game.turn_state["auction_current_player_index"] = next_index
-        game.turn_state["auction_turn_start_time"] = datetime.utcnow().timestamp()
+        # game.turn_state["auction_turn_start_time"] = datetime.utcnow().timestamp() # Removed for global timer
         
         next_player_id = eligible_players[next_index]
         next_player = game.players[next_player_id]
         current_bid = game.turn_state.get("auction_current_bid", 0)
         
         game.logs.append(f"⏰ {next_player.name}'s turn (Current: ${current_bid}, Raise: ${current_bid + 10})")
-        self._reset_timer(game)
+        # self._reset_timer(game) # Removed for global timer
         
         # Trigger bot logic if next player is bot
         if next_player.is_bot:
