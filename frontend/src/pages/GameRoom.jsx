@@ -812,15 +812,19 @@ const GameRoom = () => {
                 break;
             case 'TRADE_UPDATED': setIncomingTrade(null); break;
             case 'CASINO_RESULT':
-                if (lastAction.player_id === playerId) {
+                // Close modal for everyone or at least the current player
+                if (String(lastAction.player_id) === String(playerId)) {
                     setShowCasinoModal(false);
                     if (lastAction.skipped) {
-                        // Just quiet close or toast
+                        // Just quiet close
                     } else if (lastAction.win) {
-                        alert(`💰 КАЗИНО: Вы выиграли $${lastAction.amount}!`);
+                        // Small delay to allow modal to close before alert
+                        setTimeout(() => alert(`💰 КАЗИНО: Вы выиграли $${lastAction.amount}!`), 100);
                     } else {
-                        alert(`🔥 КАЗИНО: Вы проиграли! В стране произошла РЕВОЛЮЦИЯ.`);
+                        setTimeout(() => alert(`🔥 КАЗИНО: Вы проиграли! В стране произошла РЕВОЛЮЦИЯ.`), 100);
                     }
+                } else {
+                    // For others, just ensure visual sync if needed
                 }
                 break;
             case 'TELEPORT':
@@ -1365,21 +1369,19 @@ const GameRoom = () => {
             </motion.div >
 
             {/* MAIN BOARD AREA */}
-            < div className={`flex-1 relative bg-[#0c0c14] flex items-center justify-center overflow-hidden`}>
+            {/* MAIN BOARD AREA */}
+            < div className={`flex-1 relative bg-[#0c0c14] flex items-start justify-start overflow-auto custom-scrollbar p-0 pl-2 md:pl-4 pt-4 pb-20`}>
                 {/* Background */}
                 < div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
-                <div className={`relative z-10 shadow-2xl`}
+                <div className={`relative z-10 shadow-2xl flex-shrink-0`}
                     style={{
                         width: isMobile
-                            ? 'min(92vh, 98vw)'
-                            : 'min(92vh, calc(100vw - ' + (sidebarCollapsed ? '100px' : '340px') + '))',
+                            ? '96vw'
+                            : 'min(92vh, 880px)',
                         aspectRatio: '1/1',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
                         transform: !isMobile ? `scale(${boardScale})` : 'none',
-                        transformOrigin: 'center center'
+                        transformOrigin: 'left top'
                     }}
                 >
                     <Board
