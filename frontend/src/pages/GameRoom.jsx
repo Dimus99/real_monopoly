@@ -1378,7 +1378,7 @@ const GameRoom = () => {
                     style={{
                         width: isMobile
                             ? '96vw'
-                            : 'min(92vh, 880px)',
+                            : `min(92vh, calc(100vw - ${sidebarCollapsed ? '100px' : '360px'}), 850px)`,
                         aspectRatio: '1/1',
                         transform: !isMobile ? `scale(${boardScale})` : 'none',
                         transformOrigin: 'left top'

@@ -59,7 +59,7 @@ const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, 
     const image = getTileImage(property);
     const displayName = DISPLAY_NAMES[property.name] || property.name;
 
-    const isPropertyType = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking'].includes(property.group);
+    const isPropertyType = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking', 'Negotiations', 'RaiseTax'].includes(property.group);
     const housePrice = Math.floor(property.price / 2) + 50;
 
     return (
@@ -83,7 +83,7 @@ const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, 
                     className="absolute inset-0 z-10 opacity-90"
                     style={{ background: groupColor.gradient || groupColor.bg }}
                 />
-                {image && (
+                {image && property.owner_id && (
                     <img
                         src={image}
                         alt={displayName}
@@ -113,8 +113,8 @@ const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, 
             </div>
 
             {/* Card Content with subtle background logo */}
-            <div className="flex-1 p-6 space-y-4 bg-gradient-to-b from-[#1a1a2e] to-[#0c0c14] overflow-y-auto custom-scrollbar relative">
-                {image && (
+            <div className="flex-1 p-6 space-y-4 bg-gradient-to-b from-[#1a1a2e] to-[#0c0c14] overflow-hidden relative">
+                {image && property.owner_id && (
                     <img
                         src={image}
                         alt=""
@@ -220,37 +220,39 @@ const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, 
                             )}
                         </div>
 
-                        {/* Development Rent Table */}
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between px-1">
-                                <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Доходность развития</span>
-                                <div className="flex gap-1.5 opacity-40">
-                                    <Home size={12} />
-                                    <Building2 size={12} />
-                                    <Hotel size={12} />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-5 gap-2.5">
-                                {[1, 2, 3, 4].map(h => (
-                                    <div key={h} className={`bg-white/[0.02] border border-white/5 rounded-2xl p-2.5 flex flex-col items-center justify-between group px-1 ${property.houses === h ? 'border-green-500/50 bg-green-500/5' : ''}`}>
-                                        <div className="flex gap-0.5 mb-2.5">
-                                            {Array(h).fill(0).map((_, i) => (
-                                                <div key={i} className="w-1.5 h-2 bg-green-500 rounded-[2px] shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-                                            ))}
-                                        </div>
-                                        <div className="text-[11px] font-black font-mono text-gray-300">
-                                            ${property.rent?.[h]}
-                                        </div>
-                                    </div>
-                                ))}
-                                <div className={`bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-2.5 flex flex-col items-center justify-between shadow-[inset_0_0_20px_rgba(234,179,8,0.05)] ${property.houses === 5 ? 'border-yellow-500 bg-yellow-500/20' : ''}`}>
-                                    <Hotel size={16} className="text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.4)] mb-2" />
-                                    <div className="text-[11px] font-black font-mono text-yellow-500">
-                                        ${property.rent?.[5]}
+                        {/* Development Rent Table (Only for buildable properties) */}
+                        {property.group !== 'Station' && property.group !== 'Railroad' && property.group !== 'Utility' && (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Доходность развития</span>
+                                    <div className="flex gap-1.5 opacity-40">
+                                        <Home size={12} />
+                                        <Building2 size={12} />
+                                        <Hotel size={12} />
                                     </div>
                                 </div>
+                                <div className="grid grid-cols-5 gap-2.5">
+                                    {[1, 2, 3, 4].map(h => (
+                                        <div key={h} className={`bg-white/[0.02] border border-white/5 rounded-2xl p-2.5 flex flex-col items-center justify-between group px-1 ${property.houses === h ? 'border-green-500/50 bg-green-500/5' : ''}`}>
+                                            <div className="flex gap-0.5 mb-2.5">
+                                                {Array(h).fill(0).map((_, i) => (
+                                                    <div key={i} className="w-1.5 h-2 bg-green-500 rounded-[2px] shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                                                ))}
+                                            </div>
+                                            <div className="text-[11px] font-black font-mono text-gray-300">
+                                                ${property.rent?.[h]}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div className={`bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-2.5 flex flex-col items-center justify-between shadow-[inset_0_0_20px_rgba(234,179,8,0.05)] ${property.houses === 5 ? 'border-yellow-500 bg-yellow-500/20' : ''}`}>
+                                        <Hotel size={16} className="text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.4)] mb-2" />
+                                        <div className="text-[11px] font-black font-mono text-yellow-500">
+                                            ${property.rent?.[5]}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </>
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-center py-6 px-4">
@@ -267,6 +269,8 @@ const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, 
                             {property.group === 'Chance' && '🃏'}
                             {property.group === 'Tax' && '💸'}
                             {property.group === 'Special' && '🌟'}
+                            {property.group === 'Negotiations' && '🕊️'}
+                            {property.group === 'RaiseTax' && '📈'}
                         </motion.div>
                         <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-wider">
                             {displayName}
@@ -278,6 +282,8 @@ const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, 
                             {property.group === 'FreeParking' && 'Зона оффшоров. Ваши деньги здесь в безопасности.'}
                             {property.group === 'Chance' && 'Секретная депеша. Пан или пропал?'}
                             {property.group === 'Tax' && 'Налог на роскошь в пользу неизвестных лиц.'}
+                            {property.group === 'Negotiations' && 'Мирная инициатива: вы пропускаете следующий ход для участия в переговорах.'}
+                            {property.group === 'RaiseTax' && 'Пополнение бюджета: вы получаете единоразовый грант $300.'}
                         </p>
                     </div>
                 )}

@@ -127,7 +127,7 @@ const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, isTargetable,
     const groupStyle = GROUP_STYLES[property.group] || GROUP_STYLES.Special;
     const specialIcon = SPECIAL_ICONS[property.name];
     const isPropertyTile = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking', 'Negotiations', 'RaiseTax', 'Casino'].includes(property.group) && !isCorner;
-    const hasOwner = property.owner_id !== null;
+    const hasOwner = !!property.owner_id;
     const colorBarStyle = getColorBarStyle(property.id);
     const orientation = getTileOrientation(property.id);
 
