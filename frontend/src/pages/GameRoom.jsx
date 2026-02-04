@@ -209,6 +209,7 @@ const GameRoom = () => {
     }, [gameState?.logs, releasedLogCount]);
 
     // Animation States
+    const [musicPlaying, setMusicPlaying] = useState(false);
     const [showBuyout, setShowBuyout] = useState(false);
     const [showAid, setShowAid] = useState(false);
     const [showNuke, setShowNuke] = useState(false);
@@ -851,9 +852,11 @@ const GameRoom = () => {
                         soundManager.play('success');
                         // Small delay to allow modal to close before alert
                         setTimeout(() => alert(`💰 КАЗИНО: Вы выиграли $${lastAction.amount}!`), 100);
+                        setSelectedTile(null);
                     } else {
                         soundManager.play('error');
                         setTimeout(() => alert(`🔥 КАЗИНО: Вы проиграли! В стране произошла РЕВОЛЮЦИЯ.`), 100);
+                        setSelectedTile(null);
                     }
                 } else {
                     // For others, just ensure visual sync if needed
@@ -1416,8 +1419,18 @@ const GameRoom = () => {
                     })}
                 </div>
 
-                {/* Fullscreen Button - Moved here */}
-                <div className="px-3 py-2 border-t border-white/5">
+                {/* Fullscreen & Music Buttons */}
+                <div className="px-3 py-2 border-t border-white/5 flex gap-2">
+                    <button
+                        onClick={() => {
+                            const muted = soundManager.toggleMusic();
+                            setMusicPlaying(!muted);
+                        }}
+                        className={`flex-1 py-2 flex items-center justify-center gap-2 rounded-lg border transition-all hover:scale-[1.02] ${musicPlaying ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-white/5 text-gray-500 border-white/10'}`}
+                        title={musicPlaying ? "Выключить музыку" : "Включить музыку"}
+                    >
+                        {musicPlaying ? <div className="animate-pulse">🎵</div> : <div>🔇</div>}
+                    </button>
                     <button
                         onClick={toggleFullScreen}
                         className="w-full py-2 flex items-center justify-center gap-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 transition-all hover:scale-[1.02]"

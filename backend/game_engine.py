@@ -1408,6 +1408,21 @@ class GameEngine:
         game.logs.append(f"⏰ {next_player.name}'s turn (Current: ${current_bid}, Raise: ${current_bid + 10})")
         self._reset_timer(game)
         
+        # Trigger bot logic if next player is bot
+        if next_player.is_bot:
+            # Determine reaction time (simulate "thinking")
+            # Since we are in a sync function, we can't easily sleep without blocking.
+            # But for now, direct execution is better than stalling.
+            # We must return the result of the bot's action to update the client fully.
+            # However, _next_auction_player is expected to return a Dict for the *transition*.
+            # If we run the bot immediately, the state moves AGAIN.
+            # Ideally, we should perform the bot logic *after* returning, or return the *final* state after bot chain.
+            
+            # Simple recursive approach:
+            bot_res = self.run_bot_auction_decision(game.game_id, next_player_id)
+            if bot_res and not bot_res.get("error"):
+                return bot_res
+
         return {
             "success": True,
             "next_player": next_player_id,
