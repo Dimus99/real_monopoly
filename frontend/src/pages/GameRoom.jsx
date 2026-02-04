@@ -20,6 +20,8 @@ import ChanceModal from '../components/ChanceModal';
 import CasinoModal from '../components/CasinoModal';
 import AuctionModal from '../components/AuctionModal';
 import { BuyoutAnimation, AidAnimation, NukeThreatAnimation, SanctionsAnimation, BeltRoadAnimation } from '../components/AbilityAnimations';
+import BankruptcyAnimation from '../components/BankruptcyAnimation';
+import { soundManager } from '../utils/sounds';
 
 // Lazy load to avoid circular dependency/initialization issues
 const OreshnikAnimation = lazy(() => import('../components/OreshnikAnimation'));
