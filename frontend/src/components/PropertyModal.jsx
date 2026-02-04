@@ -133,7 +133,7 @@ const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, 
                     <img
                         src={image}
                         alt=""
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] h-auto opacity-[0.03] pointer-events-none mix-blend-screen scale-150 rotate-12"
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180%] h-auto opacity-[0.12] pointer-events-none mix-blend-screen scale-150 rotate-12"
                     />
                 )}
                 {isPropertyType ? (

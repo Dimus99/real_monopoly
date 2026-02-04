@@ -1130,7 +1130,7 @@ const GameRoom = () => {
                     width: isMobile ? (sidebarCollapsed ? 0 : 280) : (sidebarCollapsed ? 80 : 300),
                     x: isMobile && sidebarCollapsed ? -280 : 0
                 }}
-                className={`flex-shrink-0 bg-[#0c0c14] border-r border-white/10 flex flex-col z-[500] shadow-2xl relative transition-all duration-300 ${isMobile ? 'absolute inset-y-0 left-0' : ''}`}
+                className={`flex-shrink-0 bg-[#0c0c14] border-r border-white/10 flex flex-col z-[500] shadow-2xl relative ${isMobile ? 'absolute inset-y-0 left-0' : ''}`}
             >
                 {/* Mobile Toggle Button (only visible on mobile) */}
                 {isMobile && sidebarCollapsed && (
@@ -1369,11 +1369,11 @@ const GameRoom = () => {
                 {/* Background */}
                 < div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
-                <div className={`relative z-10 shadow-2xl transition-all duration-300`}
+                <div className={`relative z-10 shadow-2xl`}
                     style={{
                         width: isMobile
                             ? 'min(92vh, 98vw)'
-                            : 'min(92vh, calc(100vw - ' + (sidebarCollapsed ? '120px' : '360px') + '))',
+                            : 'min(92vh, calc(100vw - ' + (sidebarCollapsed ? '100px' : '340px') + '))',
                         aspectRatio: '1/1',
                         display: 'flex',
                         alignItems: 'center',
@@ -1389,8 +1389,6 @@ const GameRoom = () => {
                         mapType={gameState.map_type}
                         currentPlayerId={playerId}
                         targetingAbility={targetingAbility}
-                        // logs and onSendMessage removed from here as we moved the component up
-
                         externalRef={boardRef}
                         onAvatarClick={handleAvatarClick}
                         onBuy={() => {
@@ -1410,75 +1408,85 @@ const GameRoom = () => {
                     />
 
                     {/* Chat relative to Board Center (Bottom) */}
-                    <div className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-full max-w-[400px] z-[200] pointer-events-none">
+                    <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 w-full max-w-[400px] z-[200] pointer-events-none">
                         <div className="pointer-events-auto">
                             <ToastNotification logs={displayedLogs} onSendMessage={handleSendMessage} />
                         </div>
                     </div>
+
+                    {/* Main Overlays relative to Board Area */}
+                    <div className="absolute inset-0 pointer-events-none z-[130]">
+                        {/* Action Panel - CENTERED in Board Area */}
+                        {!showTradeModal && !showCasinoModal && (
+                            <div className={`absolute left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-24 scale-90' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
+                                <div className="bg-black/80 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/20 w-fit mx-auto">
+                                    <ActionPanel
+                                        onToggleSidebar={isMobile ? () => setSidebarCollapsed(!sidebarCollapsed) : null}
+                                        isMyTurn={isMyTurn}
+                                        isRolling={isRolling}
+                                        hasRolled={hasRolled}
+                                        onRoll={handleRoll}
+                                        canBuy={canBuy}
+                                        onBuy={handleBuyProperty}
+                                        onDecline={handleDeclineProperty}
+                                        onEndTurn={handleEndTurn}
+                                        character={currentPlayer?.character}
+                                        onAbility={handleAbility}
+                                        currentTilePrice={currentTile?.price}
+                                        currentTileName={currentTile?.name}
+
+                                        gameMode={gameState.game_mode}
+                                        isChatOpen={false}
+                                        isChanceOpen={!!chanceCard}
+                                        isDoubles={isDoubles}
+                                        isJailed={currentPlayer?.is_jailed}
+                                        abilityCooldown={currentPlayer?.ability_cooldown}
+                                        abilityUsed={currentPlayer?.ability_used_this_game}
+                                        onSurrender={() => sendAction('SURRENDER')}
+                                        rentDetails={rentDetails}
+                                        onPayRent={handlePayRent}
+                                        onPayBail={handlePayBail}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Dice Animation - CENTERED in Board Area */}
+                        <div className="absolute inset-0 z-[250] flex items-center justify-center">
+                            <DiceAnimation
+                                show={showDice}
+                                rolling={diceRolling}
+                                values={diceValues}
+                                glow={diceValues[0] === diceValues[1]}
+                                playerName={gameState?.players?.[rollingPlayerId]?.name || ''}
+                                isMine={rollingPlayerId === playerId}
+                            />
+                        </div>
+                    </div>
                 </div>
 
-                {/* Property Modal - Ensure High Z-Index & Centering */}
-                {
-                    gameState?.board && (
-                        <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none">
-                            <div className="pointer-events-auto">
-                                <PropertyModal
-                                    isOpen={!!selectedTile}
-                                    onClose={() => setSelectedTile(null)}
-                                    property={selectedTile}
-                                    players={gameState.players}
-                                    currentPlayerId={playerId}
-                                    onBuy={handleBuyProperty}
-                                    canBuy={canBuy && (selectedTile?.id === currentTile?.id)}
-                                    canBuild={isMyTurn && !(gameState.turn_state?.build_counts?.[selectedTile?.group] >= 1)}
-                                    onBuild={handleBuildHouse}
-                                    onSellHouse={handleSellHouse}
-                                    onMortgage={handleMortgage}
-                                    onUnmortgage={handleUnmortgage}
-                                    tiles={gameState.board}
-                                />
-                            </div>
+                {/* Property Modal - Ensure High Z-Index & Centering in Board Area */}
+                {gameState?.board && (
+                    <div className="absolute inset-0 z-[300] flex items-center justify-center pointer-events-none">
+                        <div className="pointer-events-auto">
+                            <PropertyModal
+                                isOpen={!!selectedTile}
+                                onClose={() => setSelectedTile(null)}
+                                property={selectedTile}
+                                players={gameState.players}
+                                currentPlayerId={playerId}
+                                onBuy={handleBuyProperty}
+                                canBuy={canBuy && (selectedTile?.id === currentTile?.id)}
+                                canBuild={isMyTurn && !(gameState.turn_state?.build_counts?.[selectedTile?.group] >= 1)}
+                                onBuild={handleBuildHouse}
+                                onSellHouse={handleSellHouse}
+                                onMortgage={handleMortgage}
+                                onUnmortgage={handleUnmortgage}
+                                tiles={gameState.board}
+                            />
                         </div>
-                    )
-                }
-
-
-                {/* Action Panel - CENTERED - Hide when TradeModal or CasinoModal is open */}
-                {
-                    !showTradeModal && !showCasinoModal && (
-                        <div className={`fixed left-1/2 -translate-x-1/2 pointer-events-auto z-[140] px-4 flex justify-center items-center w-full max-w-md ${isMobile ? 'bottom-24 scale-90' : 'top-[25%] -translate-y-1/2 scale-90'}`}>
-                            <div className="bg-black/80 backdrop-blur-md rounded-2xl p-2 shadow-2xl border border-white/20 w-fit mx-auto">
-                                <ActionPanel
-                                    onToggleSidebar={isMobile ? () => setSidebarCollapsed(!sidebarCollapsed) : null}
-                                    isMyTurn={isMyTurn}
-                                    isRolling={isRolling}
-                                    hasRolled={hasRolled}
-                                    onRoll={handleRoll}
-                                    canBuy={canBuy}
-                                    onBuy={handleBuyProperty}
-                                    onDecline={handleDeclineProperty}
-                                    onEndTurn={handleEndTurn}
-                                    character={currentPlayer?.character}
-                                    onAbility={handleAbility}
-                                    currentTilePrice={currentTile?.price}
-                                    currentTileName={currentTile?.name}
-
-                                    gameMode={gameState.game_mode}
-                                    isChatOpen={false}
-                                    isChanceOpen={!!chanceCard}
-                                    isDoubles={isDoubles}
-                                    isJailed={currentPlayer?.is_jailed}
-                                    abilityCooldown={currentPlayer?.ability_cooldown}
-                                    abilityUsed={currentPlayer?.ability_used_this_game}
-                                    onSurrender={() => sendAction('SURRENDER')}
-                                    rentDetails={rentDetails}
-                                    onPayRent={handlePayRent}
-                                    onPayBail={handlePayBail}
-                                />
-                            </div>
-                        </div>
-                    )
-                }
+                    </div>
+                )}
 
                 {/* Chat / Toast Notification - Elevated to avoid overlap */}
                 {/* Chat / Toast Notification - Removed fixed position here, moved inside Board container */}
@@ -1733,15 +1741,7 @@ const GameRoom = () => {
                 {showSeptember11 && <September11Animation isVisible={showSeptember11} onComplete={handleCloseSeptember11} />}
             </Suspense>
 
-            {/* Global Dice Animation Overlay - Fixed to Viewport */}
-            <DiceAnimation
-                show={showDice}
-                rolling={diceRolling}
-                values={diceValues}
-                glow={diceValues[0] === diceValues[1]}
-                playerName={gameState?.players?.[rollingPlayerId]?.name || ''}
-                isMine={rollingPlayerId === playerId}
-            />
+            {/* Removed redundant DiceAnimation as it was moved inside main area */}
             {
                 showCasinoModal && (
                     <CasinoModal

@@ -163,7 +163,7 @@ const DiceAnimation = ({ show, rolling, values, playerName, glow, isMine = true 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[250] flex flex-col items-center justify-center pointer-events-none"
+                    className="absolute inset-0 z-[250] flex flex-col items-center justify-center pointer-events-none"
                 >
                     <div className="flex gap-32 relative mb-20" style={{ transformStyle: 'preserve-3d' }}>
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/10 blur-[180px] rounded-full -z-10" />
