@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     Plus, LogIn, Users, Play, Settings, CreditCard,
     MessageSquare, Music, Volume2, Shield, Search,
-    UserPlus, UserCheck, X, RefreshCw, Camera, Smile
+    UserPlus, UserCheck, X, RefreshCw, Camera, Smile, Check
 } from 'lucide-react';
 import CharacterSelection from '../components/CharacterSelection';
 import TelegramLoginButton from '../components/TelegramLoginButton';
@@ -36,6 +36,22 @@ const getApiBase = () => {
 };
 
 const Lobby = () => {
+    const randomAnecdote = React.useMemo(() => {
+        const quotes = [
+            "Хочешь сделать хорошо? Сделай хреново, но переделывай до дедлайна.",
+            "Деньги не пахнут, но их отсутствие воняет безысходностью.",
+            "Купил биткоин по 69k? Молодец, теперь ты инвестор.",
+            "Работа не волк, работа — это work.",
+            "Если долго смотреть на коден, коден начинает смотреть на тебя.",
+            "Главное в монополии — не победа, а чтобы друзья не побили.",
+            "Заплатил налоги? А теперь заплати за то, что заплатил.",
+            "В этой жизни ты либо акула, либо корм для рыбок.",
+            "Счастье не в деньгах, а в их количестве на моем счету.",
+            "Продам гараж. Дорого. Без документов."
+        ];
+        return quotes[Math.floor(Math.random() * quotes.length)];
+    }, []);
+
     const API_BASE = React.useMemo(() => getApiBase(), []);
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
@@ -409,6 +425,27 @@ const Lobby = () => {
         } catch (e) { alert('Ошибка отправки запроса'); }
     };
 
+    const respondToFriendRequest = async (requestId, action) => {
+        const endpoint = action === 'accept' ? 'accept' : 'reject';
+        try {
+            await authFetch(`/api/friends/requests/${requestId}/${endpoint}`, {
+                method: 'POST'
+            });
+            fetchFriendsData();
+        } catch (e) { console.error(e); }
+    };
+
+    const respondToGameInvite = async (inviteId, action) => {
+        // Only valid for declining here since accepting involves joining
+        if (action === 'accept') return;
+        try {
+            await authFetch(`/api/games/invites/${inviteId}/decline`, {
+                method: 'POST'
+            });
+            fetchFriendsData();
+        } catch (e) { console.error(e); }
+    };
+
     const handleUpdateName = async (newName) => {
         const nameToSubmit = newName || profileName;
         if (!nameToSubmit || nameToSubmit.trim().length < 2) return;
@@ -567,9 +604,9 @@ const Lobby = () => {
                     </div>
                 </div>
                 <div className="flex gap-4">
-                    <div className="text-right hidden sm:block">
-                        <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">Заработано всего</div>
-                        <div className="text-xl font-mono font-bold text-green-400">${user.stats?.total_earnings?.toLocaleString()}</div>
+                    <div className="text-right hidden sm:block max-w-xs">
+                        <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">Анекдот</div>
+                        <div className="text-sm font-mono font-bold text-green-400 leading-tight italic">"{randomAnecdote}"</div>
                     </div>
                 </div>
             </div>
@@ -577,136 +614,220 @@ const Lobby = () => {
             {/* Main Content */}
             <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4">
                 {mode === 'menu' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl">
-                        <button onClick={() => setMode('create')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-purple-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="w-20 h-20 bg-purple-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(168,85,247,0.3)]">
-                                <Plus size={40} className="text-purple-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold mb-2">Создать игру</h3>
-                                <p className="text-sm text-gray-400">Начать новую партию</p>
-                            </div>
-                        </button>
+                    <div className="flex flex-col lg:flex-row gap-6 w-full max-w-7xl px-4 items-start">
+                        {/* LEFT SIDEBAR: Friends & Activity */}
+                        <div className="hidden lg:flex flex-col gap-4 w-72 shrink-0 h-[calc(100vh-140px)] sticky top-6 overflow-y-auto scrollbar-hide pb-6 pl-1">
 
-                        <button onClick={() => setMode('join')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-blue-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-cyan-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="w-20 h-20 bg-blue-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(59,130,246,0.3)]">
-                                <LogIn size={40} className="text-blue-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold mb-2">Присоединиться</h3>
-                                <p className="text-sm text-gray-400">Войти по коду лобби</p>
-                            </div>
-                        </button>
-
-                        <button onClick={() => setMode('friends')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-green-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
-                            {(friendRequests.length > 0 || gameInvites.length > 0) && (
-                                <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-bounce shadow-lg shadow-red-500/50">
-                                    {friendRequests.length + gameInvites.length}
-                                </div>
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="w-20 h-20 bg-green-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-                                <Users size={40} className="text-green-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold mb-2">Друзья</h3>
-                                <p className="text-sm text-gray-400">Управление друзьями</p>
-                            </div>
-                        </button>
-
-                        <button onClick={() => setMode('additional')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-pink-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
-                            <div className="absolute inset-0 bg-gradient-to-br from-pink-600/20 to-rose-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="w-20 h-20 bg-pink-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(236,72,153,0.3)]">
-                                <Smile size={40} className="text-pink-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold mb-2">Дополнительно</h3>
-                                <p className="text-sm text-gray-400">Мини-игры и развлечения</p>
-                            </div>
-                        </button>
-
-                        {/* Open Lobbies Panel (New Feature) */}
-                        <div className="col-span-1 md:col-span-2 lg:col-span-4 glass-card p-6 mt-4">
-                            {/* My Active Games Section */}
-                            {myGames.length > 0 && (
-                                <div className="mb-8 p-4 bg-purple-500/10 rounded-xl border border-purple-500/30">
-                                    <h3 className="text-xl font-bold flex items-center gap-2 mb-4 text-purple-300">
-                                        <Play size={20} /> Ваши активные игры
+                            {/* 1. Requests */}
+                            {friendRequests.length > 0 && (
+                                <div className="glass-card p-4 animate-in fade-in slide-in-from-left-4 border border-red-500/30 bg-red-500/5 shadow-lg shadow-red-500/10">
+                                    <h3 className="text-xs font-bold text-red-300 uppercase mb-3 flex items-center justify-between tracking-wider">
+                                        Запросы <span className="bg-red-500 text-white rounded-full px-1.5 py-0.5 text-[10px] shadow">{friendRequests.length}</span>
                                     </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {myGames.map(game => (
-                                            <div key={game.game_id} className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/50 p-4 rounded-xl flex justify-between items-center">
-                                                <div>
-                                                    <div className="font-mono font-bold text-lg text-white">#{game.game_id.substring(0, 6)}</div>
-                                                    <div className="text-xs text-purple-200 mt-1">Ход: {game.turn} • {game.status}</div>
+                                    <div className="space-y-2">
+                                        {friendRequests.map(req => (
+                                            <div key={req.id} className="bg-black/40 p-2 rounded-lg flex items-center justify-between border border-white/5 backdrop-blur-sm">
+                                                <div className="flex items-center gap-2 overflow-hidden">
+                                                    <div className="w-6 h-6 rounded bg-gray-700 flex items-center justify-center text-xs border border-white/10">👤</div>
+                                                    <span className="text-xs font-bold truncate text-gray-200">{req.from_user_name || 'Неизвестный'}</span>
                                                 </div>
-                                                <button
-                                                    onClick={() => navigate(`/game/${game.game_id}/${game.player_id}`)}
-                                                    className="btn-sm btn-primary"
-                                                >
-                                                    Продолжить
-                                                </button>
+                                                <div className="flex gap-1">
+                                                    <button onClick={() => respondToFriendRequest(req.id, 'accept')} className="p-1.5 hover:bg-green-500/20 text-green-400 rounded transition-colors"><Check size={12} /></button>
+                                                    <button onClick={() => respondToFriendRequest(req.id, 'reject')} className="p-1.5 hover:bg-red-500/20 text-red-400 rounded transition-colors"><X size={12} /></button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             )}
 
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-bold flex items-center gap-2"><Globe size={20} className="text-blue-400" /> Открытые лобби</h3>
-                                <button onClick={fetchActiveGames} className="p-2 hover:bg-white/10 rounded-full"><RefreshCw size={16} /></button>
-                            </div>
-
-                            {activeGames.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">Нет активных публичных игр. Создайте свою!</div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {activeGames.map(game => (
-                                        <div key={game.game_id} className="bg-white/5 border border-white/10 p-4 rounded-xl hover:bg-white/10 transition-all flex justify-between items-center group relative overflow-hidden">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex-shrink-0 flex items-center justify-center relative">
-                                                    {game.host_avatar && (game.host_avatar.startsWith('http') || game.host_avatar.startsWith('/')) ? (
-                                                        <img src={game.host_avatar} className="w-full h-full object-cover" alt="Avatar" />
-                                                    ) : game.host_avatar ? (
-                                                        <span className="text-xl select-none">{game.host_avatar}</span>
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-white/20 text-xl select-none">👤</div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <div className="font-mono font-bold text-lg text-purple-400 leading-tight">#{game.game_id.substring(0, 6)}</div>
-                                                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mb-1 truncate max-w-[120px]">
-                                                        Создатель: {game.host_name}
-                                                    </div>
-                                                    <div className="text-[10px] text-gray-500">{game.map_type} • {game.player_count}/{game.max_players}</div>
+                            {/* 2. Invites */}
+                            {gameInvites.length > 0 && (
+                                <div className="glass-card p-4 animate-in fade-in slide-in-from-left-4 border border-blue-500/30 bg-blue-500/5 shadow-lg shadow-blue-500/10">
+                                    <h3 className="text-xs font-bold text-blue-300 uppercase mb-3 flex items-center justify-between tracking-wider">
+                                        Приглашения <span className="bg-blue-500 text-white rounded-full px-1.5 py-0.5 text-[10px] shadow">{gameInvites.length}</span>
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {gameInvites.map(inv => (
+                                            <div key={inv.id} className="bg-black/40 p-3 rounded-lg border border-white/5 backdrop-blur-sm">
+                                                <div className="text-[10px] text-gray-400 mb-1 flex items-center gap-1">🎮 От <span className="text-white font-bold">{inv.from_user_name}</span></div>
+                                                <div className="font-mono font-bold text-blue-400 mb-2 bg-blue-500/10 px-2 py-1 rounded inline-block">#{inv.game_id.substring(0, 6)}...</div>
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => { setMode('join'); setGameIdInput(inv.game_id); }} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-1.5 rounded text-xs font-bold transition-all shadow-lg shadow-blue-600/20">Войти</button>
+                                                    <button onClick={() => respondToGameInvite(inv.id, 'decline')} className="px-2 hover:bg-white/10 text-gray-500 rounded transition-colors"><X size={14} /></button>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                {myGames.some(mg => mg.game_id === game.game_id) ? (
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 3. Friend Lobbies */}
+                            {activeGames.filter(g => friends.some(f => f.id === g.host_id)).length > 0 && (
+                                <div className="glass-card p-4 border border-purple-500/30 bg-purple-500/5 animate-in fade-in slide-in-from-left-4">
+                                    <h3 className="text-xs font-bold text-purple-300 uppercase mb-3 flex items-center gap-2 tracking-wider">
+                                        <Play size={12} /> Игры друзей
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {activeGames.filter(g => friends.some(f => f.id === g.host_id)).map(game => (
+                                            <button key={game.game_id} onClick={() => { setMode('join'); setGameIdInput(game.game_id); }} className="w-full text-left bg-black/40 hover:bg-purple-500/10 p-2 rounded-lg border border-white/5 hover:border-purple-500/30 transition-all group shadow-md">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-[10px] border border-purple-500/30">👾</div>
+                                                    <span className="text-xs font-bold text-white group-hover:text-purple-300 transition-colors truncate">{game.host_name}</span>
+                                                </div>
+                                                <div className="flex justify-between items-end mt-1">
+                                                    <span className="text-[10px] text-gray-500">{game.map_type}</span>
+                                                    <span className="text-[10px] font-mono text-purple-400 bg-purple-500/10 px-1 rounded">{game.player_count}/{game.max_players}</span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 4. Friends List */}
+                            <div className="glass-card flex-1 p-4 min-h-[250px] flex flex-col border border-white/5">
+                                <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 tracking-widest flex justify-between items-center">
+                                    Онлайн
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${friends.filter(f => f.is_online).length > 0 ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-gray-500'}`}>{friends.filter(f => f.is_online).length}</span>
+                                </h3>
+
+                                {friends.length === 0 ? (
+                                    <div className="flex-1 flex flex-col items-center justify-center text-center p-4 opacity-50 space-y-2">
+                                        <Users size={24} className="mb-1 opacity-50" />
+                                        <p className="text-[10px] uppercase tracking-widest">Список пуст</p>
+                                        <button onClick={() => setMode('additional')} className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors">Добавить друга</button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1 overflow-y-auto pr-1 flex-1 custom-scrollbar">
+                                        {friends.sort((a, b) => (b.is_online ? 1 : 0) - (a.is_online ? 1 : 0)).map(f => (
+                                            <div key={f.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg group transition-colors cursor-pointer">
+                                                <div className="relative">
+                                                    <div className="w-8 h-8 rounded-full bg-[#1a1a2e] border border-white/10 overflow-hidden flex items-center justify-center shadow-lg">
+                                                        {f.avatar_url && f.avatar_url.length > 2 ? <img src={f.avatar_url} className="w-full h-full object-cover" /> : <span className="text-xs">👤</span>}
+                                                    </div>
+                                                    <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0c0c14] transition-all ${f.is_online ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] scale-110' : 'bg-gray-600'}`} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-xs font-bold text-gray-200 truncate group-hover:text-white transition-colors">{f.name}</div>
+                                                    <div className="text-[10px] text-gray-500 truncate flex items-center gap-1">
+                                                        {f.is_online ? <span className="text-green-500/70 font-medium">В меню</span> : 'Оффлайн'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* RIGHT: Main Content */}
+                        <div className="flex-1 min-w-0 w-full">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <button onClick={() => setMode('create')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-purple-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="w-20 h-20 bg-purple-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(168,85,247,0.3)]">
+                                        <Plus size={40} className="text-purple-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-bold mb-2">Создать игру</h3>
+                                        <p className="text-sm text-gray-400">Начать новую партию</p>
+                                    </div>
+                                </button>
+
+                                <button onClick={() => setMode('additional')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-pink-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-pink-600/20 to-rose-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="w-20 h-20 bg-pink-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(236,72,153,0.3)]">
+                                        <Smile size={40} className="text-pink-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-bold mb-2">Дополнительно</h3>
+                                        <p className="text-sm text-gray-400">Друзья, Мини-игры, Вход</p>
+                                    </div>
+                                </button>
+                            </div>
+
+                            {/* Open Lobbies Panel (New Feature) */}
+                            <div className="glass-card p-6 mt-4">
+                                {/* My Active Games Section */}
+                                {myGames.length > 0 && (
+                                    <div className="mb-8 p-4 bg-purple-500/10 rounded-xl border border-purple-500/30">
+                                        <h3 className="text-xl font-bold flex items-center gap-2 mb-4 text-purple-300">
+                                            <Play size={20} /> Ваши активные игры
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {myGames.map(game => (
+                                                <div key={game.game_id} className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/50 p-4 rounded-xl flex justify-between items-center">
+                                                    <div>
+                                                        <div className="font-mono font-bold text-lg text-white">#{game.game_id.substring(0, 6)}</div>
+                                                        <div className="text-xs text-purple-200 mt-1">Ход: {game.turn} • {game.status}</div>
+                                                    </div>
                                                     <button
-                                                        onClick={() => {
-                                                            const mg = myGames.find(m => m.game_id === game.game_id);
-                                                            navigate(`/game/${mg.game_id}/${mg.player_id}`);
-                                                        }}
-                                                        className="btn-sm btn-purple opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        onClick={() => navigate(`/game/${game.game_id}/${game.player_id}`)}
+                                                        className="btn-sm btn-primary"
                                                     >
                                                         Продолжить
                                                     </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => { setMode('join'); setGameIdInput(game.game_id); }}
-                                                        className="btn-sm btn-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    >
-                                                        Войти
-                                                    </button>
-                                                )}
-                                            </div>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
+                                    </div>
+                                )}
+
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-xl font-bold flex items-center gap-2"><Globe size={20} className="text-blue-400" /> Открытые лобби</h3>
+                                    <button onClick={fetchActiveGames} className="p-2 hover:bg-white/10 rounded-full"><RefreshCw size={16} /></button>
                                 </div>
-                            )}
+
+                                {activeGames.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-500">Нет активных публичных игр. Создайте свою!</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {activeGames.map(game => (
+                                            <div key={game.game_id} className="bg-white/5 border border-white/10 p-4 rounded-xl hover:bg-white/10 transition-all flex justify-between items-center group relative overflow-hidden">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex-shrink-0 flex items-center justify-center relative">
+                                                        {game.host_avatar && (game.host_avatar.startsWith('http') || game.host_avatar.startsWith('/')) ? (
+                                                            <img src={game.host_avatar} className="w-full h-full object-cover" alt="Avatar" />
+                                                        ) : game.host_avatar ? (
+                                                            <span className="text-xl select-none">{game.host_avatar}</span>
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-white/20 text-xl select-none">👤</div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-mono font-bold text-lg text-purple-400 leading-tight">#{game.game_id.substring(0, 6)}</div>
+                                                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mb-1 truncate max-w-[120px]">
+                                                            Создатель: {game.host_name}
+                                                        </div>
+                                                        <div className="text-[10px] text-gray-500">{game.map_type} • {game.player_count}/{game.max_players}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    {myGames.some(mg => mg.game_id === game.game_id) ? (
+                                                        <button
+                                                            onClick={() => {
+                                                                const mg = myGames.find(m => m.game_id === game.game_id);
+                                                                navigate(`/game/${mg.game_id}/${mg.player_id}`);
+                                                            }}
+                                                            className="btn-sm btn-purple opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            Продолжить
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => { setMode('join'); setGameIdInput(game.game_id); }}
+                                                            className="btn-sm btn-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            Войти
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -820,15 +941,44 @@ const Lobby = () => {
                                 </div>
                             </button>
 
-                            {/* Your Status / Compliment Mini-Game */}
+                            {/* Friend Button Moved Here */}
+                            <button onClick={() => setMode('friends')} className="group relative h-64 glass-card bg-white/5 hover:bg-white/10 transition-all duration-300 rounded-2xl border border-white/10 hover:border-green-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                                {(friendRequests.length > 0 || gameInvites.length > 0) && (
+                                    <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-bounce shadow-lg shadow-red-500/50">
+                                        {friendRequests.length + gameInvites.length}
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="w-20 h-20 bg-green-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+                                    <Users size={40} className="text-green-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-bold mb-2">Друзья</h3>
+                                    <p className="text-sm text-gray-400">Управление друзьями</p>
+                                </div>
+                            </button>
+
+                            {/* Join Button Moved Here */}
+                            <button onClick={() => setMode('join')} className="group relative h-64 glass-card bg-white/5 hover:bg-white/10 transition-all duration-300 rounded-2xl border border-white/10 hover:border-blue-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-cyan-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="w-20 h-20 bg-blue-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+                                    <LogIn size={40} className="text-blue-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-bold mb-2">Присоединиться</h3>
+                                    <p className="text-sm text-gray-400">Войти по коду лобби</p>
+                                </div>
+                            </button>
+
+                            {/* Anecdote Button */}
                             <button onClick={() => setShowWhoAmI(true)} className="group relative h-64 glass-card bg-white/5 hover:bg-white/10 transition-all duration-300 rounded-2xl border border-white/10 hover:border-indigo-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
                                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <div className="w-20 h-20 bg-indigo-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(99,102,241,0.3)]">
                                     <span className="text-4xl filter drop-shadow-lg">🔮</span>
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-bold mb-2">Статус дня</h3>
-                                    <p className="text-sm text-gray-400">Получи предсказание или комплимент</p>
+                                    <h3 className="text-2xl font-bold mb-2">Анекдот</h3>
+                                    <p className="text-sm text-gray-400">Случайная мудрость</p>
                                 </div>
                             </button>
 

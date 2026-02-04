@@ -1334,18 +1334,7 @@ const GameRoom = () => {
 
                 {/* Sidebar Footer - Bottom Actions */}
                 <div className="p-3 border-t border-white/10 bg-[#0c0c14]">
-                    <button
-                        onClick={toggleFullScreen}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${sidebarCollapsed ? 'justify-center' : 'pl-4'} bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-gray-400 hover:text-white`}
-                        title={isFullScreen ? "Выйти из полноэкранного режима" : "Полный экран"}
-                    >
-                        {isFullScreen ? (
-                            <Minimize size={sidebarCollapsed ? 20 : 18} className="text-blue-400" />
-                        ) : (
-                            <Maximize size={sidebarCollapsed ? 20 : 18} className="text-blue-400" />
-                        )}
-                        {!sidebarCollapsed && <span className="text-xs font-bold uppercase tracking-wider">Полный экран</span>}
-                    </button>
+                    {/* Full screen button moved to fixed position */}
                 </div>
             </motion.div >
 

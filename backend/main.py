@@ -5,6 +5,7 @@ Uses PostgreSQL for persistent storage.
 """
 import os
 import asyncio
+import random
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -614,6 +615,29 @@ async def _check_and_run_bot_turn(game_id: str):
     if not game or game.game_status != "active":
         return
     
+    
+    # 1. Check Auction Turn
+    if game.turn_state.get("auction_active"):
+        eligible = game.turn_state.get("auction_eligible_players", [])
+        idx = game.turn_state.get("auction_current_player_index", 0)
+        
+        if eligible and idx < len(eligible):
+            current_id = eligible[idx]
+            player = game.players.get(current_id)
+            
+            if player and player.is_bot:
+                print(f"DEBUG: Running bot AUCTION turn for {player.name}")
+                await asyncio.sleep(1.0 + random.random()) # Delay for realism
+                
+                result = engine.run_bot_auction_decision(game_id, current_id)
+                if result:
+                    msg_type = "AUCTION_RESOLVED" if "winner" in result else "AUCTION_UPDATED"
+                    await manager.broadcast(game_id, {"type": msg_type, **result})
+                    
+                    # Recursively check next (if auction still active or just ended and next is bot)
+                    await _check_and_run_bot_turn(game_id)
+        return
+
     current_id = game.player_order[game.current_turn_index]
     player = game.players.get(current_id)
     

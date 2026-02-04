@@ -2752,6 +2752,36 @@ class GameEngine:
             **roll_result
         }
     
+    def run_bot_auction_decision(self, game_id: str, player_id: str) -> Optional[Dict[str, Any]]:
+        """Make a decision for a bot in an auction."""
+        game = self.games.get(game_id)
+        if not game or not game.turn_state.get("auction_active"):
+            return None
+        
+        player = game.players.get(player_id)
+        if not player or not player.is_bot:
+            return None
+
+        # Logic
+        current_bid = game.turn_state.get("auction_current_bid", 0)
+        new_bid = current_bid + 10
+        
+        should_raise = False
+        
+        # User requested: "bots let with 30% probability raise if they have money"
+        if player.money >= new_bid:
+             if random.random() < 0.3:
+                 should_raise = True
+             
+             # Also, if bot is the ONLY one left besides decliner? No, logic handles multiple.
+             # If price is super cheap (< 20% of value), maybe always raise?
+             # But sticking to user request: "30% probability".
+        
+        if should_raise:
+            return self.raise_bid(game_id, player_id)
+        else:
+            return self.pass_auction(game_id, player_id)
+
     def bot_resolve_debt(self, game_id: str, player: Player, amount: int) -> bool:
         """Bot logic to raise funds for debt."""
         game = self.games.get(game_id)
