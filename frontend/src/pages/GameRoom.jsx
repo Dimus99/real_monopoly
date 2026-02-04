@@ -253,18 +253,25 @@ const GameRoom = () => {
 
     // Automatic turn ending
     useEffect(() => {
-        if (!isMyTurn || !hasRolled || diceRolling || showDice || showBuyModal || rentDetails || chanceCard || showCasinoModal || targetingAbility || showTradeModal || !!selectedTile || gameState?.turn_state?.auction_active) {
+        // More robust check: check if the backend is waiting for a buy decision or payment
+        const isWaitingForDecision = gameState?.turn_state?.awaiting_buy_decision || gameState?.turn_state?.awaiting_payment;
+
+        if (!isMyTurn || !hasRolled || diceRolling || showDice || showBuyModal || rentDetails || chanceCard || showCasinoModal || targetingAbility || showTradeModal || !!selectedTile || gameState?.turn_state?.auction_active || isWaitingForDecision) {
             return;
         }
 
         // If it's my turn and I've rolled and no mandatory actions are left, auto-end
         if (!isDoubles) {
+            // Increased delay to 5 seconds to prevent accidental skipping + check for potential actions
             const timer = setTimeout(() => {
-                handleEndTurn();
-            }, 3000); // 3 second delay for reading the board
+                // Double check we are not in a modal state that just appeared
+                if (!showBuyModal && !gameState?.turn_state?.awaiting_buy_decision) {
+                    handleEndTurn();
+                }
+            }, 5000);
             return () => clearTimeout(timer);
         }
-    }, [isMyTurn, hasRolled, diceRolling, showDice, showBuyModal, rentDetails, chanceCard, isDoubles, showCasinoModal, targetingAbility, showTradeModal, !!selectedTile]);
+    }, [isMyTurn, hasRolled, diceRolling, showDice, showBuyModal, rentDetails, chanceCard, isDoubles, showCasinoModal, targetingAbility, showTradeModal, !!selectedTile, gameState?.turn_state]);
 
     // Trade States End
 

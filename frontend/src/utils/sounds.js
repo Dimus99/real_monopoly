@@ -1,28 +1,30 @@
 
 const SOUND_URLS = {
-    roll: 'https://actions.google.com/sounds/v1/cartoon/swipe.ogg',
-    roll_start: 'https://actions.google.com/sounds/v1/cartoon/swipe.ogg',
-    turn_switch: 'https://actions.google.com/sounds/v1/cartoon/pop.ogg',
+    // MP3s for better compatibility (Safari/Mac)
+    roll: 'https://assets.mixkit.co/sfx/preview/mixkit-rpg-dice-throw-2652.mp3',
+    roll_start: 'https://assets.mixkit.co/sfx/preview/mixkit-dice-shake-2651.mp3', // Realistic shake
+    turn_switch: 'https://assets.mixkit.co/sfx/preview/mixkit-interface-click-1126.mp3',
 
-    dice_shake: 'https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg',
-    dice_land: 'https://actions.google.com/sounds/v1/foley/glasses_clinking.ogg',
+    dice_shake: 'https://assets.mixkit.co/sfx/preview/mixkit-dice-shake-2651.mp3',
+    dice_land: 'https://assets.mixkit.co/sfx/preview/mixkit-game-ball-tap-2073.mp3',
 
-    buy: 'https://actions.google.com/sounds/v1/cartoon/magic_chime.ogg',
-    yes: 'https://actions.google.com/sounds/v1/cartoon/magic_chime.ogg',
+    buy: 'https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3',
+    yes: 'https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3',
 
-    money: 'https://actions.google.com/sounds/v1/cartoon/cartoon_cowbell.ogg',
+    money: 'https://assets.mixkit.co/sfx/preview/mixkit-coins-handling-1939.mp3',
 
-    explosion: 'https://actions.google.com/sounds/v1/explosions/medium_explosion.ogg',
+    explosion: 'https://assets.mixkit.co/sfx/preview/mixkit-short-explosion-1694.mp3',
+    oreshnik: 'https://assets.mixkit.co/sfx/preview/mixkit-massive-explosion-1680.mp3', // BIG explosion
 
-    click: 'https://actions.google.com/sounds/v1/cartoon/pop.ogg',
+    click: 'https://assets.mixkit.co/sfx/preview/mixkit-ui-click-1135.mp3',
 
-    bankruptcy: 'https://actions.google.com/sounds/v1/cartoon/cartoon_whistle.ogg',
-    success: 'https://actions.google.com/sounds/v1/cartoon/magic_chime.ogg',
-    error: 'https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg',
-    jail: 'https://actions.google.com/sounds/v1/cartoon/comedy_trumpet_fail.ogg',
-    paper: 'https://actions.google.com/sounds/v1/office/paper_shuffle.ogg',
+    bankruptcy: 'https://assets.mixkit.co/sfx/preview/mixkit-cartoon-failure-piano-573.mp3',
+    success: 'https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3',
+    error: 'https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3',
+    jail: 'https://assets.mixkit.co/sfx/preview/mixkit-cartoon-toy-whistle-616.mp3',
+    paper: 'https://assets.mixkit.co/sfx/preview/mixkit-paper-slide-1530.mp3',
 
-    bgm: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_dcdc1b9d42.mp3?filename=lofi-hip-hop-114896.mp3',
+    bgm: 'https://assets.mixkit.co/music/preview/mixkit-driving-ambition-32.mp3',
 };
 
 class SoundManager {

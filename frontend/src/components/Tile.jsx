@@ -211,8 +211,8 @@ const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, isTargetable,
             )}
 
             {/* Tile Content */}
-            <div className={`flex-1 flex ${contentLayoutClass} items-center justify-center gap-1.5 relative h-full ${contentPaddingClass}`}>
-                {(specialIcon || groupStyle.icon) && (
+            <div className={`flex-1 flex ${contentLayoutClass} items-center justify-center gap-1.5 relative w-full h-full ${contentPaddingClass}`}>
+                {!(hasOwner && image) && (specialIcon || groupStyle.icon) && (
                     <div className={`${isCorner ? 'text-2xl md:text-3xl' : (isSideStation ? 'text-lg mr-1' : 'text-xl md:text-2xl')} drop-shadow-md`}>
                         {specialIcon || groupStyle.icon}
                     </div>
