@@ -1616,6 +1616,9 @@ class GameEngine:
         game.logs.append(f"{player.name} bought {prop.name} for ${prop.price}")
         self._reset_timer(game)
         
+        # Auto-end turn after purchase
+        self._maybe_end_turn(game)
+        
         return {
             "success": True,
             "player_id": player_id,

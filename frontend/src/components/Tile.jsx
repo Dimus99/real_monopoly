@@ -172,6 +172,18 @@ const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, isTargetable,
                     : 'inset 0 0 20px rgba(0,0,0,0.3)',
             }}
         >
+            {/* City Logo/Image (if available and owned) */}
+            {hasOwner && image && (
+                <div className="absolute inset-[1px] z-0 overflow-hidden pointer-events-none">
+                    <img
+                        src={image}
+                        alt={property.name}
+                        className="w-full h-full object-cover opacity-50 contrast-125 filter grayscale-[0.3] mix-blend-overlay transition-all duration-700 hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                </div>
+            )}
+
             {/* Owner Avatar Overlay */}
             {hasOwner && ownerInfo && !property.is_destroyed && (
                 <div className="absolute top-0.5 right-0.5 z-30 filter drop-shadow-md transform hover:scale-125 transition-transform">
@@ -201,17 +213,18 @@ const Tile = React.memo(({ property, onClick, isCurrentPlayerHere, isTargetable,
                     </div>
                 )}
 
-                <div className="flex flex-col items-center justify-center">
+                <div className="flex flex-col items-center justify-center z-10 w-full">
                     <div
-                        className="tile-name leading-tight text-center px-0.5"
+                        className={`tile-name leading-tight text-center px-0.5 transition-all duration-300 ${hasOwner ? 'font-serif tracking-wider' : ''}`}
                         style={{
                             color: hasOwner ? '#fff' : (isCorner ? groupStyle.textColor : '#e0e0e0'),
-                            fontSize: isCorner ? '14px' : (property.name.length > 12 ? '9px' : '11px'),
+                            fontSize: isCorner ? '14px' : (hasOwner ? (property.name.length > 10 ? '10px' : '12px') : (property.name.length > 12 ? '9px' : '11px')),
                             lineHeight: '1.0',
-                            fontWeight: '900',
-                            textShadow: hasOwner ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 2px rgba(0,0,0,0.5)',
+                            fontWeight: hasOwner ? '800' : '900',
+                            textShadow: hasOwner ? '0 2px 8px rgba(0,0,0,0.9)' : '0 1px 2px rgba(0,0,0,0.5)',
                             maxWidth: '100%',
-                            textTransform: 'uppercase'
+                            textTransform: 'uppercase',
+                            transform: hasOwner && !isCorner ? 'scale(1.1)' : 'none'
                         }}
                     >
                         {property.name}
