@@ -1,30 +1,30 @@
 
 const SOUND_URLS = {
-    // Switching to MyInstants MP3s for better browser compatibility (Safari/Mac)
-    roll: 'https://www.myinstants.com/media/sounds/dice-roll.mp3',
-    roll_start: 'https://www.myinstants.com/media/sounds/rattle-dice.mp3',
-    turn_switch: 'https://www.myinstants.com/media/sounds/notification.mp3',
+    // SoundJay and SoundHelix (Reliable MP3s, no screams, safe for work)
+    roll: 'https://www.soundjay.com/misc/sounds/dice-throw-1.mp3',
+    roll_start: 'https://www.soundjay.com/misc/sounds/dice-rattle-1.mp3',
+    turn_switch: 'https://www.soundjay.com/button/sounds/button-16.mp3', // Discrete click
 
-    dice_shake: 'https://www.myinstants.com/media/sounds/rattle-dice.mp3',
-    dice_land: 'https://www.myinstants.com/media/sounds/dice-hit-table.mp3', // Fallback
+    dice_shake: 'https://www.soundjay.com/misc/sounds/dice-rattle-1.mp3',
+    dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
 
-    buy: 'https://www.myinstants.com/media/sounds/ka-ching.mp3',
-    yes: 'https://www.myinstants.com/media/sounds/ka-ching.mp3',
+    buy: 'https://www.soundjay.com/button/sounds/button-09.mp3', // Nice ding
+    yes: 'https://www.soundjay.com/button/sounds/button-09.mp3',
 
-    money: 'https://www.myinstants.com/media/sounds/coins.mp3',
+    money: 'https://www.soundjay.com/misc/sounds/coins-in-hand-2.mp3',
 
-    explosion: 'https://www.myinstants.com/media/sounds/explosion.mp3',
-    oreshnik: 'https://www.myinstants.com/media/sounds/nuclear-explosion.mp3',
+    explosion: 'https://www.soundjay.com/mechanical/sounds/explosion-01.mp3',
+    oreshnik: 'https://www.soundjay.com/mechanical/sounds/explosion-02.mp3', // Louder boom
 
-    click: 'https://www.myinstants.com/media/sounds/click.mp3',
+    click: 'https://www.soundjay.com/button/sounds/button-30.mp3',
 
-    bankruptcy: 'https://www.myinstants.com/media/sounds/spongebob-fail.mp3',
-    success: 'https://www.myinstants.com/media/sounds/tada-fanfare-a.mp3',
-    error: 'https://www.myinstants.com/media/sounds/error.mp3',
-    jail: 'https://www.myinstants.com/media/sounds/jail-door-close.mp3',
-    paper: 'https://www.myinstants.com/media/sounds/paper-crunch.mp3',
+    bankruptcy: 'https://www.soundjay.com/misc/sounds/fail-buzzer-01.mp3',
+    success: 'https://www.soundjay.com/human/sounds/applause-01.mp3',
+    error: 'https://www.soundjay.com/button/sounds/button-10.mp3',
+    jail: 'https://www.soundjay.com/misc/sounds/jail-door-close-1.mp3',
+    paper: 'https://www.soundjay.com/nature/sounds/paper-hiss-1.mp3',
 
-    bgm: 'https://cdn.pixabay.com/audio/2022/01/18/audio_dcdc1b9d42.mp3', // Classic upbeat BGM
+    bgm: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // Stable MP3 stream
 };
 
 class SoundManager {
