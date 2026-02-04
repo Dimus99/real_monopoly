@@ -51,6 +51,7 @@ const GameRoom = () => {
 
     // Can buy only if on the tile (UI Logic)
     const canBuy = isMyTurn &&
+        gameState?.turn_state?.has_rolled &&
         currentTile &&
         !currentTile.owner_id &&
         currentTile.price > 0 &&

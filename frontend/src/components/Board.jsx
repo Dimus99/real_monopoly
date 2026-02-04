@@ -35,11 +35,11 @@ const getTileStyle = (index) => {
 
 // Tile images mapping
 const TILE_IMAGES = {
-    'Moscow': '/tiles/moscow.png',
-    'Washington': '/tiles/washington.png',
-    'Kyiv': '/tiles/kyiv.png',
-    'Beijing': '/tiles/beijing.png',
-    'Greenland': '/tiles/greenland.png'
+    'Москва': '/tiles/moscow.png',
+    'Вашингтон': '/tiles/washington.png',
+    'Киев': '/tiles/kyiv.png',
+    'Пекин': '/tiles/beijing.png',
+    'Гренландия': '/tiles/greenland.png'
 };
 
 // Get absolute pixel coordinates for a tile position
