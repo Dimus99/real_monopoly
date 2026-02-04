@@ -39,7 +39,18 @@ const TILE_IMAGES = {
     'Вашингтон': '/tiles/washington.png',
     'Киев': '/tiles/kyiv.png',
     'Пекин': '/tiles/beijing.png',
-    'Гренландия': '/tiles/greenland.png'
+    'Гренландия': '/tiles/greenland.png',
+    'Берлин': '/tiles/berlin.png',
+    'Иерусалим': '/tiles/jerusalem.png',
+    'Газпром': '/tiles/gazprom.png',
+    'Аэропорт Шереметьево': '/tiles/airport.png',
+    'Аэропорт Дасин': '/tiles/airport.png',
+    'Аэропорт Кеннеди': '/tiles/airport.png',
+    'Аэропорт Хитроу': '/tiles/airport.png',
+    'Киевский Вокзал': '/tiles/airport.png',
+    'Одесский Порт': '/tiles/airport.png',
+    'ГП Антонов': '/tiles/airport.png',
+    'Аэропорт Борисполь': '/tiles/airport.png'
 };
 
 // Get absolute pixel coordinates for a tile position

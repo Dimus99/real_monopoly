@@ -499,22 +499,20 @@ async def websocket_game(
                 else:
                     await manager.broadcast(game_id, {"type": "CASINO_RESULT", **result})
                     
-                    if result.get("eliminated"):
-                        # If player lost everything, end their turn (which moves to next player)
-                        # We use surrender logic or just end turn? 
-                        # Since they are bankrupt, end_turn should just move to next index.
-                        # Note: we should verify if game is over first in result.
-                        if result.get("game_over"):
-                             await manager.broadcast(game_id, {
-                                "type": "GAME_OVER",
-                                "game_state": result["game_state"]
-                            })
-                        else:
-                            # Force end turn to proceed
-                            end_result = engine.end_turn(game_id, player_id)
-                            if not end_result.get("error"):
-                                 await manager.broadcast(game_id, {"type": "TURN_ENDED", **end_result})
-                                 await _check_and_run_bot_turn(game_id)
+                    if result.get("game_over"):
+                         await manager.broadcast(game_id, {
+                            "type": "GAME_OVER",
+                            "game_state": result["game_state"]
+                        })
+                    else:
+                        # Turn is already advanced by engine._maybe_end_turn or _handle_bankruptcy
+                        # so we just need to notify users and check if NEXT player is bot
+                        await manager.broadcast(game_id, {
+                            "type": "TURN_ENDED", 
+                            "game_state": result["game_state"],
+                            "player_id": player_id
+                        })
+                        await _check_and_run_bot_turn(game_id)
             
             elif action == "SURRENDER":
                 result = engine.surrender_player(game_id, player_id)

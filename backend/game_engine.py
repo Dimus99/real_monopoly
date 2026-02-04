@@ -919,6 +919,11 @@ class GameEngine:
             player.money = max(0, player.money - cost)
             msg = f"🐎 {player.name} отказался ставить на тотализаторе. С горя выпил на $100." if is_totalizator else f"🎰 {player.name} отказался от игры в казино. Штраф $50."
             game.logs.append(msg)
+            
+            # Auto-end turn after skipping
+            if not player.is_bot:
+                self._maybe_end_turn(game)
+                
             return {
                 "player_id": player_id,
                 "action": "casino_result",
@@ -964,6 +969,11 @@ class GameEngine:
             player.money += prize
             icon = "🐎 ТОТАЛИЗАТОР" if is_totalizator else "🎰 КАЗИНО"
             game.logs.append(f"{icon}: {player.name} выиграл! Пришло число {roll}. Приз: ${prize}!")
+            
+            # Auto-end turn after winning
+            if not player.is_bot:
+                self._maybe_end_turn(game)
+                
             return {
                 "player_id": player_id,
                 "action": "casino_result",
@@ -976,6 +986,11 @@ class GameEngine:
             icon = "🐎 ТОТАЛИЗАТОР" if is_totalizator else "🎰 КАЗИНО"
             if is_totalizator:
                 game.logs.append(f"{icon}: {player.name} проиграл. Первой пришла №{roll}. Ставка ${bet_amount} утеряна.")
+                
+                # Auto-end turn after losing in totalizator
+                if not player.is_bot:
+                    self._maybe_end_turn(game)
+                    
                 return {
                     "player_id": player_id,
                     "action": "casino_result",
@@ -987,13 +1002,16 @@ class GameEngine:
             else:
                 game.logs.append(f"{icon}: {player.name} ПРОИГРАЛ ВСЁ! РЕВОЛЮЦИЯ! Выпало {roll}.")
                 # Handle Bankruptcy/Elimination for Casino
-                self._handle_bankruptcy(game, player, None, 0)
+                bankrupt_res = self._handle_bankruptcy(game, player, None, 0)
+                game_over = bankrupt_res.get("game_over", False)
+                
                 return {
                     "player_id": player_id,
                     "action": "casino_result",
                     "win": False,
                     "roll": roll,
                     "eliminated": True,
+                    "game_over": game_over,
                     "game_state": game.dict()
                 }
 
