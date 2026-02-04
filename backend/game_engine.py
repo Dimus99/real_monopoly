@@ -523,6 +523,7 @@ class GameEngine:
             game.turn_state["action"] = "can_buy"
             game.turn_state["price"] = result.get("price")
             game.turn_state["property_id"] = player.position
+            game.turn_state["awaiting_buy_decision"] = True
         elif result.get("action") == "pay_rent" or result.get("action") == "tax":
             game.turn_state["action"] = result.get("action")
             game.turn_state["awaiting_payment"] = True
@@ -533,6 +534,7 @@ class GameEngine:
             game.turn_state.pop("awaiting_payment", None)
             game.turn_state.pop("awaiting_payment_amount", None)
             game.turn_state.pop("awaiting_payment_owner", None)
+            game.turn_state.pop("awaiting_buy_decision", None)
             
             # Auto-End Turn for non-interactive actions
             interactive_actions = ["can_buy", "pay_rent", "tax", "casino_prompt"]

@@ -1,30 +1,30 @@
 
 const SOUND_URLS = {
-    // SoundJay and SoundHelix (Reliable MP3s, no screams, safe for work)
-    roll: 'https://www.soundjay.com/misc/sounds/dice-throw-1.mp3',
-    roll_start: 'https://www.soundjay.com/misc/sounds/dice-rattle-1.mp3',
-    turn_switch: 'https://www.soundjay.com/button/sounds/button-16.mp3', // Discrete click
+    // Google CodeSkulptor Assets (High Reliability, CORS-friendly, MP3/M4A/OGG)
+    roll: 'https://commondatastorage.googleapis.com/codeskulptor-assets/week7-bounce.m4a',
+    roll_start: 'https://commondatastorage.googleapis.com/codeskulptor-assets/week7-bounce.m4a',
+    turn_switch: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Pang/pop.mp3',
 
-    dice_shake: 'https://www.soundjay.com/misc/sounds/dice-rattle-1.mp3',
-    dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
+    dice_shake: 'https://commondatastorage.googleapis.com/codeskulptor-assets/week7-bounce.m4a',
+    dice_land: 'https://commondatastorage.googleapis.com/codeskulptor-assets/week7-bounce.m4a',
 
-    buy: 'https://www.soundjay.com/button/sounds/button-09.mp3', // Nice ding
-    yes: 'https://www.soundjay.com/button/sounds/button-09.mp3',
+    buy: 'https://commondatastorage.googleapis.com/codeskulptor-assets/week7-brrring.m4a',
+    yes: 'https://commondatastorage.googleapis.com/codeskulptor-assets/week7-brrring.m4a',
 
-    money: 'https://www.soundjay.com/misc/sounds/coins-in-hand-2.mp3',
+    money: 'https://commondatastorage.googleapis.com/codeskulptor-assets/week7-brrring.m4a',
 
-    explosion: 'https://www.soundjay.com/mechanical/sounds/explosion-01.mp3',
-    oreshnik: 'https://www.soundjay.com/mechanical/sounds/explosion-02.mp3', // Louder boom
+    explosion: 'https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/explosion.mp3',
+    oreshnik: 'https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/missile.mp3',
 
-    click: 'https://www.soundjay.com/button/sounds/button-30.mp3',
+    click: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Pang/pop.mp3',
 
-    bankruptcy: 'https://www.soundjay.com/misc/sounds/fail-buzzer-01.mp3',
-    success: 'https://www.soundjay.com/human/sounds/applause-01.mp3',
-    error: 'https://www.soundjay.com/button/sounds/button-10.mp3',
-    jail: 'https://www.soundjay.com/misc/sounds/jail-door-close-1.mp3',
-    paper: 'https://www.soundjay.com/nature/sounds/paper-hiss-1.mp3',
+    bankruptcy: 'https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/explosion.mp3',
+    success: 'https://commondatastorage.googleapis.com/codeskulptor-assets/week7-brrring.m4a',
+    error: 'https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/explosion.mp3',
+    jail: 'https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/thrust.mp3',
+    paper: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Pang/pop.mp3',
 
-    bgm: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // Stable MP3 stream
+    bgm: 'https://commondatastorage.googleapis.com/codeskulptor-demos/riceracer_assets/music/race2.ogg',
 };
 
 class SoundManager {

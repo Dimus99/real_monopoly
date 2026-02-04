@@ -632,6 +632,7 @@ async def _check_and_run_bot_turn(game_id: str):
             current_id = eligible[idx]
             player = game.players.get(current_id)
             
+            # Additional check: verify it really IS a bot
             if player and player.is_bot:
                 print(f"DEBUG: Running bot AUCTION turn for {player.name}")
                 await asyncio.sleep(1.0 + random.random()) # Delay for realism
@@ -645,12 +646,15 @@ async def _check_and_run_bot_turn(game_id: str):
                     await _check_and_run_bot_turn(game_id)
         return
 
+    # 2. Check Standard Turn
     current_id = game.player_order[game.current_turn_index]
     player = game.players.get(current_id)
     
+    # DEBUG LOG
     if player:
-        print(f"DEBUG: Checking turn: {player.name} (Bot: {player.is_bot})")
+         pass # print(f"DEBUG: Checking turn: {player.name} (Bot: {player.is_bot})")
     
+    # CRITICAL FIX: Ensure we only run if it is explicitly a BOT
     if player and player.is_bot:
         print(f"DEBUG: Running bot turn for {player.name}")
         # Wait a bit for realism - increased pause
