@@ -83,6 +83,19 @@ const GameRoom = () => {
     const [boardScale, setBoardScale] = useState(1);
     const [isFullScreen, setIsFullScreen] = useState(false);
 
+    // Modal & Action States (Moved up to fix TDZ errors)
+    const [targetingAbility, setTargetingAbility] = useState(null);
+    const [showRentModal, setShowRentModal] = useState(false);
+    const [rentDetails, setRentDetails] = useState(null);
+    const [showBuyModal, setShowBuyModal] = useState(false);
+    const [showChanceModal, setShowChanceModal] = useState(false);
+    const [showCasinoModal, setShowCasinoModal] = useState(false);
+    const [chanceData, setChanceData] = useState(null);
+    const [showAuctionModal, setShowAuctionModal] = useState(false);
+    const [auctionTimeLeft, setAuctionTimeLeft] = useState(30);
+    const [timeLeft, setTimeLeft] = useState(90);
+    const [lastRollTime, setLastRollTime] = useState(0);
+
     useEffect(() => {
         const handleResize = () => {
             const mobile = window.innerWidth < 768;
@@ -238,6 +251,29 @@ const GameRoom = () => {
 
     // Trade States End
 
+    // --- Handlers (Moved up to avoid TDZ) ---
+    const handleEndTurn = () => {
+        if (!isMyTurn) return;
+        sendAction('END_TURN');
+    };
+
+    const handleSendMessage = (text) => {
+        if (text.trim()) sendAction('CHAT', { message: text });
+    };
+
+    const handleAbility = (abilityType) => {
+        if (!isMyTurn || !currentPlayer) return;
+        if ((abilityType === 'WHO_AM_I' || abilityType === 'SHOW_OFF') && showWhoAmI) {
+            setShowWhoAmI(false);
+            return;
+        }
+        if (['ORESHNIK', 'BUYOUT', 'ISOLATION', 'SANCTIONS', 'TELEPORT', 'SEPTEMBER_11', 'CONSTRUCTION'].includes(abilityType)) {
+            setTargetingAbility(abilityType);
+        } else {
+            sendAction('USE_ABILITY', { ability_type: abilityType });
+        }
+    };
+
     // Keep delayedPlayers synced when not animating a move
     useEffect(() => {
         // Prevent auto-sync if we are in the middle of a dice roll sequence (controlled by timeouts)
@@ -249,7 +285,6 @@ const GameRoom = () => {
     }, [gameState?.players, isRolling, diceRolling, lastAction?.type]);
 
     // Targeting State
-    const [targetingAbility, setTargetingAbility] = useState(null);
 
     const handleCloseOreshnik = React.useCallback(() => setShowOreshnik(false), []);
     const handleCloseSeptember11 = React.useCallback(() => setShowSeptember11(false), []);
@@ -315,8 +350,6 @@ const GameRoom = () => {
     };
 
     // Rent State
-    const [showRentModal, setShowRentModal] = useState(false);
-    const [rentDetails, setRentDetails] = useState(null);
 
     const handlePayRent = React.useCallback(() => {
         if (!isMyTurn || !rentDetails) return;
@@ -349,12 +382,6 @@ const GameRoom = () => {
         });
     };
 
-    const handleEndTurn = () => {
-        if (!isMyTurn) return;
-        sendAction('END_TURN');
-        // Do NOT setHasRolled(false) here. Wait for backend confirmation.
-    };
-
     const handleSync = () => {
         console.log("Manual Sync Triggered");
         sendAction('SYNC');
@@ -365,26 +392,8 @@ const GameRoom = () => {
         setHasRolled(!!gameState?.turn_state?.has_rolled);
     };
 
-    const handleAbility = (abilityType) => {
-        if (!isMyTurn || !currentPlayer) return;
-
-        // Toggle logic for local visual abilities (WhoAmI)
-        // If already showing, close it and do NOT send action (or maybe the action itself toggles?)
-        // Assuming "Who Am I" ability creates a local state overlay.
-        if ((abilityType === 'WHO_AM_I' || abilityType === 'SHOW_OFF') && showWhoAmI) {
-            setShowWhoAmI(false);
-            return;
-        }
-
-        if (['ORESHNIK', 'BUYOUT', 'ISOLATION', 'SANCTIONS', 'TELEPORT', 'SEPTEMBER_11', 'CONSTRUCTION'].includes(abilityType)) {
-            setTargetingAbility(abilityType);
-        } else {
-            sendAction('USE_ABILITY', { ability_type: abilityType });
-        }
-    };
 
     // Timer
-    const [timeLeft, setTimeLeft] = useState(90);
     useEffect(() => {
         if (!gameState?.turn_expiry) return;
         const updateTimer = () => {
@@ -434,7 +443,6 @@ const GameRoom = () => {
         }
     }, [gameState?.turn_state?.auction_active, gameState?.turn_state?.auction_turn_start_time, gameState?.turn_state?.auction_eligible_players, gameState?.turn_state?.auction_current_player_index, playerId]);
 
-    const [lastRollTime, setLastRollTime] = useState(0);
 
     const handleRoll = () => {
         if (!isMyTurn || isRolling) return;
@@ -460,9 +468,6 @@ const GameRoom = () => {
         }
     }, [isRolling, lastRollTime]);
 
-    const handleSendMessage = (text) => {
-        if (text.trim()) sendAction('CHAT', { message: text });
-    };
 
     const initiateTrade = (targetPlayer) => {
         setTradeTarget(targetPlayer);
@@ -649,14 +654,8 @@ const GameRoom = () => {
     };
 
     // Modals state
-    const [showBuyModal, setShowBuyModal] = useState(false);
-    const [showChanceModal, setShowChanceModal] = useState(false);
-    const [showCasinoModal, setShowCasinoModal] = useState(false);
-    const [chanceData, setChanceData] = useState(null);
 
     // Auction state
-    const [showAuctionModal, setShowAuctionModal] = useState(false);
-    const [auctionTimeLeft, setAuctionTimeLeft] = useState(30);
 
     // Track processed actions to prevent loops/re-triggers
     const lastProcessedActionRef = useRef(null);
