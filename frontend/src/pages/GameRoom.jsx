@@ -97,24 +97,19 @@ const GameRoom = () => {
 
     // Board Scaling Effect (Desktop)
     useEffect(() => {
+        soundManager.init();
         const handleScale = () => {
             const h = window.innerHeight;
             const w = window.innerWidth;
             const sidebarWidth = sidebarCollapsed ? 80 : 320;
             const availableWidth = w - (isMobile ? 0 : sidebarWidth);
-            const availableHeight = h - 60; // Padding for header/footer
-
-            // We want the board to be as large as possible but fit both
-            const size = Math.min(availableWidth, availableHeight) - 40;
-
-            // Set scale based on the 850px base size in the style object
-            // or just use 1 if we are handling size in style
+            const availableHeight = h - 60;
             setBoardScale(1);
         };
         window.addEventListener('resize', handleScale);
         handleScale();
         return () => window.removeEventListener('resize', handleScale);
-    }, []);
+    }, [sidebarCollapsed, isMobile]);
 
     // Full Screen Sync Effect
     useEffect(() => {
@@ -135,7 +130,7 @@ const GameRoom = () => {
     const [showDice, setShowDice] = useState(false);
     const [diceRolling, setDiceRolling] = useState(false);
     const [hasRolled, setHasRolled] = useState(false);
-    const [isDoubles, setIsDoubles] = useState(false); // Robust doubles tracking
+    const [isDoubles, setIsDoubles] = useState(false);
     const [chanceCard, setChanceCard] = useState(null);
     const [rollingPlayerId, setRollingPlayerId] = useState(null);
 
@@ -209,7 +204,37 @@ const GameRoom = () => {
     // Trade States
     const [showTradeModal, setShowTradeModal] = useState(false);
     const [tradeTarget, setTradeTarget] = useState(null);
-    const [incomingTrade, setIncomingTrade] = useState(null);
+    // Bankruptcy States
+    const [bankruptPlayer, setBankruptPlayer] = useState(null);
+    const prevPlayersRef = useRef({});
+
+    useEffect(() => {
+        if (gameState?.players) {
+            Object.values(gameState.players).forEach(p => {
+                const prevP = prevPlayersRef.current[p.id];
+                if (p.is_bankrupt && prevP && !prevP.is_bankrupt) {
+                    setBankruptPlayer(p);
+                    soundManager.play('bankruptcy', 0.8);
+                }
+            });
+            prevPlayersRef.current = gameState.players;
+        }
+    }, [gameState?.players]);
+
+    // Automatic turn ending
+    useEffect(() => {
+        if (!isMyTurn || !hasRolled || diceRolling || showDice || showBuyModal || rentDetails || chanceCard || showCasinoModal || targetingAbility || showTradeModal || !!selectedTile || gameState?.turn_state?.auction_active) {
+            return;
+        }
+
+        // If it's my turn and I've rolled and no mandatory actions are left, auto-end
+        if (!isDoubles) {
+            const timer = setTimeout(() => {
+                handleEndTurn();
+            }, 3000); // 3 second delay for reading the board
+            return () => clearTimeout(timer);
+        }
+    }, [isMyTurn, hasRolled, diceRolling, showDice, showBuyModal, rentDetails, chanceCard, isDoubles, showCasinoModal, targetingAbility, showTradeModal, !!selectedTile]);
 
     // Trade States End
 
@@ -415,6 +440,7 @@ const GameRoom = () => {
         if (!isMyTurn || isRolling) return;
         setIsRolling(true);
         setLastRollTime(Date.now());
+        soundManager.play('roll');
         sendAction('ROLL');
     };
 
@@ -754,6 +780,7 @@ const GameRoom = () => {
                 break;
 
             case 'PROPERTY_BOUGHT':
+                soundManager.play('money');
                 if (lastAction.player_id === playerId) {
                     setShowBuyModal(false);
                 }
@@ -772,6 +799,7 @@ const GameRoom = () => {
             case 'TURN_ENDED':
             case 'TURN_SKIPPED':
             case 'PLAYER_DISQUALIFIED':
+                soundManager.play('click', 0.2);
                 if (lastAction.player_id === playerId) {
                     setHasRolled(false);
                     setDiceRolling(false);
@@ -818,9 +846,11 @@ const GameRoom = () => {
                     if (lastAction.skipped) {
                         // Just quiet close
                     } else if (lastAction.win) {
+                        soundManager.play('success');
                         // Small delay to allow modal to close before alert
                         setTimeout(() => alert(`💰 КАЗИНО: Вы выиграли $${lastAction.amount}!`), 100);
                     } else {
+                        soundManager.play('error');
                         setTimeout(() => alert(`🔥 КАЗИНО: Вы проиграли! В стране произошла РЕВОЛЮЦИЯ.`), 100);
                     }
                 } else {
@@ -835,6 +865,35 @@ const GameRoom = () => {
                         setSelectedTile(board[targetPos]);
                     }
                 }
+                break;
+            case 'ORESHNIK':
+                setShowOreshnik(true);
+                break;
+            case 'SEPTEMBER_11':
+                setShowSeptember11(true);
+                break;
+            case 'BUYOUT':
+                setAbilityTargetName(lastAction.target_name || '');
+                setShowBuyout(true);
+                break;
+            case 'AID':
+                setAbilityAmount(lastAction.amount_collected || 0);
+                setShowAid(true);
+                soundManager.play('money');
+                break;
+            case 'NUKE_THREAT':
+                setShowNuke(true);
+                break;
+            case 'SANCTIONS':
+                setAbilityTargetName(lastAction.target_name || '');
+                setShowSanctions(true);
+                break;
+            case 'BELT_ROAD':
+                setAbilityBonus(lastAction.total_bonus || 0);
+                setShowBeltRoad(true);
+                break;
+            case 'ISOLATION':
+                // Could add a small toast or sound for isolation if no specific full-screen animation exists
                 break;
         }
     }, [lastAction]); // STRICT DEPENDENCY: Only lastAction. NO diceValues.
@@ -1355,8 +1414,8 @@ const GameRoom = () => {
                     })}
                 </div>
 
-                {/* Sidebar Footer - Bottom Actions */}
-                <div className="p-3 border-t border-white/10 bg-[#0c0c14] flex justify-center">
+                {/* Fullscreen Button - Moved here */}
+                <div className="px-3 py-2 border-t border-white/5">
                     <button
                         onClick={toggleFullScreen}
                         className="w-full py-2 flex items-center justify-center gap-2 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 transition-all hover:scale-[1.02]"
@@ -1366,11 +1425,15 @@ const GameRoom = () => {
                         {!sidebarCollapsed && <span className="text-xs font-bold uppercase tracking-widest">{isFullScreen ? 'Свернуть' : 'На весь экран'}</span>}
                     </button>
                 </div>
+
+                {/* Sidebar Footer - Empty or Bottom padding */}
+                <div className="p-1 pb-3">
+                </div>
             </motion.div >
 
             {/* MAIN BOARD AREA */}
             {/* MAIN BOARD AREA */}
-            < div className={`flex-1 relative bg-[#0c0c14] flex items-start justify-start overflow-auto custom-scrollbar p-0 pl-2 md:pl-4 pt-4 pb-20`}>
+            < div className={`flex-1 relative bg-[#0c0c14] flex items-start justify-start overflow-hidden p-0 pb-20`}>
                 {/* Background */}
                 < div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
 
@@ -1412,7 +1475,10 @@ const GameRoom = () => {
                     {/* Chat relative to Board Center (Bottom) */}
                     <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 w-full max-w-[400px] z-[200] pointer-events-none">
                         <div className="pointer-events-auto">
-                            <ToastNotification logs={displayedLogs} onSendMessage={handleSendMessage} />
+                            <ToastNotification logs={displayedLogs} onSendMessage={(msg) => {
+                                handleSendMessage(msg);
+                                soundManager.play('click', 0.3);
+                            }} />
                         </div>
                     </div>
 
@@ -1530,6 +1596,11 @@ const GameRoom = () => {
                 <NukeThreatAnimation isVisible={showNuke} onComplete={handleCloseNuke} />
                 <SanctionsAnimation isVisible={showSanctions} onComplete={handleCloseSanctions} />
                 <BeltRoadAnimation isVisible={showBeltRoad} onComplete={handleCloseBeltRoad} bonus={abilityBonus} />
+                <BankruptcyAnimation
+                    isVisible={!!bankruptPlayer}
+                    playerName={bankruptPlayer?.name || ''}
+                    onComplete={() => setBankruptPlayer(null)}
+                />
             </div>
 
 

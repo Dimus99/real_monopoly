@@ -62,12 +62,14 @@ const PropertyDetailView = ({ property, players, tiles, canBuy, onBuy, onClose, 
     const isPropertyType = !['Special', 'Chance', 'Tax', 'Jail', 'GoToJail', 'FreeParking', 'Negotiations', 'RaiseTax'].includes(property.group);
     const housePrice = Math.floor(property.price / 2) + 50;
 
+    const isNarrow = property.group === 'Negotiations' || property.group === 'RaiseTax' || property.name === 'Дели' || property.group === 'Tax';
+
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="w-[320px] md:w-[350px] max-h-[90vh] bg-[#1a1b26] rounded-[32px] overflow-hidden flex flex-col relative shadow-[0_30px_90px_rgba(0,0,0,0.8)] border border-white/10"
+            className={`${isNarrow ? 'w-[280px] md:w-[300px]' : 'w-[320px] md:w-[350px]'} max-h-[90vh] bg-[#1a1b26] rounded-[32px] overflow-hidden flex flex-col relative shadow-[0_30px_90px_rgba(0,0,0,0.8)] border border-white/10`}
         >
             {/* Close Button */}
             <button

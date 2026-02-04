@@ -252,7 +252,7 @@ const ActionPanel = ({
                     )}
                 </AnimatePresence>
 
-                {/* 5. End Turn Button */}
+                {/* 5. End Turn Button - Removed per user request */}
 
             </motion.div>
         </div>

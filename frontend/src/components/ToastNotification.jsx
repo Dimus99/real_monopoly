@@ -88,8 +88,39 @@ const ToastNotification = ({ logs, onSendMessage }) => {
                             <div ref={chatEndRef} />
                         </div>
 
+                        {/* Emojis Bar (Satirical Mix) */}
+                        <div className="flex items-center gap-1.5 px-1 py-1 overflow-x-auto custom-scrollbar no-scrollbar scrollbar-hide shrink-0 mt-1">
+                            {[
+                                { e: '🤡', t: 'Клоун' },
+                                { e: '🤑', t: 'Олигарх' },
+                                { e: '🗿', t: 'База' },
+                                { e: '☢️', t: 'Орешник' },
+                                { e: '💸', t: 'Откат' },
+                                { e: '🤡', t: 'Клоун' },
+                                { e: '💩', t: 'Оппозиция' },
+                                { e: '🍿', t: 'Наблюдаю' },
+                                { e: '🎪', t: 'Цирк' },
+                                { e: '💣', t: 'Бум' },
+                                { e: '🥂', t: 'За победу' },
+                                { e: '📉', t: 'Дефолт' },
+                                { e: '🚀', t: 'Взлетаем' },
+                                { e: '👮', t: 'ФСБ' },
+                                { e: '🕊️', t: 'Мирные переговоры' }
+                            ].map((item, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => setInputValue(prev => prev + item.e)}
+                                    className="text-lg hover:scale-125 transition-transform p-1 grayscale-[0.3] hover:grayscale-0"
+                                    title={item.t}
+                                >
+                                    {item.e}
+                                </button>
+                            ))}
+                        </div>
+
                         {/* Input Area */}
-                        <form onSubmit={handleSubmit} className="mt-2 pt-2 border-t border-white/10 flex gap-2 shrink-0">
+                        <form onSubmit={handleSubmit} className="mt-1 pt-2 border-t border-white/10 flex gap-2 shrink-0">
                             <input
                                 type="text"
                                 value={inputValue}
