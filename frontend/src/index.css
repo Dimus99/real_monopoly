@@ -51,12 +51,11 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg-dark);
   color: #fff;
-  overflow: hidden;
-  height: 100%;
+  overflow-x: hidden;
 }
 
 #root {
-  height: 100%;
+  max-width: 100%;
   margin: 0;
   padding: 0;
   text-align: left;
