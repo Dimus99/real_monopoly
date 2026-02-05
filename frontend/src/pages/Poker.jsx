@@ -12,6 +12,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
     const [buyInAmount, setBuyInAmount] = useState(1000);
     const [selectedSeat, setSelectedSeat] = useState(null);
     const [winnerAnim, setWinnerAnim] = useState(null);
+    const [tick, setTick] = useState(0);
     const [preAction, setPreAction] = useState(null); // 'CHECK', 'FOLD', or 'RAISE'
     const [isDealing, setIsDealing] = useState(false); // New: prevents action buttons before cards
     const [preActionAmount, setPreActionAmount] = useState(0);
@@ -770,9 +771,18 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 const Poker = () => {
     const navigate = useNavigate();
     const [tables, setTables] = useState([]);
-    const [currentTableId, setCurrentTableId] = useState(null);
+    const [currentTableId, setCurrentTableId] = useState(() => localStorage.getItem('active_poker_table'));
     const [isLoading, setIsLoading] = useState(false);
     const [userBalance, setUserBalance] = useState(0);
+
+    // Persist table selection across refreshes
+    useEffect(() => {
+        if (currentTableId) {
+            localStorage.setItem('active_poker_table', currentTableId);
+        } else {
+            localStorage.removeItem('active_poker_table');
+        }
+    }, [currentTableId]);
 
     const authFetch = async (url, method = 'GET') => {
         const token = localStorage.getItem('monopoly_token');
