@@ -53,6 +53,8 @@ class PokerPlayer:
         self.consecutive_timeouts = 0
         self.is_bot = False
         self.acted_street = False
+        self.total_wagered = 0
+        self.current_hand_strength = None # Cache for the frontend display
     
     def to_dict(self, show_hand=False):
         return {
@@ -68,7 +70,8 @@ class PokerPlayer:
             "is_sitting_out": self.is_sitting_out,
             "last_action": self.last_action,
             "consecutive_timeouts": self.consecutive_timeouts,
-            "is_bot": self.is_bot
+            "is_bot": self.is_bot,
+            "current_hand": self.current_hand_strength
         }
 
 class BotPlayer(PokerPlayer):
@@ -239,10 +242,12 @@ class PokerTable:
         for p in self.seats.values():
             p.hand = [self.deck.draw(), self.deck.draw()]
             p.current_bet = 0
+            p.total_wagered = 0
             p.is_folded = False
             p.is_all_in = False
             p.last_action = None
             p.acted_street = False
+            p.current_hand_strength = None
         
         sb_seat = active_seats[(dealer_idx + 1) % len(active_seats)]
         bb_seat = active_seats[(dealer_idx + 2) % len(active_seats)]
@@ -253,12 +258,16 @@ class PokerTable:
         sb_amt = min(sb_player.chips, self.small_blind)
         sb_player.chips -= sb_amt
         sb_player.current_bet = sb_amt
+        sb_player.total_wagered = sb_amt
         self.pot += sb_amt
+        if sb_player.chips == 0: sb_player.is_all_in = True
         
         bb_amt = min(bb_player.chips, self.big_blind)
         bb_player.chips -= bb_amt
         bb_player.current_bet = bb_amt
+        bb_player.total_wagered = bb_amt
         self.pot += bb_amt
+        if bb_player.chips == 0: bb_player.is_all_in = True
         
         self.current_bet = self.big_blind
         self.min_raise = self.big_blind
@@ -366,6 +375,7 @@ class PokerTable:
             
             player.chips -= call_amt
             player.current_bet += call_amt
+            player.total_wagered += call_amt
             self.pot += call_amt
             player.last_action = "CALL"
             if player.chips == 0:
@@ -382,16 +392,27 @@ class PokerTable:
             
         elif action == "RAISE":
             total_bet = amount
-            if total_bet < self.current_bet + self.min_raise and total_bet != player.chips + player.current_bet:
-                 return {"error": f"Minimum raise is to {self.current_bet + self.min_raise}"}
+            # Validation: Min raise is current_bet + min_raise, unless all-in
+            min_valid_raise = self.current_bet + self.min_raise
+            
+            # Exception: User can go all-in for less than min_raise
+            if total_bet < min_valid_raise:
+                 if total_bet != player.chips + player.current_bet:
+                     return {"error": f"Minimum raise is to {min_valid_raise}"}
             
             needed = total_bet - player.current_bet
             if needed > player.chips:
                  return {"error": "Not enough chips"}
             
-            self.min_raise = total_bet - self.current_bet
+            # Logic for updating min_raise logic:
+            # If the raise is a full valid raise, update min_raise
+            current_raise_amt = total_bet - self.current_bet
+            if current_raise_amt >= self.min_raise:
+                 self.min_raise = current_raise_amt
+            
             player.chips -= needed
             player.current_bet = total_bet
+            player.total_wagered += needed
             self.pot += needed
             self.current_bet = total_bet
             player.last_action = f"RAISE {total_bet}"
@@ -506,81 +527,142 @@ class PokerTable:
 
     def end_hand(self, winner_by_fold=False):
         winners = []
-        winning_score = -1
+        winning_score = (-1,)
         winning_cards = []
         
+        overall_winners_ids = []
+        
         if winner_by_fold:
-            for p in self.seats.values():
-                if not p.is_folded:
-                    winners = [p]
-                    break
+            # Everyone folded except one
+            remaining = [p for p in self.seats.values() if not p.is_folded]
+            if remaining:
+                w = remaining[0]
+                w.chips += self.pot
+                self.add_log(f"{w.name} wins {self.pot} by fold!")
+                overall_winners_ids.append(w.user_id)
         else:
-            active = [p for p in self.seats.values() if not p.is_folded]
+            # Showdown with Side Pots Logic
+            active_players = [p for p in self.seats.values() if not p.is_folded]
+            all_players = list(self.seats.values())
             
-            best_rank = -1
-            best_score = -1
+            # Sort active players by total wagered to create side pots
+            # Filter out 0 wagered if any (shouldn't be if active)
+            active_players.sort(key=lambda p: p.total_wagered)
             
-            for p in active:
-                rank, score, best_cards = self.evaluate_hand(p.hand, self.community_cards)
-                if rank > best_rank:
-                    best_rank = rank
-                    best_score = score
-                    winners = [p]
-                    winning_cards = best_cards
-                elif rank == best_rank:
-                    if score > best_score:
-                        best_score = score
-                        winners = [p]
-                        winning_cards = best_cards
-                    elif score == best_score:
-                        winners.append(p)
-                        # In split pot, showing one set of winning cards is acceptable or show all intersection?
-                        # Usually show the first one's winning cards or both. We'll just show current.
-                        winning_cards = best_cards
-
-        share = self.pot // len(winners) if winners else 0
-        
-        hand_name = ""
-        if not winner_by_fold:
-             hand_ranks = {
-                0: "High Card", 1: "Pair", 2: "Two Pair", 3: "Three of a Kind",
-                4: "Straight", 5: "Flush", 6: "Full House", 7: "Four of a Kind", 8: "Straight Flush"
-            }
-             hand_name = f" with {hand_ranks.get(best_rank, 'Hand')}"
-
-        for w in winners:
-            w.chips += share
-            self.add_log(f"{w.name} wins {share}{hand_name}!")
-        
-        self.winners_ids = [w.user_id for w in winners]
+            pots = [] 
+            prev_limit = 0
+            
+            for p in active_players:
+                limit = p.total_wagered
+                if limit <= prev_limit:
+                    continue
+                
+                pot_amount = 0
+                for ap in all_players:
+                    contribution = max(0, min(ap.total_wagered, limit) - prev_limit)
+                    pot_amount += contribution
+                
+                if pot_amount > 0:
+                    eligible = [ap for ap in active_players if ap.total_wagered >= limit]
+                    pots.append({"amount": pot_amount, "eligible": eligible})
+                    
+                prev_limit = limit
+                
+            # Now resolve each side pot
+            for i, pot_obj in enumerate(pots):
+                amount = pot_obj["amount"]
+                eligible = pot_obj["eligible"]
+                
+                # Evaluate hands for eligible players
+                pot_winners = []
+                best_rank_val = -1
+                best_score_val = (-1,)
+                best_pot_cards = []
+                
+                for player in eligible:
+                    rank, score, best_hand = self.evaluate_hand(player.hand, self.community_cards)
+                    
+                    # Store strength for display
+                    player.current_hand_strength = {
+                        "rank": rank,
+                        "name": self.get_hand_name(rank),
+                        "best_cards": [c.to_dict() for c in best_hand],
+                        "uses_my_cards": any(c in best_hand for c in player.hand)
+                    }
+                    
+                    if rank > best_rank_val:
+                        best_rank_val = rank
+                        best_score_val = score
+                        pot_winners = [player]
+                        best_pot_cards = best_hand
+                    elif rank == best_rank_val:
+                        if score > best_score_val:
+                            best_score_val = score
+                            pot_winners = [player]
+                            best_pot_cards = best_hand
+                        elif score == best_score_val:
+                            pot_winners.append(player)
+                
+                # Distribute pot
+                if pot_winners:
+                    share = amount // len(pot_winners)
+                    remainder = amount % len(pot_winners)
+                    
+                    hand_name = self.get_hand_name(best_rank_val)
+                    
+                    for idx, w in enumerate(pot_winners):
+                        extra = 1 if idx < remainder else 0 # Simple remainder distribution
+                        win_amt = share + extra
+                        w.chips += win_amt
+                        if w.user_id not in overall_winners_ids:
+                             overall_winners_ids.append(w.user_id)
+                        
+                        # Only add main pot log
+                        # self.add_log(f"{w.name} wins {win_amt} from side pot {i+1} with {hand_name}!")
+                    
+                    pot_desc = "Main Pot" if i == len(pots)-1 else f"Side Pot {i+1}"
+                    names = ", ".join([w.name for w in pot_winners])
+                    self.add_log(f"{names} win {amount} ({pot_desc}) with {hand_name}")
+                    
+                    # Update global winning cards to the best hand of the LAST pot (Main Pot usually) for display
+                    if i == len(pots) - 1:
+                        winning_cards = best_pot_cards
+            
+        self.winners_ids = overall_winners_ids
         self.winning_cards = winning_cards
         
         self.state = "SHOWDOWN" # Ensure state is designated as finished/showdown
         
         self.turn_deadline = datetime.utcnow() + timedelta(seconds=10) # 10s to see results
 
-    def evaluate_hand(self, hole_cards: List[Card], community_cards: List[Card]) -> Tuple[int, int, List[Card]]:
-        # Returns (Rank, Score, BestCards)
-        # 0: High Card, 1: Pair, 2: Two Pair, 3: Trips, 4: Straight, 5: Flush, 6: FH, 7: Quads, 8: SF
+    def evaluate_hand(self, hole_cards: List[Card], community_cards: List[Card]) -> Tuple[int, Tuple, List[Card]]:
+        # Returns (RankCategory, ScoreTuple, BestCards)
+        # RankCategory: 0-8 (High Card to Straight Flush)
+        # ScoreTuple: Tuple for tie-breaking (e.g., (14, 13, 12, 11, 10))
         
         all_cards = hole_cards + community_cards
-        # This is a simplified evaluator. For a perfect one, we need to try all 5-card combinations.
-        # We will try all 5-card combos for accuracy.
         import itertools
         
         best_rank = -1
-        best_score = -1
+        best_score_tuple = (-1,)
         best_hand = []
         
+        # Performance note: 7 choose 5 is 21 combinations. Very fast.
         for combo in itertools.combinations(all_cards, 5):
             combo = list(combo)
-            rank, score = self._eval_5(combo)
-            if rank > best_rank or (rank == best_rank and score > best_score):
+            rank, score_tuple = self._eval_5(combo)
+            
+            # Tuple comparison handles tie-breaking automatically
+            if rank > best_rank:
                 best_rank = rank
-                best_score = score
+                best_score_tuple = score_tuple
                 best_hand = combo
+            elif rank == best_rank:
+                if score_tuple > best_score_tuple:
+                    best_score_tuple = score_tuple
+                    best_hand = combo
                 
-        return best_rank, best_score, best_hand
+        return best_rank, best_score_tuple, best_hand
 
     def get_hand_name(self, rank):
         hand_ranks = {
@@ -589,38 +671,57 @@ class PokerTable:
         }
         return hand_ranks.get(rank, "Unknown")
 
-    def _eval_5(self, cards: List[Card]) -> Tuple[int, int]:
+    def _eval_5(self, cards: List[Card]) -> Tuple[int, Tuple]:
+        # Returns (Category, TieBreakerTuple)
+        # Sort by rank descending
         ranks = sorted([c.value for c in cards], reverse=True)
         suits = [c.suit for c in cards]
         
         is_flush = len(set(suits)) == 1
         
+        # Ace is value 12 (in 0-12 scale). 2 is 0. 
+        # Check Straight
         unique_ranks = sorted(list(set(ranks)), reverse=True)
         is_straight = (len(unique_ranks) == 5) and (unique_ranks[0] - unique_ranks[-1] == 4)
-        # Wheel (A, 2, 3, 4, 5) -> A=12, 5=3, ... this logic needs A check
-        if not is_straight and len(unique_ranks) == 5:
-             if unique_ranks == [12, 3, 2, 1, 0]: # A, 5, 4, 3, 2
-                 is_straight = True
-                 ranks = [3, 2, 1, 0, -1] # treat A as low
         
+        # Wheel Check: A, 5, 4, 3, 2 -> [12, 3, 2, 1, 0]
+        # Converted to 5-high straight
+        if not is_straight and set(ranks) == {12, 3, 2, 1, 0}:
+            is_straight = True
+            ranks = [3, 2, 1, 0, -1] # Adjust ranks for score tuple so 5 is high
+
+        if is_straight and is_flush:
+            return 8, tuple(ranks)
+            
         counts = {}
         for r in ranks: counts[r] = counts.get(r, 0) + 1
         
-        start_counts = sorted(counts.values(), reverse=True)
+        # Sort counts to find pairs/trips
+        # group by count, then by rank
+        # Example Full House: {Rank: Count} -> (3, PairRank), (2, LowRank)
         
-        # Score calculation is simplified
-        score = sum([r * (10**i) for i, r in enumerate(reversed(ranks))]) # generic score
+        sorted_by_count = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=True)
+        # structure: [(rank, count), (rank, count)...]
         
-        if is_straight and is_flush: return 8, score
-        if 4 in start_counts: return 7, score
-        if 3 in start_counts and 2 in start_counts: return 6, score
-        if is_flush: return 5, score
-        if is_straight: return 4, score
-        if 3 in start_counts: return 3, score
-        if start_counts.count(2) == 2: return 2, score
-        if 2 in start_counts: return 1, score
+        pattern = tuple(count for rank, count in sorted_by_count)
+        tie_breakers = tuple(rank for rank, count in sorted_by_count)
         
-        return 0, score
+        if pattern == (4, 1):
+            return 7, tie_breakers # Quads: (QuadRank, Kicker)
+        if pattern == (3, 2):
+            return 6, tie_breakers # Full House: (TripsRank, PairRank)
+        if is_flush:
+            return 5, tuple(ranks) # Flush: (R1, R2, R3, R4, R5)
+        if is_straight:
+            return 4, tuple(ranks) # Straight: (HighRank) - Wheel handled above
+        if pattern == (3, 1, 1):
+            return 3, tie_breakers # Trips: (TripRank, K1, K2)
+        if pattern == (2, 2, 1):
+            return 2, tie_breakers # Two Pair: (HighPair, LowPair, Kicker)
+        if pattern == (2, 1, 1, 1):
+            return 1, tie_breakers # Pair: (PairRank, K1, K2, K3)
+        
+        return 0, tuple(ranks)
         
     def add_log(self, msg):
         self.logs.append({"time": datetime.utcnow().isoformat() + "Z", "msg": msg})
@@ -653,10 +754,14 @@ class PokerTable:
                 # Add current hand evaluation for the player themselves
                 if p.hand and len(p.hand) == 2:
                     rank, score, best_hand = self.evaluate_hand(p.hand, self.community_cards)
+                    
+                    uses_my_cards = any(c in best_hand for c in p.hand)
+                    
                     p_dict["current_hand"] = {
                         "rank": rank,
                         "name": self.get_hand_name(rank),
-                        "cards": [c.to_dict() for c in best_hand]
+                        "best_cards": [c.to_dict() for c in best_hand],
+                        "uses_my_cards": uses_my_cards
                     }
                 base["seats"][seat] = p_dict
                 base["me"] = p_dict
