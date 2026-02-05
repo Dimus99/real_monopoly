@@ -40,10 +40,12 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const myPlayer = mySeatEntry ? mySeatEntry[1] : (gameState?.me || null);
 
     const minRaiseAmount = React.useMemo(() => {
-        if (!gameState) return 0;
-        const minLegal = Math.max(gameState.big_blind, (gameState.current_bet || 0) + (gameState.min_raise || gameState.big_blind));
-        return minLegal;
-    }, [gameState?.current_bet, gameState?.min_raise, gameState?.big_blind]);
+        if (!gameState || !gameState.limits) return 0;
+        const bb = gameState.limits.bb || 0;
+        const currentBet = gameState.current_bet || 0;
+        const minIncrement = gameState.min_raise || bb;
+        return currentBet + minIncrement;
+    }, [gameState?.current_bet, gameState?.min_raise, gameState?.limits?.bb]);
 
     // --- Handlers ---
     const sendAction = (action, data = {}) => {
@@ -782,8 +784,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                     <div className="flex flex-wrap gap-1 justify-end max-w-[220px] mb-1">
                                         {[
                                             { l: 'Min', val: minRaiseAmount },
-                                            { l: '2 BB', val: gameState.big_blind * 2 },
-                                            { l: '3 BB', val: gameState.big_blind * 3 },
+                                            { l: '2 BB', val: (gameState.limits?.bb || 0) * 2 },
+                                            { l: '3 BB', val: (gameState.limits?.bb || 0) * 3 },
                                             { l: 'Pot', val: (gameState.current_bet || 0) + (gameState.pot || 0) },
                                             { l: 'Max', val: (myPlayer?.chips || 0) + (myPlayer?.current_bet || 0) }
                                         ].map((btn, idx) => (
@@ -808,20 +810,23 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                         ))}
                                     </div>
                                     <div className="flex items-center gap-1 bg-black/50 p-1.5 rounded-xl border border-white/20 shadow-inner">
-                                        <button onClick={() => setBetAmount(prev => Math.max(minRaiseAmount, prev - gameState.big_blind))} className="w-7 h-7 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm shadow-md">-</button>
+                                        <button onClick={() => setBetAmount(prev => Math.max(minRaiseAmount, (prev || minRaiseAmount) - (gameState.limits?.bb || 10)))} className="w-7 h-7 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm shadow-md">-</button>
                                         <input
                                             type="number"
                                             className="w-20 bg-transparent text-center font-mono font-black text-yellow-400 outline-none text-base"
-                                            value={betAmount || minRaiseAmount}
-                                            onChange={(e) => setBetAmount(Math.max(gameState.small_blind, parseInt(e.target.value) || 0))}
+                                            value={betAmount || minRaiseAmount || 0}
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value);
+                                                setBetAmount(isNaN(val) ? minRaiseAmount : Math.max(minRaiseAmount, val));
+                                            }}
                                         />
-                                        <button onClick={() => setBetAmount(prev => prev + gameState.big_blind)} className="w-7 h-7 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm shadow-md">+</button>
+                                        <button onClick={() => setBetAmount(prev => (prev || minRaiseAmount) + (gameState.limits?.bb || 10))} className="w-7 h-7 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm shadow-md">+</button>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => {
                                         if (isDealing) return;
-                                        const raiseVal = betAmount || (gameState.current_bet + gameState.min_raise);
+                                        const raiseVal = betAmount || minRaiseAmount;
                                         if (gameState.current_player_seat === mySeatIdx) {
                                             sendAction('RAISE', { amount: raiseVal });
                                         } else {

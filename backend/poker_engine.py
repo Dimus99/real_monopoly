@@ -635,6 +635,7 @@ class PokerTable:
             "community_cards": [c.to_dict() for c in self.community_cards],
             "pot": self.pot,
             "current_bet": self.current_bet,
+            "min_raise": self.min_raise,
             "dealer_seat": self.dealer_seat,
             "current_player_seat": self.current_player_seat,
             "logs": self.logs,

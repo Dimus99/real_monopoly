@@ -68,6 +68,16 @@ async def poker_timer_loop():
                         "state": result["state"]
                     })
                     
+                    # Broadcast Private Hands (CRITICAL FIX)
+                    # When auto-start happens in timer loop, we must send private cards
+                    if table.state != "WAITING":
+                        for seat_num, player in table.seats.items():
+                             if player.hand and not player.is_folded and not player.is_bot:
+                                 await manager.send_to_user(player.user_id, {
+                                     "type": "HAND_UPDATE",
+                                     "hand": [c.to_dict() for c in player.hand]
+                                 })
+                    
                     # Check if next is bot
                     if result.get("next_is_bot"):
                          asyncio.create_task(run_poker_bot_turn(table_id))
