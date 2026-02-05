@@ -130,6 +130,12 @@ class PokerTable:
             return {"error": "Table is full"}
         
         player = PokerPlayer(user, buy_in, seat)
+        
+        # If joining mid-game, wait for next hand
+        if self.state != "WAITING":
+            player.is_folded = True
+            player.last_action = "Wait next"
+            
         self.seats[seat] = player
         self.add_log(f"{user.name} joined the table.")
         
@@ -406,7 +412,7 @@ class PokerTable:
         
         while loop_count < len(active_seats):
             p = self.seats[next_seat]
-            if not p.is_folded and not p.is_all_in:
+            if not p.is_folded and not p.is_all_in and len(p.hand) > 0:
                 break
             next_idx = (next_idx + 1) % len(active_seats)
             next_seat = active_seats[next_idx]

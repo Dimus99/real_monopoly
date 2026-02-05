@@ -175,18 +175,18 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 
         return (
             <div className={`flex flex-col items-center group relative z-40 ${scale}`}>
-                <div className="relative w-8 h-8 cursor-pointer transform hover:scale-110 transition-transform">
+                <div className="relative w-6 h-6 cursor-pointer transform hover:scale-110 transition-transform">
                     {/* Simulated Stack - 3 chips */}
                     <div className={`absolute top-0 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-lg`}></div>
-                    <div className={`absolute -top-1 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-md`}></div>
-                    <div className={`absolute -top-2 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-inner flex items-center justify-center`}>
-                        <div className={`w-5 h-5 rounded-full border border-white/30 border-dashed ${textColor} text-[9px] font-bold flex items-center justify-center font-mono`}>
+                    <div className={`absolute -top-0.5 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-md`}></div>
+                    <div className={`absolute -top-1 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-inner flex items-center justify-center`}>
+                        <div className={`w-4 h-4 rounded-full border border-white/30 border-dashed ${textColor} text-[8px] font-bold flex items-center justify-center font-mono`}>
                             $
                         </div>
                     </div>
                 </div>
                 {/* Tooltip Value */}
-                <div className="bg-black/80 text-yellow-400 text-[10px] font-mono font-bold px-1.5 rounded mt-[-4px] border border-yellow-500/30 shadow-md backdrop-blur-sm z-50">
+                <div className="bg-black/80 text-yellow-400 text-[9px] font-mono font-bold px-1 rounded mt-[-2px] border border-yellow-500/30 shadow-md backdrop-blur-sm z-50">
                     ${formatted}
                 </div>
             </div>
@@ -371,7 +371,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 
                                         {/* Cards */}
                                         {/* Cards */}
-                                        <div className="flex -mt-8 z-40 filter drop-shadow-xl hover:-translate-y-6 transition-transform duration-300">
+                                        <div className="flex mt-2 z-50 filter drop-shadow-xl hover:-translate-y-6 transition-transform duration-300">
                                             {player.hand.map((c, i) => (
                                                 <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-1' : 'rotate-6 -translate-x-1'} origin-bottom`}>
                                                     {renderCard(c, i)}
