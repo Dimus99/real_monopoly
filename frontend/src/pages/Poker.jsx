@@ -54,16 +54,21 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
         }
     }, [gameState?.winners_ids, gameState?.state]);
 
-    // Chat auto-fade logic
+    // Street change effect - for dealing animation and pre-action clearing
+    const prevStreet = useRef(gameState?.state);
     useEffect(() => {
-        if (!isChatPinned) {
-            setIsChatVisible(true);
-            const timer = setTimeout(() => setIsChatVisible(false), 8000);
-            return () => clearTimeout(timer);
-        } else {
-            setIsChatVisible(true);
+        if (gameState?.state && gameState.state !== prevStreet.current) {
+            if (gameState.state !== 'WAITING') {
+                setIsDealing(true);
+                setTimeout(() => setIsDealing(false), 1200); // Wait for cards to fly
+            }
+            setPreAction(null);
+            setPreActionAmount(0);
+            prevStreet.current = gameState.state;
         }
-    }, [gameState?.logs?.length, isChatPinned]);
+    }, [gameState?.state]);
+
+    // Chat auto-fade logic
 
     // Error auto-clear logic
     useEffect(() => {
@@ -125,29 +130,24 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                     }
                                 }
                             }
-                            setPreAction(null);
-                            setPreActionAmount(0);
                         }
                     }
-
-                    // On street change, set dealing state for short visual flow
-                    if (prev && prev.state !== newState.state) {
-                        setIsDealing(true);
-                        setTimeout(() => setIsDealing(false), 800);
-                        setPreAction(null);
-                        setPreActionAmount(0);
-                    }
-
                     return newState;
                 });
             } else if (data.type === 'HAND_UPDATE') {
                 setGameState(prev => {
                     if (!prev || !prev.me) return prev;
+
+                    // Sync hand to both 'me' and the corresponding seat
                     const mySeatKey = Object.keys(prev.seats).find(k => prev.seats[k].user_id === prev.me.user_id);
-                    if (!mySeatKey) return prev;
+
+                    const newMe = { ...prev.me, hand: data.hand };
                     const newSeats = { ...prev.seats };
-                    newSeats[mySeatKey] = { ...newSeats[mySeatKey], hand: data.hand };
-                    return { ...prev, me: { ...prev.me, hand: data.hand }, seats: newSeats };
+                    if (mySeatKey) {
+                        newSeats[mySeatKey] = { ...newSeats[mySeatKey], hand: data.hand };
+                    }
+
+                    return { ...prev, me: newMe, seats: newSeats };
                 });
             } else if (data.type === 'ERROR') {
                 setGameError(data.message);
@@ -297,7 +297,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
         }
 
         const styles = {
-            0: { bottom: '-30px', left: '50%', transform: 'translateX(-50%)' }, // ME (Bottom)
+            0: { bottom: '15px', left: '50%', transform: 'translateX(-50%)' }, // ME (Bottom) - Raised to prevent card cut-off
             1: { bottom: '5%', left: '12%' }, // Bottom Left
             2: { top: '55%', left: '-35px', transform: 'translateY(-50%)' }, // Left
             3: { top: '15%', left: '10%' }, // Top Left
@@ -505,7 +505,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                         {/* Cards */}
                                         <div className="flex flex-col items-center mt-2 z-50">
                                             <div className="flex filter drop-shadow-xl hover:-translate-y-4 transition-transform duration-300">
-                                                {player.hand.map((c, i) => (
+                                                {(player.user_id === gameState.me?.user_id && gameState.me.hand[0]?.rank !== '?' ? gameState.me.hand : player.hand).map((c, i) => (
                                                     <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-1' : 'rotate-6 -translate-x-1'} origin-bottom`}>
                                                         {renderCard(c, i)}
                                                     </div>
