@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play, Maximize2, Minimize2, Bot, Trash2, Coins } from 'lucide-react';
 
-const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
+const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) => {
     const [gameState, setGameState] = useState(null);
     const [socket, setSocket] = useState(null);
     const [betAmount, setBetAmount] = useState(0);
@@ -12,12 +12,13 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
     const [buyInAmount, setBuyInAmount] = useState(1000);
     const [selectedSeat, setSelectedSeat] = useState(null);
     const [winnerAnim, setWinnerAnim] = useState(null);
-    const [tick, setTick] = useState(0);
+    const [myId, setMyId] = useState(null);
     const [preAction, setPreAction] = useState(null); // 'CHECK', 'FOLD', or 'RAISE'
     const [isDealing, setIsDealing] = useState(false); // New: prevents action buttons before cards
     const [preActionAmount, setPreActionAmount] = useState(0);
     const [isChatVisible, setIsChatVisible] = useState(true);
     const [isChatPinned, setIsChatPinned] = useState(false);
+    const [isChatExpanded, setIsChatExpanded] = useState(false);
     const [gameError, setGameError] = useState(null);
     const [showStandUpConfirm, setShowStandUpConfirm] = useState(false);
     const messagesEndRef = useRef(null);
@@ -60,7 +61,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
         if (gameState?.state && gameState.state !== prevStreet.current) {
             if (gameState.state !== 'WAITING') {
                 setIsDealing(true);
-                setTimeout(() => setIsDealing(false), 1200); // Wait for cards to fly
+                setTimeout(() => setIsDealing(false), 800); // Wait for cards to fly
             }
             setPreAction(null);
             setPreActionAmount(0);
@@ -94,17 +95,21 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
             const data = JSON.parse(event.data);
             if (data.type === 'CONNECTED') {
                 setGameState(data.state);
+                if (data.your_id) setMyId(data.your_id);
             } else if (data.type === 'GAME_UPDATE') {
                 setGameState(prev => {
                     const newState = { ...prev, ...data.state };
 
-                    if (prev && prev.me && newState.seats) {
-                        const myUserId = prev.me.user_id;
+                    if (prev && prev.me) {
+                        newState.me = prev.me;
+                    }
+
+                    if (newState.me && newState.seats) {
+                        const myUserId = newState.me.user_id;
                         const mySeatKey = Object.keys(newState.seats).find(k => newState.seats[k].user_id === myUserId);
                         const currentMySeatIdx = mySeatKey ? parseInt(mySeatKey) : -1;
 
-                        if (mySeatKey) {
-                            // Restore cached hand if public update shows ?
+                        if (mySeatKey && prev.seats && prev.seats[mySeatKey]) {
                             if (prev.seats[mySeatKey]?.hand?.length && prev.seats[mySeatKey].hand[0].rank !== '?') {
                                 if (newState.seats[mySeatKey].hand[0].rank === '?') {
                                     newState.seats[mySeatKey].hand = prev.seats[mySeatKey].hand;
@@ -112,61 +117,74 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                             }
                         }
 
-                        // Pre-Action Execution Logic
-                        if (newState.current_player_seat === currentMySeatIdx && preAction) {
-                            const myPlayerNow = newState.seats[mySeatKey];
+                        if (currentMySeatIdx !== -1 && newState.current_player_seat === currentMySeatIdx && preAction) {
+                            const myPlayerNow = newState.seats[currentMySeatIdx.toString()];
                             if (myPlayerNow && !myPlayerNow.is_folded) {
                                 if (preAction === 'FOLD') {
                                     setTimeout(() => sendAction('FOLD'), 500);
+                                    setPreAction(null);
+                                    setPreActionAmount(0);
                                 } else if (preAction === 'CHECK') {
                                     if (newState.current_bet === (myPlayerNow.current_bet || 0)) {
                                         setTimeout(() => sendAction('CHECK'), 50);
+                                        setPreAction(null);
+                                        setPreActionAmount(0);
                                     }
                                 } else if (preAction === 'RAISE') {
                                     if (newState.current_bet < preActionAmount) {
                                         setTimeout(() => sendAction('RAISE', { amount: preActionAmount }), 50);
+                                        setPreAction(null);
+                                        setPreActionAmount(0);
                                     } else {
-                                        setGameError("Pre-Raise cancelled: bet equal/higher");
+                                        setGameError("Pre-Raise cancelled");
+                                        setPreAction(null);
+                                        setPreActionAmount(0);
                                     }
                                 }
                             }
                         }
                     }
+
+                    if (prev && prev.seats && newState.seats) {
+                        if (Object.keys(prev.seats).length !== Object.keys(newState.seats).length) {
+                            if (typeof refreshBalance === 'function') refreshBalance();
+                        }
+                    }
+
                     return newState;
                 });
             } else if (data.type === 'HAND_UPDATE') {
                 setGameState(prev => {
-                    if (!prev || !prev.me) return prev;
-
-                    // Sync hand to both 'me' and the corresponding seat
-                    const mySeatKey = Object.keys(prev.seats).find(k => prev.seats[k].user_id === prev.me.user_id);
-
-                    const newMe = { ...prev.me, hand: data.hand };
+                    if (!prev) return prev;
+                    const myUserId = myId || prev.me?.user_id;
+                    if (!myUserId) return prev;
+                    const mySeatKey = Object.keys(prev.seats).find(k => prev.seats[k].user_id === myUserId);
+                    const newMe = { ...(prev.me || { user_id: myUserId }), hand: data.hand };
                     const newSeats = { ...prev.seats };
                     if (mySeatKey) {
                         newSeats[mySeatKey] = { ...newSeats[mySeatKey], hand: data.hand };
                     }
-
                     return { ...prev, me: newMe, seats: newSeats };
                 });
             } else if (data.type === 'ERROR') {
                 setGameError(data.message);
-                setPreAction(null); // Clear pre-action on error
+                setPreAction(null);
             }
         };
 
-        ws.onclose = () => {
-            console.log('Disconnected');
-            setConnected(false);
-        };
-
+        ws.onclose = () => { setConnected(false); };
         setSocket(ws);
         return () => ws.close();
-    }, [tableId, preAction]);
+    }, [tableId, preAction, myId, refreshBalance]);
 
     const sendAction = (action, data = {}) => {
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({ action, ...data }));
+            // Clear pre-actions whenever we send a manual action
+            if (['FOLD', 'CHECK', 'CALL', 'RAISE'].includes(action)) {
+                setPreAction(null);
+                setPreActionAmount(0);
+            }
         }
     };
 
@@ -182,19 +200,16 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 
     if (!gameState) return <div className="text-center p-10 text-white">Loading Table...</div>;
 
-    const mySeatEntry = Object.entries(gameState.seats).find(([k, v]) => v.user_id === gameState.me?.user_id);
+    // Derived state for current player
+    const mySeatEntry = gameState?.seats ? Object.entries(gameState.seats).find(([_, p]) => p.user_id === (myId || gameState.me?.user_id)) : null;
     const mySeatIdx = mySeatEntry ? parseInt(mySeatEntry[0]) : -1;
-    const myPlayer = mySeatEntry ? mySeatEntry[1] : null;
+    const myPlayer = mySeatEntry ? mySeatEntry[1] : (gameState?.me || null);
 
     const isWinningCard = (card) => {
         if (!card) return false;
-        // 1. Showdown winning cards
-        if (gameState.winning_cards?.length > 0) {
+        // Highlighting in SHOWDOWN mode for winners
+        if (gameState.state === 'SHOWDOWN' && gameState.winning_cards?.length > 0) {
             return gameState.winning_cards.some(c => c.rank === card.rank && c.suit === card.suit);
-        }
-        // 2. Current hand cards for the player
-        if (myPlayer?.current_hand?.cards) {
-            return myPlayer.current_hand.cards.some(c => c.rank === card.rank && c.suit === card.suit);
         }
         return false;
     };
@@ -325,9 +340,12 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                     100% { opacity: 0; transform: scale(1); }
                 }
                 @keyframes chipWin {
-                    0% { transform: scale(0); opacity: 0; }
-                    50% { transform: scale(1.5); opacity: 1; }
-                    100% { transform: scale(1); opacity: 1; }
+                    0% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.5); opacity: 0.8; top: -50px; }
+                    100% { transform: scale(0.5); opacity: 0; top: -200px; left: 0; }
+                }
+                .winning-chips {
+                    animation: chipWin 1.5s ease-out forwards;
                 }
             `}</style>
             {/* Top Bar */}
@@ -340,14 +358,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                     <div className="text-xs text-gray-400">Pot: {gameState.pot} • Blinds: {gameState.small_blind}/{gameState.big_blind}</div>
                 </div>
                 <div className="flex gap-2">
-                    <div className="bg-black/50 border border-white/10 px-2 py-1 rounded flex items-center gap-2 mr-2">
+                    <div className="bg-black/50 border border-white/10 px-2 py-1 rounded flex items-center gap-2">
                         <span className="text-[10px] text-gray-500 uppercase">Wallet</span>
                         <span className="text-sm font-bold text-yellow-500">${balance}</span>
                     </div>
-                    <button onClick={() => sendAction('ADD_FUNDS')} className="btn-xs bg-green-900 border border-green-500/50 p-1 px-2 rounded hover:bg-green-800 text-green-200 font-mono font-bold" title="Cheat: Add $10k">
-                        +10k
-                    </button>
-                    <button onClick={() => sendAction('ADD_BOT')} className="btn-xs border border-white/20 p-1 rounded hover:bg-white/10" title="Add Bot">
+                    <button onClick={() => sendAction('ADD_BOT')} className="btn-xs border border-white/20 p-1 rounded hover:bg-white/10 ml-2" title="Add Bot">
                         <Bot size={16} />
                     </button>
                     <button onClick={() => sendAction('REMOVE_BOT')} className="btn-xs border border-white/20 p-1 rounded hover:bg-white/10" title="Remove Bot">
@@ -362,12 +377,15 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
             {/* Chat / LOGS */}
             <div
                 className={`absolute bottom-4 left-4 z-50 transition-all duration-700 ${(isChatVisible || isChatPinned) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
-                    } hover:opacity-100 hover:translate-y-0 hover:pointer-events-auto`}
+                    } hover:opacity-100 hover:translate-y-0 hover:pointer-events-auto cursor-pointer`}
                 onMouseEnter={() => setIsChatVisible(true)}
+                onClick={() => setIsChatExpanded(!isChatExpanded)}
             >
-                <div className="w-80 max-h-40 overflow-y-auto font-mono text-[10px] text-gray-400 bg-black/80 p-3 rounded-xl border border-white/10 shadow-2xl flex flex-col-reverse backdrop-blur-md">
+                <div className={`w-80 ${isChatExpanded ? 'max-h-[60vh]' : 'max-h-24'} overflow-y-auto font-mono text-[10px] text-gray-400 bg-black/80 p-3 rounded-xl border border-white/10 shadow-2xl flex flex-col-reverse backdrop-blur-md transition-all duration-300`}>
                     <div className="flex justify-between items-center mb-1 border-b border-white/5 pb-1">
-                        <span className="text-[9px] uppercase font-bold text-gray-500">Game Log</span>
+                        <span className="text-[9px] uppercase font-bold text-yellow-500/80">
+                            {isChatExpanded ? 'Full Game Log' : 'Game Log (Click to expand)'}
+                        </span>
                         <button
                             onClick={(e) => { e.stopPropagation(); setIsChatPinned(!isChatPinned); }}
                             className={`text-[9px] px-2 py-0.5 rounded transition-colors ${isChatPinned ? 'bg-yellow-500 text-black font-bold' : 'bg-white/10 text-gray-400'}`}
@@ -376,7 +394,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                         </button>
                     </div>
                     {gameState.logs && gameState.logs.slice().reverse().map((log, i) => (
-                        <div key={i} className="mb-0.5 break-words transition-opacity duration-1000" style={{ opacity: Math.max(0.3, 1 - (i * 0.15)) }}>
+                        <div key={i} className="mb-0.5 break-words transition-opacity duration-1000" style={{ opacity: isChatExpanded ? 1 : Math.max(0.3, 1 - (i * 0.15)) }}>
                             <span className="text-gray-600">[{new Date(log.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]</span> <span className="text-gray-300">{log.msg}</span>
                         </div>
                     ))}
@@ -480,8 +498,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                             {/* Cards ABOVE Avatar now - with better centering and overlap */}
                                             <div className="mb-[-15px] z-[60] flex flex-col items-center pointer-events-none">
                                                 <div className="flex justify-center filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)] scale-125">
-                                                    {(player.user_id === gameState.me?.user_id && gameState.me.hand[0]?.rank !== '?' ? gameState.me.hand : player.hand).map((c, i) => (
-                                                        <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-2' : 'rotate-6 -translate-x-2'} origin-bottom transition-all`}>
+                                                    {!player.is_folded && (player.user_id === gameState.me?.user_id && gameState.me.hand[0]?.rank !== '?' ? gameState.me.hand : player.hand).map((c, i) => (
+                                                        <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-2' : 'rotate-6 -translate-x-2'} origin-bottom transition-all ${player.is_folded ? 'opacity-0 scale-0' : 'opacity-100 scale-100'}`}>
                                                             {renderCard(c, i)}
                                                         </div>
                                                     ))}
@@ -527,6 +545,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                                     {player.name}
                                                     {player.is_bot && <Bot size={10} />}
                                                 </div>
+                                                {gameState.winners_ids && gameState.winners_ids.includes(player.user_id) && (
+                                                    <div className="mt-1 bg-yellow-500 text-black px-2 py-0.5 rounded text-[10px] font-black animate-pulse border border-yellow-300">
+                                                        WINNER
+                                                    </div>
+                                                )}
                                                 <div className="mt-1 flex items-center gap-1 bg-black/80 px-2 py-0.5 rounded border border-yellow-500/30">
                                                     <Coins size={10} className="text-yellow-500" />
                                                     <span className="text-xs font-mono font-black text-yellow-400">${player.chips}</span>
@@ -535,7 +558,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 
                                             {/* Chips Bet Display (Shifted to side) */}
                                             {player.current_bet > 0 && (
-                                                <div className="absolute -top-8 -right-16 z-40 transform scale-75">
+                                                <div className={`absolute -top-12 -right-16 z-40 transform scale-75 ${winnerAnim ? 'winning-chips' : ''}`}>
                                                     <ChipStack amount={player.current_bet} />
                                                     <div className="text-[10px] font-bold text-yellow-400 bg-black/60 px-2 rounded-full mt-1">
                                                         ${player.current_bet}
@@ -560,13 +583,6 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                     </div>
                                 )}
 
-                                {winnerAnim && winnerAnim.includes(player?.user_id) && (
-                                    <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center pointer-events-none animate-in fade-in zoom-in duration-500">
-                                        <div className="bg-yellow-500/20 rounded-full p-4 backdrop-blur-sm border-2 border-yellow-500 shadow-[0_0_80px_rgba(234,179,8,0.6)] animate-bounce">
-                                            <Trophy className="text-yellow-400 w-12 h-12" />
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         );
                     })}
@@ -626,8 +642,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                             <button onClick={() => setShowBuyIn(false)} className="btn-ghost flex-1 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white">Cancel</button>
                             <button
                                 onClick={handleBuyInConfirm}
-                                className="btn-primary flex-1 py-2 rounded bg-yellow-600 hover:bg-yellow-500 text-black font-bold"
-                                disabled={buyInAmount > balance || buyInAmount < (gameState.big_blind * 20)}
+                                className="btn-primary flex-1 py-2 rounded bg-yellow-600 hover:bg-yellow-500 text-black font-bold disabled:opacity-50"
+                                disabled={buyInAmount < (gameState.big_blind * 20)}
                             >
                                 Join Game
                             </button>
@@ -724,10 +740,12 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                         <button
                                             key={idx}
                                             onClick={() => {
-                                                setBetAmount(btn.val);
+                                                const finalAmount = Math.max(btn.val, gameState.current_bet + gameState.min_raise);
+                                                setBetAmount(finalAmount);
                                                 if (gameState.current_player_seat !== mySeatIdx) {
-                                                    setPreAction(preAction === 'RAISE' && preActionAmount === btn.val ? null : 'RAISE');
-                                                    setPreActionAmount(preAction === 'RAISE' && preActionAmount === btn.val ? 0 : btn.val);
+                                                    const isSame = preAction === 'RAISE' && preActionAmount === finalAmount;
+                                                    setPreAction(isSame ? null : 'RAISE');
+                                                    setPreActionAmount(isSame ? 0 : finalAmount);
                                                 }
                                             }}
                                             className={`text-[10px] px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 text-gray-200 transition-all font-bold ${(preAction === 'RAISE' && preActionAmount === btn.val) || (gameState.current_player_seat === mySeatIdx && betAmount === btn.val)
@@ -738,27 +756,31 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                     ))}
                                 </div>
                                 <div className="flex items-center gap-1 bg-black/50 p-1.5 rounded-xl mb-1 border border-white/20 shadow-inner">
-                                    <button onClick={() => setBetAmount(Math.max((gameState.current_bet + gameState.min_raise), betAmount - gameState.big_blind))} className="w-7 h-7 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm shadow-md">-</button>
+                                    <button onClick={() => setBetAmount(prev => Math.max(gameState.current_bet + gameState.min_raise, prev - gameState.big_blind))} className="w-7 h-7 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm shadow-md">-</button>
                                     <input
                                         type="number"
                                         className="w-20 bg-transparent text-center font-mono font-black text-yellow-400 outline-none text-base"
                                         value={betAmount || (gameState.current_bet + gameState.min_raise)}
-                                        onChange={(e) => setBetAmount(parseInt(e.target.value) || 0)}
+                                        onChange={(e) => setBetAmount(Math.max(gameState.current_bet + gameState.min_raise, parseInt(e.target.value) || 0))}
                                     />
-                                    <button onClick={() => setBetAmount(betAmount + gameState.big_blind)} className="w-7 h-7 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm shadow-md">+</button>
+                                    <button onClick={() => setBetAmount(prev => prev + gameState.big_blind)} className="w-7 h-7 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm shadow-md">+</button>
                                 </div>
                                 <button
                                     onClick={() => {
+                                        const raiseVal = betAmount || (gameState.current_bet + gameState.min_raise);
                                         if (gameState.current_player_seat === mySeatIdx) {
-                                            sendAction('RAISE', { amount: betAmount || (gameState.current_bet + gameState.min_raise) });
+                                            sendAction('RAISE', { amount: raiseVal });
                                         } else {
-                                            setIsChatVisible(true); // Hint
+                                            setPreAction(preAction === 'RAISE' && preActionAmount === raiseVal ? null : 'RAISE');
+                                            setPreActionAmount(preAction === 'RAISE' && preActionAmount === raiseVal ? 0 : raiseVal);
                                         }
                                     }}
-                                    className={`bg-yellow-600 hover:bg-yellow-500 border-b-4 border-yellow-900 text-white h-14 w-28 rounded-2xl flex flex-col items-center justify-center transition-all active:border-b-0 active:translate-y-1 shadow-xl ${gameState.current_player_seat !== mySeatIdx ? 'opacity-30 grayscale cursor-not-allowed' : 'hover:scale-105'}`}
+                                    className={`bg-yellow-600 hover:bg-yellow-500 border-b-4 border-yellow-900 text-white h-14 w-28 rounded-2xl flex flex-col items-center justify-center transition-all active:border-b-0 active:translate-y-1 shadow-xl ${gameState.current_player_seat !== mySeatIdx && preAction !== 'RAISE' ? 'opacity-60 grayscale' : 'hover:scale-105'}`}
                                 >
                                     <span className="text-lg font-black uppercase tracking-tight">Raise</span>
-                                    <span className="text-[11px] font-mono font-bold leading-none text-yellow-200">${betAmount || (gameState.current_bet + gameState.min_raise)}</span>
+                                    <span className="text-[11px] font-mono font-bold leading-none text-yellow-200">
+                                        ${(gameState.current_player_seat === mySeatIdx ? betAmount : preActionAmount) || (gameState.current_bet + gameState.min_raise)}
+                                    </span>
                                 </button>
                                 <span className="text-[10px] uppercase font-black text-gray-500 mt-1">{gameState.current_player_seat === mySeatIdx ? 'Send Now' : 'Wait for turn'}</span>
                             </div>
@@ -834,7 +856,7 @@ const Poker = () => {
 
     useEffect(() => {
         fetchInfo();
-        const interval = setInterval(fetchInfo, 5000);
+        const interval = setInterval(fetchInfo, 3000);
         return () => clearInterval(interval);
     }, []);
 
@@ -848,6 +870,7 @@ const Poker = () => {
                 <PokerTable
                     tableId={currentTableId}
                     balance={userBalance}
+                    refreshBalance={fetchInfo}
                     onLeave={() => setCurrentTableId(null)}
                 />
             </div>
@@ -863,23 +886,8 @@ const Poker = () => {
                     </button>
                     <h1 className="text-3xl font-display font-bold text-yellow-400">TEXAS HOLD'EM</h1>
                     <div className="bg-black/40 px-4 py-2 rounded-lg border border-yellow-500/30 flex items-center gap-2">
-                        <span className="text-xs text-gray-400 uppercase">Balance</span>
+                        <span className="text-xs text-gray-400 uppercase">Wallet Balance</span>
                         <span className="font-mono font-bold text-xl text-yellow-400">${userBalance}</span>
-                        <button
-                            onClick={async () => {
-                                try {
-                                    const res = await authFetch('/api/users/bonus', { method: 'POST' });
-                                    if (res.ok) {
-                                        const data = await res.json();
-                                        setUserBalance(data.new_balance);
-                                        fetchInfo();
-                                    }
-                                } catch (e) { }
-                            }}
-                            className="ml-2 btn-xs bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-white rounded px-2 transition-colors text-[10px] font-bold"
-                        >
-                            +10k
-                        </button>
                     </div>
                 </div>
 

@@ -257,7 +257,8 @@ async def websocket_poker(
     # Send initial state (with private hand)
     await websocket.send_json({
         "type": "CONNECTED",
-        "state": table.get_player_state(user.id)
+        "state": table.get_player_state(user.id),
+        "your_id": user.id
     })
     
     try:
@@ -270,18 +271,15 @@ async def websocket_poker(
             if action == "JOIN":
                 buy_in = data.get("buy_in", 1000)
                 async with async_session() as session:
-                     u = await db_service.get_user(session, user.id)
-                     if u.balance < buy_in:
-                         resp = {"error": "Not enough balance"}
-                     else:
-                         await session.execute(text("UPDATE users SET balance = balance - :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})
+                     # Skip balance check to allow infinite/credit play
+                     await session.execute(text("UPDATE users SET balance = balance - :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})
+                     await session.commit()
+                     resp = table.add_player(user, buy_in, requested_seat=data.get("requested_seat"))
+                     if resp.get("error"):
+                         await session.execute(text("UPDATE users SET balance = balance + :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})
                          await session.commit()
-                         resp = table.add_player(user, buy_in, requested_seat=data.get("requested_seat"))
-                         if resp.get("error"):
-                             await session.execute(text("UPDATE users SET balance = balance + :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})
-                             await session.commit()
-                         else:
-                             should_broadcast = True
+                     else:
+                         should_broadcast = True
             
             elif action == "LEAVE":
                  leave_res = table.remove_player(user.id)
