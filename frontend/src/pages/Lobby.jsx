@@ -609,24 +609,8 @@ const Lobby = () => {
                 </div>
                 <div className="flex gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="bg-[#0c0c14] border border-white/10 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Баланс</div>
-                            <div className="font-mono font-bold text-yellow-400">${balance}</div>
-                            <button
-                                onClick={async () => {
-                                    try {
-                                        const res = await authFetch('/api/users/bonus', { method: 'POST' });
-                                        if (res.ok) {
-                                            const data = await res.json();
-                                            setBalance(data.new_balance);
-                                            alert('+10,000 получено!');
-                                        }
-                                    } catch (e) { }
-                                }}
-                                className="ml-2 btn-xs bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-white rounded px-2 transition-colors text-[10px] font-bold"
-                            >
-                                +10k
-                            </button>
+                        <div className="bg-[#0c0c14] border border-white/10 px-3 py-1.5 rounded-lg flex items-center gap-2 hidden">
+                            {/* Balance hidden per user request */}
                         </div>
                         <div className="text-right hidden sm:block max-w-xs">
                             <div className="text-sm font-mono font-bold text-green-400 leading-tight italic">"{randomAnecdote}"</div>

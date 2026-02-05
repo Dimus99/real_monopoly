@@ -141,6 +141,15 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
                 </div>
             </div>
 
+            {/* Chat / LOGS (Bottom Left) */}
+            <div className="absolute bottom-4 left-4 z-50 w-64 max-h-48 overflow-y-auto font-mono text-xs text-gray-400 bg-black/60 p-2 rounded pointer-events-none fade-mask">
+                {gameState.logs && gameState.logs.slice().reverse().map((log, i) => (
+                    <div key={i} className="mb-1">
+                        <span className="text-gray-600">[{new Date(log.time).toLocaleTimeString().split(' ')[0]}]</span> <span className="text-gray-300">{log.msg}</span>
+                    </div>
+                ))}
+            </div>
+
             {/* Table Area */}
             <div className="flex-1 relative my-4 flex items-center justify-center">
                 {/* Dealer Graphic - Absolute Top Center */}
@@ -151,8 +160,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
                 {/* Felt */}
                 <div className="w-[90%] aspect-[2/1] bg-[#1a472a] rounded-[200px] border-[12px] border-[#2d2a26] shadow-[inset_0_0_100px_rgba(0,0,0,0.5)] relative flex items-center justify-center">
 
-                    {/* Community Cards */}
-                    <div className="flex gap-2 mb-8">
+                    {/* Community Cards - Slightly lower to accommodate dealer */}
+                    <div className="flex gap-2 mb-2">
                         {gameState.community_cards.map((c, i) => <div key={i}>{renderCard(c)}</div>)}
                         {Array(5 - gameState.community_cards.length).fill(0).map((_, i) => (
                             <div key={i} className="w-12 h-16 border-2 border-white/5 rounded m-1"></div>
@@ -166,23 +175,24 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
                         </div>
                     </div>
 
-                    {/* Seats */}
-                    {[0, 1, 2, 3, 4, 5].map(seatIdx => {
+                    {/* Seats - exclude Top (3) for players, use other seats effectively */}
+                    {[0, 1, 2, 4, 5].map(seatIdx => {
                         const player = gameState.seats[seatIdx];
                         const isMe = myPlayer && parseInt(mySeat[0]) === seatIdx;
                         const isActive = gameState.current_player_seat === seatIdx;
 
-                        // Positioning
-                        const positions = [
-                            { top: 'auto', bottom: '-40px', left: '50%', transform: 'translateX(-50%)' }, // 0 (My Seat)
-                            { top: 'auto', bottom: '15%', left: '-5%', transform: 'none' }, // 1 (Bottom Left)
-                            { top: '15%', bottom: 'auto', left: '-5%', transform: 'none' }, // 2 (Top Left)
-                            { top: '-40px', bottom: 'auto', left: '50%', transform: 'translateX(-50%)' }, // 3 (Top)
-                            { top: '15%', bottom: 'auto', right: '-5%', transform: 'none' }, // 4 (Top Right)
-                            { top: 'auto', bottom: '15%', right: '-5%', transform: 'none' }, // 5 (Bottom Right)
-                        ];
+                        // Positioning - Shifted to avoid top center (Dealer Girl)
+                        // 0: Bottom Center, 1: Bottom Left, 2: Top Left, 3: (Reserved), 4: Top Right, 5: Bottom Right
+                        const positions = {
+                            0: { bottom: '-30px', left: '50%', transform: 'translateX(-50%)' }, // My Seat (Bottom)
+                            1: { bottom: '10%', left: '-20px' }, // Bottom Left
+                            2: { top: '30%', left: '-20px' }, // Top Left
+                            4: { top: '30%', right: '-20px' }, // Top Right
+                            5: { bottom: '10%', right: '-20px' }, // Bottom Right
+                        };
 
                         const pos = positions[seatIdx];
+                        if (!pos) return null; // Should not trigger
 
                         return (
                             <div key={seatIdx} className={`absolute flex flex-col items-center transition-all duration-300 ${isActive ? 'scale-110 z-20' : 'z-10'}`} style={pos}>
@@ -389,9 +399,25 @@ const Poker = () => {
                         <ArrowLeft /> Back
                     </button>
                     <h1 className="text-3xl font-display font-bold text-yellow-400">TEXAS HOLD'EM</h1>
-                    <div className="bg-black/40 px-4 py-2 rounded-lg border border-yellow-500/30 flex items-center gap-2 hidden">
+                    <div className="bg-black/40 px-4 py-2 rounded-lg border border-yellow-500/30 flex items-center gap-2">
                         <span className="text-xs text-gray-400 uppercase">Balance</span>
                         <span className="font-mono font-bold text-xl text-yellow-400">${userBalance}</span>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const res = await authFetch('/api/users/bonus', { method: 'POST' });
+                                    if (res.ok) {
+                                        const data = await res.json();
+                                        setUserBalance(data.new_balance); // Update local state immediately
+                                        // Also refresh full info just in case
+                                        fetchInfo();
+                                    }
+                                } catch (e) { }
+                            }}
+                            className="ml-2 btn-xs bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-white rounded px-2 transition-colors text-[10px] font-bold"
+                        >
+                            +10k
+                        </button>
                     </div>
                 </div>
 

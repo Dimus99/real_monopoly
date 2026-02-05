@@ -104,6 +104,7 @@ class PokerTable:
 
     def get_empty_seat(self) -> int:
         for i in range(self.max_seats):
+            if i == 3: continue # Reserve Top Seat for Dealer
             if i not in self.seats:
                 return i
         return -1
@@ -571,7 +572,39 @@ class PokerTable:
                 base["seats"][seat] = p.to_dict(show_hand=True)
                 base["me"] = p.to_dict(show_hand=True)
                 break
-        return base
+    def check_timers(self):
+        if self.state == "WAITING": return None
+        
+        # Check active player timeout
+        if self.turn_deadline and datetime.utcnow() > self.turn_deadline:
+             current_player = self.seats.get(self.current_player_seat)
+             if current_player and not current_player.is_folded and not current_player.is_all_in:
+                 # Auto Fold
+                 self.add_log(f"{current_player.name} timed out and folded.")
+                 current_player.is_folded = True
+                 current_player.consecutive_timeouts += 1
+                 
+                 # Check if kick needed (3 timeouts)
+                 kick_result = None
+                 if current_player.consecutive_timeouts >= 3:
+                     # Kick
+                     chip_refund = current_player.chips
+                     uid = current_player.user_id
+                     seat = self.current_player_seat
+                     del self.seats[self.current_player_seat]
+                     self.add_log(f"{current_player.name} kicked for inactivity.")
+                     kick_result = {"type": "KICKED", "user_id": uid, "refund": chip_refund, "seat": seat}
+                 
+                 # Move to next turn
+                 result = self.next_turn()
+                 
+                 return {
+                     "type": "GAME_UPDATE",
+                     "state": self.to_dict(),
+                     "kick": kick_result,
+                     "next_is_bot": result.get("next_is_bot", False) if result else False
+                 }
+        return None
 
 poker_engine = {
     "tables": {

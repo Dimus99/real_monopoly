@@ -65,7 +65,7 @@ async def poker_timer_loop():
                     # Broadcast Update
                     await manager.broadcast(poker_scope, {
                         "type": "GAME_UPDATE",
-                        "state": result["game_state"]
+                        "state": result["state"]
                     })
                     
                     # Check if next is bot
