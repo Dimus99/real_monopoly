@@ -374,9 +374,23 @@ async def websocket_poker(
                  for seat_num, player in table.seats.items():
                       if player.user_id == user.id:
                           if player.hand:
+                              # Re-evaluate logic for refresh
+                              rank_val, score_val, best_cards = table.evaluate_hand(player.hand, table.community_cards)
+                              hand_name = table.get_hand_name(rank_val)
+                              
+                              my_cards_strs = [c.to_dict()["rank"] + c.to_dict()["suit"] for c in player.hand]
+                              best_cards_strs = [c.to_dict()["rank"] + c.to_dict()["suit"] for c in best_cards] if best_cards else []
+                              uses_my_cards = any(c in best_cards_strs for c in my_cards_strs)
+
                               await manager.send_to_user(user.id, {
                                   "type": "HAND_UPDATE",
-                                  "hand": [c.to_dict() for c in player.hand]
+                                  "hand": [c.to_dict() for c in player.hand],
+                                  "evaluation": {
+                                      "rank": rank_val,
+                                      "name": hand_name,
+                                      "best_cards": [c.to_dict() for c in best_cards],
+                                      "uses_my_cards": uses_my_cards
+                                  }
                               })
                           break
                  continue # No broadcast needed for this

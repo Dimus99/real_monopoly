@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play, Maximize2, Minimize2, Bot, Trash2, Coins } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play, Maximize2, Minimize2, Bot, Trash2, Coins, Lightbulb, LightbulbOff } from 'lucide-react';
 
 const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) => {
     const [gameState, setGameState] = useState(null);
@@ -26,6 +26,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const [isActionPanelHovered, setIsActionPanelHovered] = useState(false);
     const [gameError, setGameError] = useState(null);
     const [showStandUpConfirm, setShowStandUpConfirm] = useState(false);
+    const [highlightEnabled, setHighlightEnabled] = useState(true); // New Toggle State
 
     const messagesEndRef = useRef(null);
     const tableRef = useRef(null);
@@ -288,14 +289,79 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
             return gameState.winning_cards.some(c => c.rank === card.rank && c.suit === card.suit);
         }
 
-        // Priority 2: My Current Best Hand Helper (Highlight my combo during play)
-        // ONLY highlight if I have a valid hand combination (better than High Card 0 usually, or if explicitly marked)
-        if (gameState.me?.current_hand?.best_cards?.length > 0) {
-            // Avoid highlighting generic "High Card" unless it's a specific top card situation that matters? 
-            // Actually, if rank is 0 (High Card) and uses_my_cards is false, don't highlight.
-            if (gameState.me.current_hand.rank === 0 && !gameState.me.current_hand.uses_my_cards) return false;
+        // Check if highlighting is enabled
+        if (!highlightEnabled) return false;
 
-            return gameState.me.current_hand.best_cards.some(c => c.rank === card.rank && c.suit === card.suit);
+        // Priority 2: My Current Best Hand Helper (Highlight my combo during play)
+        if (gameState.me?.current_hand?.best_cards?.length > 0) {
+            const currentHand = gameState.me.current_hand;
+            const rank = currentHand.rank;
+            const bestCards = currentHand.best_cards;
+
+            // If Playing the Board (High Card/Pair etc exclusively on board), don't highlight board unless requested.
+            // User asked: "only those cards which are in combination with the player's hand (only his)"
+
+            // 1. Identify "Core" ranks based on hand type
+            //    (Exclude kickers from being considered "in combination")
+            let targetRanks = new Set();
+
+            if (rank === 0) {
+                // High Card: Core is just the 1 high card
+                targetRanks.add(bestCards[0].rank);
+            } else if (rank === 1 || rank === 3 || rank === 7) {
+                // Pair, Trips, Quads: Find the rank that repeats
+                const counts = {};
+                bestCards.forEach(c => counts[c.rank] = (counts[c.rank] || 0) + 1);
+                Object.entries(counts).forEach(([r, count]) => {
+                    if (count >= 2) targetRanks.add(r);
+                });
+            } else if (rank === 2) {
+                // Two Pair
+                const counts = {};
+                bestCards.forEach(c => counts[c.rank] = (counts[c.rank] || 0) + 1);
+                Object.entries(counts).forEach(([r, count]) => {
+                    if (count >= 2) targetRanks.add(r);
+                });
+            } else {
+                // Straight, Flush, Full House, Straight Flush: All 5 cards are core
+                // For these, we highlight all best_cards IF we contribute.
+                // Full House is effectively Trips + Pair, both are core.
+            }
+
+            // 2. Check if MY HAND holds any of these target ranks (or any card for straight/flush)
+            const myHoleCards = gameState.me.hand || [];
+
+            let shouldHighlight = false;
+
+            if (rank >= 4 && rank !== 7) {
+                // Straights, Flushes, Full Houses
+                // Highlight if ANY of my cards are part of the 5-card combo
+                const amIContributing = bestCards.some(bc =>
+                    myHoleCards.some(hc => hc.rank === bc.rank && hc.suit === bc.suit)
+                );
+                if (amIContributing) shouldHighlight = true;
+
+            } else {
+                // Pairs/Trips/Quads/HighCard
+                // Highlight ONLY if I hold one of the target ranks
+                const amIContributing = myHoleCards.some(hc => targetRanks.has(hc.rank));
+                if (amIContributing) shouldHighlight = true;
+            }
+
+            if (!shouldHighlight) return false;
+
+            // 3. Final Filter: Only highlight the specific core cards
+            // If straight/flush, highlight all best cards.
+            // If pair/trips, highlight only the matching ranks.
+
+            if (rank >= 4 && rank !== 7) {
+                return bestCards.some(c => c.rank === card.rank && c.suit === card.suit);
+            } else {
+                // Only highlight if this card's rank is in targetRanks AND it is part of bestCards
+                // (e.g. don't highlight a 3rd pair on board if it's not in best hand, though backend filters best_cards already)
+                if (!targetRanks.has(card.rank)) return false;
+                return bestCards.some(c => c.rank === card.rank && c.suit === card.suit);
+            }
         }
 
         return false;
@@ -462,6 +528,15 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     <div className="text-xs text-gray-400">Pot: {gameState.pot} • Blinds: {gameState.small_blind}/{gameState.big_blind}</div>
                 </div>
                 <div className="flex gap-2">
+                    {/* Highlight Toggle */}
+                    <button
+                        onClick={() => setHighlightEnabled(!highlightEnabled)}
+                        className={`btn-xs border border-white/20 p-1 rounded hover:bg-white/10 flex items-center gap-1 ${highlightEnabled ? 'text-yellow-400' : 'text-gray-500'}`}
+                        title={highlightEnabled ? "Hints On" : "Hints Off"}
+                    >
+                        {highlightEnabled ? <Lightbulb size={16} /> : <LightbulbOff size={16} />}
+                    </button>
+
                     <div className="bg-black/50 border border-white/10 px-2 py-1 rounded flex items-center gap-2">
                         <span className="text-[10px] text-gray-500 uppercase">Wallet</span>
                         <span className="text-sm font-bold text-yellow-500">${balance}</span>
@@ -621,18 +696,21 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                                 }}
                                                 id={player.user_id === gameState.me?.user_id ? 'my-cards-container' : undefined}
                                             >
-                                                <div className="flex justify-center filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)] scale-125">
-                                                    {!player.is_folded && (player.user_id === gameState.me?.user_id && gameState.me.hand[0]?.rank !== '?' ? gameState.me.hand : player.hand).map((c, i) => (
-                                                        <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-2' : 'rotate-6 -translate-x-2'} origin-bottom transition-all ${player.is_folded ? 'opacity-0 scale-0' : 'opacity-100 scale-100'}`}>
-                                                            {renderCard(c, i)}
-                                                        </div>
-                                                    ))}
+                                                <div className={`flex justify-center filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)] scale-125 ${player.is_folded && player.user_id === gameState.me?.user_id ? 'grayscale opacity-60' : ''}`}>
+                                                    {/* Show cards if NOT folded OR if it's ME (even if folded) */}
+                                                    {(!player.is_folded || player.user_id === gameState.me?.user_id) &&
+                                                        (player.user_id === gameState.me?.user_id && gameState.me.hand[0]?.rank !== '?' ? gameState.me.hand : player.hand).map((c, i) => (
+                                                            <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-2' : 'rotate-6 -translate-x-2'} origin-bottom transition-all ${player.is_folded && player.user_id !== gameState.me?.user_id ? 'opacity-0 scale-0' : 'opacity-100 scale-100'}`}>
+                                                                {renderCard(c, i)}
+                                                            </div>
+                                                        ))}
                                                 </div>
-                                                {/* Hand Combination Name */}
-                                                {player.user_id === gameState.me?.user_id && player.current_hand && !player.is_folded && (
-                                                    <div className={`mt-3 relative z-[70] px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_4px_10px_rgba(0,0,0,0.5)] border-2 animate-in fade-in zoom-in duration-300 ${player.current_hand.uses_my_cards
-                                                        ? 'bg-yellow-500 text-black border-yellow-200'
-                                                        : 'bg-gray-800 text-gray-300 border-gray-600'
+                                                {/* Hand Combination Name - Always show for ME, even if folded */}
+                                                {player.user_id === gameState.me?.user_id && player.current_hand && (
+                                                    <div className={`mt-3 relative z-[70] px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_4px_10px_rgba(0,0,0,0.5)] border-2 animate-in fade-in zoom-in duration-300 ${player.is_folded ? 'bg-gray-900 text-gray-500 border-gray-700' :
+                                                        (player.current_hand.uses_my_cards
+                                                            ? 'bg-yellow-500 text-black border-yellow-200'
+                                                            : 'bg-gray-800 text-gray-300 border-gray-600')
                                                         }`}>
                                                         {player.current_hand.name}
                                                     </div>
