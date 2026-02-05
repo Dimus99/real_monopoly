@@ -20,34 +20,45 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const [dealerImageIdx, setDealerImageIdx] = useState(0);
     const dealerImages = ['/assets/croupier.png', '/assets/dealer.png'];
 
-    const minRaiseAmount = React.useMemo(() => {
-        if (!gameState) return 0;
-        // The minimum raise is usually at least the big blind or the previous raise increment
-        const minLegal = Math.max(gameState.big_blind, (gameState.current_bet || 0) + (gameState.min_raise || gameState.big_blind));
-        return minLegal;
-    }, [gameState?.current_bet, gameState?.min_raise, gameState?.big_blind]);
-
-    useEffect(() => {
-        if (gameState?.current_player_seat === mySeatIdx && myPlayer) {
-            if (betAmount < minRaiseAmount) {
-                setBetAmount(minRaiseAmount);
-            }
-        }
-    }, [gameState?.current_player_seat, minRaiseAmount]);
-
     const [isChatVisible, setIsChatVisible] = useState(true);
     const [isChatPinned, setIsChatPinned] = useState(false);
     const [isChatExpanded, setIsChatExpanded] = useState(false);
     const [isActionPanelHovered, setIsActionPanelHovered] = useState(false);
     const [gameError, setGameError] = useState(null);
     const [showStandUpConfirm, setShowStandUpConfirm] = useState(false);
+
     const messagesEndRef = useRef(null);
     const tableRef = useRef(null);
     const socketRef = useRef(null);
+
     const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : window.location.origin);
     const wsBase = API_BASE.replace('http', 'ws');
 
+    // --- Derived State ---
+    const mySeatEntry = gameState?.seats ? Object.entries(gameState.seats).find(([_, p]) => p.user_id === (myId || gameState.me?.user_id)) : null;
+    const mySeatIdx = mySeatEntry ? parseInt(mySeatEntry[0]) : -1;
+    const myPlayer = mySeatEntry ? mySeatEntry[1] : (gameState?.me || null);
+
+    const minRaiseAmount = React.useMemo(() => {
+        if (!gameState) return 0;
+        const minLegal = Math.max(gameState.big_blind, (gameState.current_bet || 0) + (gameState.min_raise || gameState.big_blind));
+        return minLegal;
+    }, [gameState?.current_bet, gameState?.min_raise, gameState?.big_blind]);
+
+    // --- Handlers ---
+    const sendAction = (action, data = {}) => {
+        const socket = socketRef.current;
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ action, ...data }));
+            if (['FOLD', 'CHECK', 'CALL', 'RAISE'].includes(action)) {
+                setPreAction(null);
+                setPreActionAmount(0);
+            }
+        }
+    };
+
     const handleBuyInConfirm = () => {
+        const socket = socketRef.current;
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
                 action: 'JOIN',
@@ -57,6 +68,27 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
             setShowBuyIn(false);
         }
     };
+
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            tableRef.current?.requestFullscreen();
+            setIsFullscreen(true);
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                setIsFullscreen(false);
+            }
+        }
+    };
+
+    // --- Effects ---
+    useEffect(() => {
+        if (gameState?.current_player_seat === mySeatIdx && myPlayer) {
+            if (betAmount < minRaiseAmount) {
+                setBetAmount(minRaiseAmount);
+            }
+        }
+    }, [gameState?.current_player_seat, minRaiseAmount, mySeatIdx, myPlayer]);
 
     // Timer ticker
     useEffect(() => {
@@ -200,34 +232,9 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
         }
     }, [gameState?.current_player_seat, preAction, mySeatIdx]);
 
-    const sendAction = (action, data = {}) => {
-        const socket = socketRef.current;
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ action, ...data }));
-            // Clear pre-actions whenever we send a manual action
-            if (['FOLD', 'CHECK', 'CALL', 'RAISE'].includes(action)) {
-                setPreAction(null);
-                setPreActionAmount(0);
-            }
-        }
-    };
-
-    const toggleFullscreen = () => {
-        if (!document.fullscreenElement) {
-            tableRef.current?.requestFullscreen();
-            setIsFullscreen(true);
-        } else {
-            document.exitFullscreen();
-            setIsFullscreen(false);
-        }
-    };
 
     if (!gameState) return <div className="text-center p-10 text-white">Loading Table...</div>;
 
-    // Derived state for current player
-    const mySeatEntry = gameState?.seats ? Object.entries(gameState.seats).find(([_, p]) => p.user_id === (myId || gameState.me?.user_id)) : null;
-    const mySeatIdx = mySeatEntry ? parseInt(mySeatEntry[0]) : -1;
-    const myPlayer = mySeatEntry ? mySeatEntry[1] : (gameState?.me || null);
 
     const isWinningCard = (card) => {
         if (!card) return false;
