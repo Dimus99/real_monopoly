@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play, Maximize2, Minimize2, Bot, Trash2, Coins } from 'lucide-react';
 
@@ -875,7 +875,7 @@ const Poker = () => {
         }
     }, [currentTableId]);
 
-    const authFetch = async (url, method = 'GET') => {
+    const authFetch = useCallback(async (url, method = 'GET') => {
         const token = localStorage.getItem('monopoly_token');
         const res = await fetch(`${import.meta.env.VITE_API_URL || ''}${url}`, {
             method,
@@ -884,9 +884,9 @@ const Poker = () => {
             }
         });
         return res;
-    };
+    }, []);
 
-    const fetchInfo = async () => {
+    const fetchInfo = useCallback(async () => {
         setIsLoading(true);
         try {
             const [tRes, uRes] = await Promise.all([
@@ -907,7 +907,7 @@ const Poker = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [authFetch]); // Dependencies for fetchInfo
 
     useEffect(() => {
         fetchInfo();
@@ -919,6 +919,8 @@ const Poker = () => {
         setCurrentTableId(table.id);
     };
 
+    const handleLeave = useCallback(() => setCurrentTableId(null), []);
+
     if (currentTableId) {
         return (
             <div className="h-screen w-screen bg-[#0c0c14] overflow-hidden">
@@ -926,7 +928,7 @@ const Poker = () => {
                     tableId={currentTableId}
                     balance={userBalance}
                     refreshBalance={fetchInfo}
-                    onLeave={() => setCurrentTableId(null)}
+                    onLeave={handleLeave}
                 />
             </div>
         );
