@@ -433,36 +433,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                 )}
             </div>
 
-            {/* Buy In Modal */}
-            {showBuyIn && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="glass-card max-w-sm w-full p-6 animate-in zoom-in">
-                        <h3 className="text-2xl font-bold mb-4">Buy In</h3>
-                        <p className="text-gray-400 text-sm mb-6">Choose how much to bring to the table.</p>
 
-                        <div className="mb-6">
-                            <label className="text-xs text-gray-500 uppercase font-bold block mb-2">Amount</label>
-                            <input
-                                type="number"
-                                className="input-field text-center text-2xl font-mono text-yellow-400"
-                                value={buyInAmount}
-                                onChange={e => setBuyInAmount(Math.min(userBalance, Math.max(selectedTable.min_buy || 100, parseInt(e.target.value) || 0)))}
-                            />
-                            <div className="flex justify-between text-xs text-gray-500 mt-2">
-                                <span>Min: ${selectedTable?.min_buy || 100}</span>
-                                <span>Max: ${Math.min(userBalance, selectedTable?.max_buy || 100000)}</span>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-4">
-                            <button onClick={() => setShowBuyIn(false)} className="btn-ghost flex-1">Cancel</button>
-                            <button onClick={confirmJoin} className="btn-primary flex-1" disabled={buyInAmount > userBalance || buyInAmount < (selectedTable?.min_buy || 100)}>
-                                Sit Down
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
