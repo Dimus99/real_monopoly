@@ -279,7 +279,12 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
         }
 
         // Priority 2: My Current Best Hand Helper (Highlight my combo during play)
+        // ONLY highlight if I have a valid hand combination (better than High Card 0 usually, or if explicitly marked)
         if (gameState.me?.current_hand?.best_cards?.length > 0) {
+            // Avoid highlighting generic "High Card" unless it's a specific top card situation that matters? 
+            // Actually, if rank is 0 (High Card) and uses_my_cards is false, don't highlight.
+            if (gameState.me.current_hand.rank === 0 && !gameState.me.current_hand.uses_my_cards) return false;
+
             return gameState.me.current_hand.best_cards.some(c => c.rank === card.rank && c.suit === card.suit);
         }
 
@@ -291,7 +296,23 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
         const glowClass = winning ? "ring-4 ring-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.8)] z-50 scale-105" : "";
 
         if (!card) return <div className="w-10 h-14 bg-blue-900 border border-blue-500 rounded m-1"></div>;
-        if (card.rank === '?') return <div className="w-10 h-14 bg-blue-800 border-2 border-blue-400 rounded m-1 flex items-center justify-center text-xs text-blue-200 shadow-md">?</div>;
+
+        // Error / Hidden Card Recovery
+        if (card.rank === '?') return (
+            <div
+                onClick={(e) => {
+                    e.stopPropagation(); // Prevent bubbling if container has click
+                    sendAction('REFRESH_HAND');
+                    // Visual feedback
+                    e.target.style.opacity = '0.5';
+                    setTimeout(() => e.target.style.opacity = '1', 200);
+                }}
+                className="w-10 h-14 bg-blue-800 border-2 border-blue-400 rounded m-1 flex items-center justify-center text-xs text-blue-200 shadow-md cursor-pointer hover:bg-blue-700 transition-colors"
+                title="Click to refresh cards"
+            >
+                ?
+            </div>
+        );
 
         const isRed = ['♥', '♦'].includes(card.suit);
         return (
@@ -599,9 +620,9 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                                 </div>
                                                 {/* Hand Combination Name */}
                                                 {player.user_id === gameState.me?.user_id && player.current_hand && !player.is_folded && (
-                                                    <div className={`mt-2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl border-2 animate-in fade-in zoom-in duration-300 ${player.current_hand.uses_my_cards
-                                                        ? 'bg-yellow-500 text-black border-yellow-200/50'
-                                                        : 'bg-gray-700 text-gray-300 border-gray-500'
+                                                    <div className={`mt-3 relative z-[70] px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_4px_10px_rgba(0,0,0,0.5)] border-2 animate-in fade-in zoom-in duration-300 ${player.current_hand.uses_my_cards
+                                                        ? 'bg-yellow-500 text-black border-yellow-200'
+                                                        : 'bg-gray-800 text-gray-300 border-gray-600'
                                                         }`}>
                                                         {player.current_hand.name}
                                                     </div>
