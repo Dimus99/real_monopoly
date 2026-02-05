@@ -76,6 +76,7 @@ const Lobby = () => {
     const [character, setCharacter] = useState('Putin');
     const [activeGames, setActiveGames] = useState([]);
     const [profileName, setProfileName] = useState('');
+    const [balance, setBalance] = useState(0);
 
     // Friends State
     const [friends, setFriends] = useState([]);
@@ -134,6 +135,7 @@ const Lobby = () => {
                 localStorage.setItem('monopoly_token', authData.token);
                 setProfileName(authData.user.name);
                 setUser(authData.user);
+                setBalance(authData.user.balance || 0);
                 setMode('menu');
             } else {
                 let errorData = {};
@@ -158,6 +160,7 @@ const Lobby = () => {
                 const data = await res.json();
                 localStorage.setItem('monopoly_token', data.token);
                 setUser(data.user);
+                setBalance(data.user.balance || 0);
                 setMode('menu');
             } else {
                 alert("Вход гостем запрещен или не удался.");
@@ -251,6 +254,7 @@ const Lobby = () => {
                         const data = await res.json();
                         console.log("DEBUG AUTH: [Init] Token VALID! User:", data.name);
                         setUser(data);
+                        setBalance(data.balance || 0);
                         setProfileName(data.name);
                         setMode('menu');
                         setIsInitializing(false);
@@ -604,8 +608,29 @@ const Lobby = () => {
                     </div>
                 </div>
                 <div className="flex gap-4">
-                    <div className="text-right hidden sm:block max-w-xs">
-                        <div className="text-sm font-mono font-bold text-green-400 leading-tight italic">"{randomAnecdote}"</div>
+                    <div className="flex items-center gap-4">
+                        <div className="bg-[#0c0c14] border border-white/10 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Баланс</div>
+                            <div className="font-mono font-bold text-yellow-400">${balance}</div>
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const res = await authFetch('/api/users/bonus', { method: 'POST' });
+                                        if (res.ok) {
+                                            const data = await res.json();
+                                            setBalance(data.new_balance);
+                                            alert('+10,000 получено!');
+                                        }
+                                    } catch (e) { }
+                                }}
+                                className="ml-2 btn-xs bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-white rounded px-2 transition-colors text-[10px] font-bold"
+                            >
+                                +10k
+                            </button>
+                        </div>
+                        <div className="text-right hidden sm:block max-w-xs">
+                            <div className="text-sm font-mono font-bold text-green-400 leading-tight italic">"{randomAnecdote}"</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -728,7 +753,7 @@ const Lobby = () => {
 
                         {/* RIGHT: Main Content */}
                         <div className="flex-1 min-w-0 w-full">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                                 <button onClick={() => setMode('create')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-purple-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
                                     <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <div className="w-20 h-20 bg-purple-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(168,85,247,0.3)]">
@@ -749,6 +774,18 @@ const Lobby = () => {
                                         <h3 className="text-2xl font-bold mb-2">Дополнительно</h3>
                                         <p className="text-sm text-gray-400">Друзья, Мини-игры, Вход</p>
                                     </div>
+                                </button>
+
+                                <button onClick={() => navigate('/poker')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-green-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-green-600/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="w-20 h-20 bg-green-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+                                        <span className="text-4xl filter drop-shadow-lg">♣️</span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-bold mb-2">Покер</h3>
+                                        <p className="text-sm text-gray-400 font-mono">Texas Hold'em</p>
+                                    </div>
+                                    <div className="absolute top-4 right-4 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded shadow">BETA</div>
                                 </button>
                             </div>
 

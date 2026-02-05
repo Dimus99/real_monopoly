@@ -70,6 +70,9 @@ class UserDB(Base):
     total_earnings: Mapped[int] = mapped_column(Integer, default=0)
     highest_net_worth: Mapped[int] = mapped_column(Integer, default=0)
     
+    # Currency
+    balance: Mapped[int] = mapped_column(BigInteger, default=10000)
+    
     # Relationships
     sent_friend_requests: Mapped[List["FriendRequestDB"]] = relationship(
         "FriendRequestDB",
@@ -98,8 +101,10 @@ class UserDB(Base):
                 "wins": self.wins,
                 "losses": self.losses,
                 "total_earnings": self.total_earnings,
+                "total_earnings": self.total_earnings,
                 "highest_net_worth": self.highest_net_worth,
-            }
+            },
+            "balance": self.balance
         }
 
 

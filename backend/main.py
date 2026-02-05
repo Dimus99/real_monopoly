@@ -19,6 +19,8 @@ from models import User, WSAction
 from database import db
 from db.base import engine as db_engine, async_session, close_db
 from db import service as db_service
+from poker_engine import poker_engine
+from sqlalchemy import text
 
 # Routes
 from routes.users import router as users_router
@@ -94,6 +96,20 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠ Cleanup failed: {e}")
 
+    # Database Migration: Add balance column if missing
+    try:
+        async with async_session() as session:
+            async with session.begin():
+                # Check directly via SQL as this is safer for partial migrations
+                # This is PostgreSQL specific syntax
+                try:
+                    await session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS balance BIGINT DEFAULT 10000"))
+                    print("✓ Database: Verified 'balance' column exists")
+                except Exception as e:
+                    print(f"⚠ Database migration warning: {e}")
+    except Exception as e:
+        print(f"⚠ Database connection failed checking columns: {e}")
+
     # Start background tasks
     task = asyncio.create_task(game_loop())
     print("🎮 MonopolyX Backend started!")
@@ -137,6 +153,153 @@ app.include_router(games_router)
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+@app.post("/api/users/bonus")
+async def get_bonus(current_user: User = Depends(get_current_user)):
+    """Get free 10k chips."""
+    async with async_session() as session:
+        # Fetch directly to update
+        from db.models import UserDB
+        result = await session.execute(text("SELECT id, balance FROM users WHERE id = :uid"), {"uid": current_user.id})
+        user_row = result.fetchone()
+        
+        if user_row:
+             new_bal = (user_row.balance or 0) + 10000
+             await session.execute(
+                 text("UPDATE users SET balance = :b WHERE id = :uid"),
+                 {"b": new_bal, "uid": current_user.id}
+             )
+             await session.commit()
+             return {"success": True, "new_balance": new_bal}
+    return {"error": "User not found"}
+
+@app.get("/api/poker/tables")
+async def get_poker_tables():
+    """Get list of poker tables."""
+    tables = []
+    for tid, table in poker_engine["tables"].items():
+        tables.append({
+            "id": tid,
+            "name": table.name,
+            "players": len(table.seats),
+            "max_seats": table.max_seats,
+            "small_blind": table.small_blind,
+            "big_blind": table.big_blind
+        })
+    return tables
+
+@app.websocket("/ws/poker/{table_id}")
+async def websocket_poker(
+    websocket: WebSocket,
+    table_id: str,
+    token: Optional[str] = Query(None)
+):
+    table = poker_engine["tables"].get(table_id)
+    if not table:
+        await websocket.close(code=4004, reason="Table not found")
+        return
+
+    # Auth logic
+    user = None
+    if token:
+        async with async_session() as session:
+            user_id = await db_service.get_session(session, token)
+            if user_id:
+                user = await db_service.get_user(session, user_id)
+      
+    if not user:
+         await websocket.close(code=4003, reason="Auth required")
+         return
+
+    # Use poker_{table_id} scope for manager
+    poker_scope = f"poker_{table_id}"
+    await manager.connect(websocket, poker_scope, user.id)
+    
+    # Send initial state (with private hand)
+    await websocket.send_json({
+        "type": "CONNECTED",
+        "state": table.get_player_state(user.id)
+    })
+    
+    try:
+        while True:
+            data = await websocket.receive_json()
+            action = data.get("action")
+            resp = None
+            should_broadcast = False
+            
+            if action == "JOIN":
+                buy_in = data.get("buy_in", 1000)
+                async with async_session() as session:
+                     u = await db_service.get_user(session, user.id)
+                     if u.balance < buy_in:
+                         resp = {"error": "Not enough balance"}
+                     else:
+                         await session.execute(text("UPDATE users SET balance = balance - :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})
+                         await session.commit()
+                         resp = table.add_player(user, buy_in)
+                         if resp.get("error"):
+                             await session.execute(text("UPDATE users SET balance = balance + :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})
+                             await session.commit()
+                         else:
+                             should_broadcast = True
+            
+            elif action == "LEAVE":
+                 leave_res = table.remove_player(user.id)
+                 if leave_res.get("success"):
+                      refund = leave_res.get("refund", 0)
+                      if refund > 0:
+                          async with async_session() as session:
+                              await session.execute(text("UPDATE users SET balance = balance + :amt WHERE id = :uid"), {"amt": refund, "uid": user.id})
+                              await session.commit()
+                 resp = leave_res
+                 should_broadcast = True
+
+            elif action in ["FOLD", "CALL", "CHECK", "RAISE"]:
+                 amount = data.get("amount", 0)
+                 resp = table.handle_action(user.id, action, amount)
+                 should_broadcast = True
+            
+            elif action == "START":
+                 # Check if waiting and we have players
+                 if table.state == "WAITING" and len(table.seats) >= 2:
+                     table.start_hand()
+                     resp = {"success": True}
+                     should_broadcast = True
+                     # Broadcast private hands? 
+                     # We will handle that in the broadcast block
+
+            # Error handling
+            if resp and resp.get("error"):
+                 await websocket.send_json({"type": "ERROR", "message": resp["message"] if "message" in resp else resp["error"]})
+                 continue
+            
+            # Broadcast State logic
+            if should_broadcast:
+                 # 1. Send Public State to everyone
+                 public_state = table.to_dict() # This hides hands
+                 await manager.broadcast(poker_scope, {
+                     "type": "GAME_UPDATE", 
+                     "state": public_state
+                 })
+                 
+                 # 2. Update specific users with private info if needed (e.g. at start of hand)
+                 # If we just started a hand, we need to send DEAL event to each player with their cards
+                 # A bit checking table state changes.. but for now, we can just send "HAND_UPDATE" to players who have cards
+                 for seat_num, player in table.seats.items():
+                      if player.hand and not player.is_folded: # If they have cards
+                          await manager.send_to_user(player.user_id, {
+                              "type": "HAND_UPDATE",
+                              "hand": [c.to_dict() for c in player.hand]
+                          })
+            
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        # Handle disconnect (auto fold/leave logic could be here)
+        # For now, just remove from websocket manager
+    except Exception as e:
+        print(f"Poker WS Error: {e}")
+        manager.disconnect(websocket)
 
 # Serve static files for uploads
 uploads_path = os.path.join(os.path.dirname(__file__), "uploads")

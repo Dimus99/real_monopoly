@@ -24,6 +24,7 @@ class User(BaseModel):
     telegram_id: int
     avatar_url: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    balance: int = 10000
     stats: UserStats = Field(default_factory=UserStats)
     
     # For searching users
@@ -37,6 +38,7 @@ class UserPublic(BaseModel):
     avatar_url: Optional[str] = None
     stats: UserStats
     friend_code: Optional[str] = None
+    balance: int = 10000
     is_online: bool = False
 
 

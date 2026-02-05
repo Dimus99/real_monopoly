@@ -5,6 +5,7 @@ import './App.css';
 const Lobby = lazy(() => import('./pages/Lobby'));
 const GameRoom = lazy(() => import('./pages/GameRoom'));
 const HearthstoneMiniGame = lazy(() => import('./pages/HearthstoneMiniGame'));
+const Poker = lazy(() => import('./pages/Poker'));
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="/" element={<Lobby />} />
             <Route path="/game/:gameId/:playerId" element={<GameRoom />} />
             <Route path="/hearthstone" element={<HearthstoneMiniGame />} />
+            <Route path="/poker" element={<Poker />} />
           </Routes>
         </Suspense>
       </div>
