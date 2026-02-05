@@ -241,34 +241,33 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
                 {myPlayer && !myPlayer.is_folded && gameState.current_player_seat === parseInt(mySeat[0]) ? (
                     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-end gap-3 bg-[#0f172a]/90 backdrop-blur p-4 rounded-2xl border border-white/10 shadow-2xl">
                         {/* Fold */}
-                        <button onClick={() => sendAction('FOLD')} className="btn bg-red-600/20 hover:bg-red-600 border border-red-600/50 text-red-500 hover:text-white h-16 w-24 rounded-xl flex flex-col items-center justify-center transition-all group">
-                            <span className="text-xs font-bold uppercase tracking-widest opacity-70 group-hover:opacity-100">Fold</span>
-                            <span className="text-2xl">✕</span>
+                        <button onClick={() => sendAction('FOLD')} className="btn bg-red-600 hover:bg-red-500 border border-red-800 text-white h-16 w-32 rounded-lg flex flex-col items-center justify-center transition-all shadow-[0_5px_0_rgb(153,27,27)] active:shadow-none active:translate-y-1">
+                            <span className="text-sm font-bold uppercase tracking-widest">Fold</span>
                         </button>
 
                         {/* Check/Call */}
-                        <button onClick={() => sendAction(gameState.current_bet > myPlayer.current_bet ? 'CALL' : 'CHECK')} className={`btn bg-blue-600/20 hover:bg-blue-600 border border-blue-600/50 text-blue-500 hover:text-white h-20 w-32 rounded-xl flex flex-col items-center justify-center transition-all -mb-2 shadow-[0_0_20px_rgba(37,99,235,0.2)] group`}>
-                            <span className="text-xs font-bold uppercase tracking-widest opacity-70 group-hover:opacity-100">{gameState.current_bet > myPlayer.current_bet ? 'Call' : 'Check'}</span>
+                        <button onClick={() => sendAction(gameState.current_bet > myPlayer.current_bet ? 'CALL' : 'CHECK')} className="btn bg-green-600 hover:bg-green-500 border border-green-800 text-white h-20 w-40 rounded-lg flex flex-col items-center justify-center transition-all shadow-[0_5px_0_rgb(22,101,52)] active:shadow-none active:translate-y-1 -mb-2">
+                            <span className="text-sm font-bold uppercase tracking-widest">{gameState.current_bet > myPlayer.current_bet ? 'Call' : 'Check'}</span>
                             <span className="text-xl font-bold font-mono">
                                 {gameState.current_bet > myPlayer.current_bet ? `$${gameState.current_bet - myPlayer.current_bet}` : '-'}
                             </span>
                         </button>
 
                         {/* Raise */}
-                        <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-2 bg-black/40 px-2 rounded-lg border border-white/5">
-                                <button onClick={() => setBetAmount(Math.max((gameState.current_bet + gameState.min_raise), betAmount - gameState.big_blind))} className="p-1 text-gray-400 hover:text-white">-</button>
+                        <div className="flex flex-col gap-2 items-center">
+                            <div className="flex items-center gap-2 bg-black/60 px-2 py-1 rounded-lg border border-white/10 shadow-inner">
+                                <button onClick={() => setBetAmount(Math.max((gameState.current_bet + gameState.min_raise), betAmount - gameState.big_blind))} className="w-8 h-8 flex items-center justify-center bg-gray-700 rounded text-white hover:bg-gray-600 font-bold">-</button>
                                 <input
                                     type="number"
-                                    className="w-20 bg-transparent text-white text-center font-bold outline-none font-mono"
+                                    className="w-24 bg-transparent text-yellow-400 text-center font-bold outline-none font-mono text-lg"
                                     value={betAmount || (gameState.current_bet + gameState.min_raise)}
                                     min={gameState.current_bet + gameState.min_raise}
                                     onChange={(e) => setBetAmount(parseInt(e.target.value))}
                                 />
-                                <button onClick={() => setBetAmount(betAmount + gameState.big_blind)} className="p-1 text-gray-400 hover:text-white">+</button>
+                                <button onClick={() => setBetAmount(betAmount + gameState.big_blind)} className="w-8 h-8 flex items-center justify-center bg-gray-700 rounded text-white hover:bg-gray-600 font-bold">+</button>
                             </div>
-                            <button onClick={() => sendAction('RAISE', { amount: betAmount || (gameState.current_bet + gameState.min_raise) })} className="btn bg-yellow-600/20 hover:bg-yellow-600 border border-yellow-600/50 text-yellow-500 hover:text-white h-16 w-24 rounded-xl flex flex-col items-center justify-center transition-all group">
-                                <span className="text-xs font-bold uppercase tracking-widest opacity-70 group-hover:opacity-100">Raise</span>
+                            <button onClick={() => sendAction('RAISE', { amount: betAmount || (gameState.current_bet + gameState.min_raise) })} className="btn bg-yellow-600 hover:bg-yellow-500 border border-yellow-800 text-white h-16 w-32 rounded-lg flex flex-col items-center justify-center transition-all shadow-[0_5px_0_rgb(161,98,7)] active:shadow-none active:translate-y-1">
+                                <span className="text-sm font-bold uppercase tracking-widest">Raise</span>
                                 <span className="text-lg font-bold font-mono">↑</span>
                             </button>
                         </div>
@@ -281,17 +280,20 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
                     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-yellow-900/50 px-6 py-2 rounded-full border border-yellow-500/30 backdrop-blur">
                         <span className="text-yellow-500 font-bold">Spectator Mode</span>
                     </div>
-                )}
-            </div>
+                )
+                }
+            </div >
 
             {/* Start Button (Dev/Host) */}
-            {gameState.state === 'WAITING' && Object.keys(gameState.seats).length >= 2 && (
-                <button onClick={() => sendAction('START')} className="absolute bottom-32 right-8 btn-sm bg-green-500 hover:bg-green-400 text-black font-bold flex items-center gap-2 px-6 py-3 rounded-xl shadow-lg shadow-green-900/20 z-50 animate-bounce">
-                    <Play size={16} fill="black" />
-                    Start Hand
-                </button>
-            )}
-        </div>
+            {
+                gameState.state === 'WAITING' && Object.keys(gameState.seats).length >= 2 && (
+                    <button onClick={() => sendAction('START')} className="absolute bottom-32 right-8 btn-sm bg-green-500 hover:bg-green-400 text-black font-bold flex items-center gap-2 px-6 py-3 rounded-xl shadow-lg shadow-green-900/20 z-50 animate-bounce">
+                        <Play size={16} fill="black" />
+                        Start Hand
+                    </button>
+                )
+            }
+        </div >
     );
 };
 
@@ -348,6 +350,7 @@ const Poker = () => {
 
     const handleJoinClick = (table) => {
         setSelectedTable(table);
+        setBuyInAmount(Math.max(table.min_buy || 100, Math.min(table.max_buy || 100000, 1000)));
         setShowBuyIn(true);
     };
 
@@ -396,6 +399,7 @@ const Poker = () => {
                                 <div className="text-sm text-gray-400 flex items-center gap-4">
                                     <span className="flex items-center gap-1"><Users size={14} /> {table.players}/{table.max_seats}</span>
                                     <span className="flex items-center gap-1 text-yellow-500/70"><Trophy size={14} /> ${table.small_blind}/${table.big_blind}</span>
+                                    <span className="text-xs text-gray-500">Min ${table.min_buy}</span>
                                 </div>
                             </div>
                             <button onClick={() => handleJoinClick(table)} className="btn-primary">
@@ -423,17 +427,17 @@ const Poker = () => {
                                 type="number"
                                 className="input-field text-center text-2xl font-mono text-yellow-400"
                                 value={buyInAmount}
-                                onChange={e => setBuyInAmount(Math.min(userBalance, Math.max(1000, parseInt(e.target.value) || 0)))}
+                                onChange={e => setBuyInAmount(Math.min(userBalance, Math.max(selectedTable.min_buy || 100, parseInt(e.target.value) || 0)))}
                             />
                             <div className="flex justify-between text-xs text-gray-500 mt-2">
-                                <span>Min: $1000</span>
-                                <span>Max: ${userBalance}</span>
+                                <span>Min: ${selectedTable?.min_buy || 100}</span>
+                                <span>Max: ${Math.min(userBalance, selectedTable?.max_buy || 100000)}</span>
                             </div>
                         </div>
 
                         <div className="flex gap-4">
                             <button onClick={() => setShowBuyIn(false)} className="btn-ghost flex-1">Cancel</button>
-                            <button onClick={confirmJoin} className="btn-primary flex-1" disabled={buyInAmount > userBalance || buyInAmount < 1000}>
+                            <button onClick={confirmJoin} className="btn-primary flex-1" disabled={buyInAmount > userBalance || buyInAmount < (selectedTable?.min_buy || 100)}>
                                 Sit Down
                             </button>
                         </div>

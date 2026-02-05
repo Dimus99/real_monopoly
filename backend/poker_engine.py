@@ -47,6 +47,7 @@ class PokerPlayer:
         self.is_all_in = False
         self.is_sitting_out = False
         self.last_action = None
+        self.consecutive_timeouts = 0
         self.is_bot = False
     
     def to_dict(self, show_hand=False):
@@ -62,6 +63,7 @@ class PokerPlayer:
             "is_all_in": self.is_all_in,
             "is_sitting_out": self.is_sitting_out,
             "last_action": self.last_action,
+            "consecutive_timeouts": self.consecutive_timeouts,
             "is_bot": self.is_bot
         }
 
@@ -73,13 +75,15 @@ class BotPlayer(PokerPlayer):
         self.is_bot = True
 
 class PokerTable:
-    def __init__(self, table_id: str, name: str, small_blind: int = 50, big_blind: int = 100):
+    def __init__(self, table_id: str, name: str, small_blind: int = 50, big_blind: int = 100, min_buy: int = 1000, max_buy: int = 100000):
         self.id = table_id
         self.name = name
         self.seats: Dict[int, PokerPlayer] = {} # 0-8
         self.max_seats = 6 
         self.small_blind = small_blind
         self.big_blind = big_blind
+        self.min_buy_in = min_buy
+        self.max_buy_in = max_buy
         
         # Game State
         self.state = "WAITING" 
@@ -105,8 +109,10 @@ class PokerTable:
         return -1
 
     def add_player(self, user: User, buy_in: int) -> Dict:
-        if buy_in < self.big_blind * 20: 
-             return {"error": f"Minimum buy-in is {self.big_blind * 20}"}
+        if buy_in < self.min_buy_in:
+             return {"error": f"Minimum buy-in is {self.min_buy_in}"}
+        if buy_in > self.max_buy_in:
+             return {"error": f"Maximum buy-in is {self.max_buy_in}"}
 
         seat = self.get_empty_seat()
         if seat == -1:
@@ -128,7 +134,7 @@ class PokerTable:
         
         bot_names = ["PokerBot3000", "FishHunter", "AllInAnyTwo", "GTO_Wizard", "Terminator"]
         name = random.choice(bot_names)
-        bot = BotPlayer(name, seat, buy_in=10000)
+        bot = BotPlayer(name, seat, buy_in=10000) # Default buyin for bot
         self.seats[seat] = bot
         self.add_log(f"Bot {name} added at seat {seat}.")
         
@@ -201,15 +207,16 @@ class PokerTable:
              
         self.dealer_seat = active_seats[dealer_idx]
         
-        sb_seat = active_seats[(dealer_idx + 1) % len(active_seats)]
-        bb_seat = active_seats[(dealer_idx + 2) % len(active_seats)]
-        
+        # Reset players
         for p in self.seats.values():
             p.hand = [self.deck.draw(), self.deck.draw()]
             p.current_bet = 0
             p.is_folded = False
             p.is_all_in = False
             p.last_action = None
+        
+        sb_seat = active_seats[(dealer_idx + 1) % len(active_seats)]
+        bb_seat = active_seats[(dealer_idx + 2) % len(active_seats)]
         
         sb_player = self.seats[sb_seat]
         bb_player = self.seats[bb_seat]
@@ -235,6 +242,58 @@ class PokerTable:
         
         self.add_log("New hand started.")
 
+    def check_timers(self) -> Optional[Dict]:
+        """Check for timed out players."""
+        if self.state == "WAITING" or not self.turn_deadline:
+            return None
+            
+        if datetime.utcnow() > self.turn_deadline:
+             # Timeout!
+             seat = self.current_player_seat
+             player = self.seats.get(seat)
+             if player:
+                 player.consecutive_timeouts += 1
+                 self.add_log(f"{player.name} timed out ({player.consecutive_timeouts}/3).")
+                 
+                 if player.consecutive_timeouts >= 3:
+                     # Kick
+                     refund = player.chips if not player.is_bot else 0
+                     del self.seats[seat]
+                     self.add_log(f"{player.name} kicked for inactivity.")
+                     
+                     # Check if game should end
+                     if len(self.seats) < 2:
+                         self.end_hand(winner_by_fold=True)
+                         return {"type": "KICKED", "user_id": player.user_id, "refund": refund, "game_state": self.to_dict()}
+                     
+                     self.next_turn()
+                     return {
+                        "type": "KICKED", 
+                        "user_id": player.user_id, 
+                        "refund": refund, 
+                        "game_state": self.to_dict(), 
+                        "next_is_bot": self.seats[self.current_player_seat].is_bot if self.current_player_seat in self.seats else False
+                     }
+                 
+                 else:
+                     # Auto Fold
+                     player.is_folded = True
+                     player.last_action = "TIMEOUT FOLD"
+                     
+                     active_counts = len([p for p in self.seats.values() if not p.is_folded])
+                     if active_counts == 1:
+                         self.end_hand(winner_by_fold=True)
+                     else:
+                         self.next_turn()
+                         
+                     return {
+                        "type": "TIMEOUT", 
+                        "game_state": self.to_dict(), 
+                        "next_is_bot": self.seats[self.current_player_seat].is_bot if self.current_player_seat in self.seats else False
+                     }
+
+        return None
+
     def handle_action(self, user_id: str, action: str, amount: int = 0) -> Dict:
         player = None
         for p in self.seats.values():
@@ -248,6 +307,7 @@ class PokerTable:
         if action == "FOLD":
             player.is_folded = True
             player.last_action = "FOLD"
+            player.consecutive_timeouts = 0
             self.add_log(f"{player.name} folded.")
             
             active_counts = len([p for p in self.seats.values() if not p.is_folded])
@@ -266,12 +326,14 @@ class PokerTable:
             player.last_action = "CALL"
             if player.chips == 0:
                  player.is_all_in = True
+            player.consecutive_timeouts = 0
             self.add_log(f"{player.name} called {call_amt}.")
             
         elif action == "CHECK":
             if player.current_bet < self.current_bet:
                  return {"error": "Cannot check, must call"}
             player.last_action = "CHECK"
+            player.consecutive_timeouts = 0
             self.add_log(f"{player.name} checked.")
             
         elif action == "RAISE":
@@ -291,7 +353,7 @@ class PokerTable:
             player.last_action = f"RAISE {total_bet}"
             if player.chips == 0:
                  player.is_all_in = True
-            
+            player.consecutive_timeouts = 0
             self.add_log(f"{player.name} raised to {total_bet}.")
 
         result = self.next_turn()
@@ -333,9 +395,8 @@ class PokerTable:
         can_advance = all_matched
         
         if self.state == "PREFLOP" and all_matched:
-             # Very naive preflop check: if we are BB and just matched (checked), advance
-             # Logic is complex, but let's stick to "if all matched, advance" except for the first round?
-             # For simplicity in this bot-heavy version, if everyone matched, we assume round over.
+             # Preflop special case: If active player is BB and bets are matched, 
+             # usually BB gets option to check. But here we simplify.
              pass
         
         if can_advance and (len(not_all_in_players) <= 1 or self.are_all_bets_equal()):
@@ -402,10 +463,7 @@ class PokerTable:
         else:
             active = [p for p in self.seats.values() if not p.is_folded]
             
-            # Simple Scoring:
-            # Rank > (0=High, 1=Pair, 2=TwoPair, 3=Trips, 4=Str, 5=Flu, 6=FH, 7=Quads, 8=SF)
-            # Tie breaker: High Card value sum (lazy)
-            
+            # Simple Scoring
             best_rank = -1
             best_score = -1
             
@@ -422,7 +480,7 @@ class PokerTable:
                     elif score == best_score:
                         winners.append(p)
                     
-        share = self.pot // len(winners)
+        share = self.pot // len(winners) if winners else 0
         for w in winners:
             w.chips += share
             self.add_log(f"{w.name} wins {share}!")
@@ -432,31 +490,20 @@ class PokerTable:
         
     def evaluate_hand(self, hole_cards, community_cards):
         # Returns (Rank, Score)
-        # Ranks: 
-        # 0: High Card
-        # 1: One Pair
-        # 2: Two Pair
-        # 3: Trips
-        # 4: Straight
-        # 5: Flush
-        # 6: Full House
-        # 7: Quads
-        # 8: Straight Flush
+        # 0: High Card, 1: Pair, 2: Two Pair, 3: Trips, 4: Straight, 5: Flush, 6: FH, 7: Quads, 8: SF
         
         cards = hole_cards + community_cards
         ranks = sorted([c.value for c in cards], reverse=True)
         suits = [c.suit for c in cards]
         
-        # Flush check
+        # Flush
         is_flush = False
-        flush_suit = None
         for s in SUITS:
             if suits.count(s) >= 5:
                 is_flush = True
-                flush_suit = s
                 break
         
-        # Straight check (simple, ignores A-2-3-4-5 wrap for brevity unless easy)
+        # Straight
         unique_ranks = sorted(list(set(ranks)), reverse=True)
         is_straight = False
         streak = 0
@@ -471,7 +518,7 @@ class PokerTable:
                 is_straight = True
                 break
         
-        # Multiples check
+        # Multiples
         counts = {}
         for r in ranks: counts[r] = counts.get(r, 0) + 1
         
@@ -479,8 +526,7 @@ class PokerTable:
         trips = [r for r, c in counts.items() if c == 3]
         quads = [r for r, c in counts.items() if c == 4]
         
-        # Determine Rank
-        score = sum(ranks[:5]) # Lazy tie-breaker
+        score = sum(ranks[:5]) 
         
         if is_straight and is_flush: return 8, score
         if quads: return 7, score
@@ -502,19 +548,19 @@ class PokerTable:
             "id": self.id,
             "name": self.name,
             "state": self.state,
-            "seats": {k: v.to_dict(show_hand=False) for k, v in self.seats.items()}, # Hide hands by default
+            "seats": {k: v.to_dict(show_hand=False) for k, v in self.seats.items()}, 
             "community_cards": [c.to_dict() for c in self.community_cards],
             "pot": self.pot,
             "current_bet": self.current_bet,
             "dealer_seat": self.dealer_seat,
             "current_player_seat": self.current_player_seat,
             "logs": self.logs,
-            "turn_deadline": self.turn_deadline.isoformat() if self.turn_deadline else None
+            "turn_deadline": self.turn_deadline.isoformat() if self.turn_deadline else None,
+            "limits": {"min": self.min_buy_in, "max": self.max_buy_in, "sb": self.small_blind, "bb": self.big_blind}
         }
     
     def get_player_state(self, user_id):
         base = self.to_dict()
-        # Reveal own hand
         for seat, p in self.seats.items():
             if p.user_id == user_id:
                 base["seats"][seat] = p.to_dict(show_hand=True)
@@ -524,6 +570,8 @@ class PokerTable:
 
 poker_engine = {
     "tables": {
-        "1": PokerTable("1", "Table 1 (Default)")
+        "1": PokerTable("1", "Rookie Table", small_blind=50, big_blind=100, min_buy=100, max_buy=100000),
+        "2": PokerTable("2", "Pro Table", small_blind=250, big_blind=500, min_buy=500, max_buy=500000),
+        "3": PokerTable("3", "Whale Table", small_blind=500, big_blind=1000, min_buy=1000, max_buy=1000000),
     }
 }

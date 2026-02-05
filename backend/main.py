@@ -44,6 +44,39 @@ async def game_loop():
             print(f"Game loop error: {e}")
             await asyncio.sleep(5)
 
+async def poker_timer_loop():
+    """Background loop for poker timers."""
+    while True:
+        try:
+            for table_id, table in poker_engine["tables"].items():
+                result = table.check_timers()
+                if result:
+                    poker_scope = f"poker_{table_id}"
+                    
+                    # Refund handling if kicked
+                    if result.get("type") == "KICKED":
+                         refund = result.get("refund", 0)
+                         uid = result.get("user_id")
+                         if refund > 0 and uid and not uid.startswith("bot_"): # Bots don't need refund
+                             async with async_session() as session:
+                                 await session.execute(text("UPDATE users SET balance = balance + :amt WHERE id = :uid"), {"amt": refund, "uid": uid})
+                                 await session.commit()
+                    
+                    # Broadcast Update
+                    await manager.broadcast(poker_scope, {
+                        "type": "GAME_UPDATE",
+                        "state": result["game_state"]
+                    })
+                    
+                    # Check if next is bot
+                    if result.get("next_is_bot"):
+                         asyncio.create_task(run_poker_bot_turn(table_id))
+            
+            await asyncio.sleep(1)
+        except Exception as e:
+            print(f"Poker timer loop error: {e}")
+            await asyncio.sleep(5)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -58,6 +91,10 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(fetch_bot_username())
     else:
         print("⚠ Warning: BOT_TOKEN not set, Telegram auth will run in dev mode")
+    
+    # Start Game Loop
+    asyncio.create_task(game_loop())
+    asyncio.create_task(poker_timer_loop())
     
     # Database info
     db_url = os.getenv("DATABASE_URL", "not set")
@@ -184,7 +221,9 @@ async def get_poker_tables():
             "players": len(table.seats),
             "max_seats": table.max_seats,
             "small_blind": table.small_blind,
-            "big_blind": table.big_blind
+            "big_blind": table.big_blind,
+            "min_buy": getattr(table, 'min_buy_in', table.big_blind * 20),
+            "max_buy": getattr(table, 'max_buy_in', 1000000)
         })
     return tables
 
