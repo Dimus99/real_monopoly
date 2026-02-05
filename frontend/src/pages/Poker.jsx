@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play, Maximize2, Minimize2, Bot, Trash2 } from 'lucide-react';
 
-const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
+const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
     const [gameState, setGameState] = useState(null);
     const [socket, setSocket] = useState(null);
     const [betAmount, setBetAmount] = useState(0);
@@ -38,8 +38,23 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
                 setGameState(data.state);
             } else if (data.type === 'GAME_UPDATE') {
                 setGameState(prev => {
-                    // Update public state
-                    return { ...prev, ...data.state };
+                    // Update public state but preserve my private hand if it exists and new one is hidden
+                    const newState = { ...prev, ...data.state };
+
+                    if (prev?.me?.user_id) {
+                        const mySeatIdx = Object.keys(newState.seats).find(k => newState.seats[k].user_id === prev.me.user_id);
+
+                        // If I have a known real hand in prev state
+                        if (mySeatIdx && prev.seats[mySeatIdx]?.hand && prev.seats[mySeatIdx].hand.length > 0 && prev.seats[mySeatIdx].hand[0].rank !== '?') {
+                            // And new state tries to hide it (or is missing it)
+                            if (newState.seats[mySeatIdx]?.hand && (newState.seats[mySeatIdx].hand.length === 0 || newState.seats[mySeatIdx].hand[0].rank === '?')) {
+                                // Restore my hand
+                                newState.seats[mySeatIdx].hand = prev.seats[mySeatIdx].hand;
+                                if (newState.me) newState.me.hand = prev.seats[mySeatIdx].hand;
+                            }
+                        }
+                    }
+                    return newState;
                 });
             } else if (data.type === 'HAND_UPDATE') {
                 // Update private hand
@@ -95,13 +110,31 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
 
     const renderCard = (card) => {
         if (!card) return <div className="w-10 h-14 bg-blue-900 border border-blue-500 rounded m-1"></div>;
-        if (card.rank === '?') return <div className="w-10 h-14 bg-blue-800 border-2 border-blue-400 rounded m-1 flex items-center justify-center text-xs">?</div>;
+        if (card.rank === '?') return <div className="w-10 h-14 bg-blue-800 border-2 border-blue-400 rounded m-1 flex items-center justify-center text-xs text-blue-200 shadow-md">?</div>;
 
         const isRed = ['♥', '♦'].includes(card.suit);
         return (
-            <div className={`w-12 h-16 bg-white ${isRed ? 'text-red-600' : 'text-black'} rounded m-1 flex flex-col items-center justify-center font-bold text-lg shadow-lg`}>
+            <div className={`w-12 h-16 bg-white ${isRed ? 'text-red-600' : 'text-black'} rounded m-1 flex flex-col items-center justify-center font-bold text-lg shadow-lg border border-gray-300`}>
                 <div>{card.rank}</div>
                 <div className="text-xl leading-none">{card.suit}</div>
+            </div>
+        );
+    };
+
+    const renderChips = (amount, isPot = false) => {
+        if (!amount || amount === 0) return null;
+        // Simple stack visual
+        const formatted = amount >= 1000 ? (amount / 1000).toFixed(1) + 'k' : amount;
+        return (
+            <div className={`flex flex-col items-center ${isPot ? 'scale-125' : ''}`}>
+                <div className="relative h-8 w-8">
+                    <div className="absolute bottom-0 w-8 h-8 rounded-full border-4 border-dashed border-white/30 bg-yellow-500 shadow-lg animate-bounce-slight flex items-center justify-center text-[10px] font-bold text-black font-mono">
+                        $
+                    </div>
+                </div>
+                <div className="bg-black/60 text-yellow-400 text-[10px] font-mono font-bold px-1.5 rounded mt-1 border border-yellow-500/30">
+                    ${formatted}
+                </div>
             </div>
         );
     };
@@ -126,6 +159,10 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
                 </div>
                 {/* Header Right */}
                 <div className="flex gap-2">
+                    <div className="bg-black/50 border border-white/10 px-2 py-1 rounded flex items-center gap-2 mr-2">
+                        <span className="text-[10px] text-gray-500 uppercase">Wallet</span>
+                        <span className="text-sm font-bold text-yellow-500">${balance}</span>
+                    </div>
                     <button onClick={() => sendAction('ADD_FUNDS')} className="btn-xs bg-green-900 border border-green-500/50 p-1 px-2 rounded hover:bg-green-800 text-green-200 font-mono font-bold" title="Cheat: Add $10k">
                         +10k
                     </button>
@@ -153,8 +190,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
             {/* Table Area */}
             <div className="flex-1 relative my-4 flex items-center justify-center">
                 {/* Dealer Graphic - Absolute Top Center */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -mt-16 z-0 opacity-80 pointer-events-none">
-                    <img src="https://i.ibb.co/60V0Gz8/poker-dealer-girl-1770264455831.png" className="w-64 h-64 object-contain filter drop-shadow-[0_0_20px_rgba(234,179,8,0.3)]" alt="Dealer" />
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -mt-20 z-0 opacity-90 pointer-events-none">
+                    <img src="/assets/dealer.png" className="w-64 h-64 object-contain filter drop-shadow-[0_0_20px_rgba(234,179,8,0.3)]" onError={(e) => e.target.style.display = 'none'} alt="Dealer" />
                 </div>
 
                 {/* Felt */}
@@ -169,7 +206,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
                     </div>
 
                     {/* Pot Display */}
-                    <div className="absolute top-[60%] flex flex-col items-center">
+                    <div className="absolute top-[60%] flex flex-col items-center gap-2">
+                        {renderChips(gameState.pot, true)}
                         <div className="text-yellow-400 font-mono font-bold bg-black/60 px-4 py-1 rounded-full text-lg border border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.3)]">
                             Pot: ${gameState.pot}
                         </div>
@@ -231,11 +269,17 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
                                             )}
                                         </div>
 
-                                        {/* Info Box */}
                                         <div className="bg-[#0f172a]/90 backdrop-blur px-4 py-2 rounded-xl text-center -mt-3 z-30 border border-white/10 min-w-[100px] shadow-xl">
                                             <div className="text-xs font-bold truncate max-w-[100px] text-gray-200">{player.name}</div>
                                             <div className="text-sm text-yellow-500 font-mono font-bold">${player.chips}</div>
                                         </div>
+
+                                        {/* Chips Bet Display (Near Player) */}
+                                        {player.current_bet > 0 && (
+                                            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 z-20">
+                                                {renderChips(player.current_bet)}
+                                            </div>
+                                        )}
 
                                         {/* Action Balloon */}
                                         {player.last_action && (
@@ -384,6 +428,7 @@ const Poker = () => {
                 <PokerTable
                     tableId={currentTableId}
                     autoBuyIn={buyInAmount}
+                    balance={userBalance}
                     onLeave={() => setCurrentTableId(null)}
                 />
             </div>
