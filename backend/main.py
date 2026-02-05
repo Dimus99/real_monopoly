@@ -269,6 +269,14 @@ async def websocket_poker(
                      # Broadcast private hands? 
                      # We will handle that in the broadcast block
 
+            elif action == "ADD_BOT":
+                 resp = table.add_bot()
+                 should_broadcast = True
+
+            elif action == "REMOVE_BOT":
+                 resp = table.remove_bot()
+                 should_broadcast = True
+            
             # Error handling
             if resp and resp.get("error"):
                  await websocket.send_json({"type": "ERROR", "message": resp["message"] if "message" in resp else resp["error"]})
@@ -284,14 +292,22 @@ async def websocket_poker(
                  })
                  
                  # 2. Update specific users with private info if needed (e.g. at start of hand)
-                 # If we just started a hand, we need to send DEAL event to each player with their cards
-                 # A bit checking table state changes.. but for now, we can just send "HAND_UPDATE" to players who have cards
                  for seat_num, player in table.seats.items():
-                      if player.hand and not player.is_folded: # If they have cards
+                      if player.hand and not player.is_folded and not player.is_bot: # If they have cards
                           await manager.send_to_user(player.user_id, {
                               "type": "HAND_UPDATE",
                               "hand": [c.to_dict() for c in player.hand]
                           })
+                
+                 # 3. Check for Bot Turn
+                 next_is_bot = resp.get("next_is_bot", False) if resp else False
+                 
+                 # Also check state directly just in case (e.g. after START)
+                 if table.state != "WAITING" and table.current_player_seat in table.seats and table.seats[table.current_player_seat].is_bot:
+                      next_is_bot = True
+
+                 if next_is_bot:
+                      asyncio.create_task(run_poker_bot_turn(table_id))
             
     except WebSocketDisconnect:
         manager.disconnect(websocket)
@@ -779,6 +795,74 @@ async def websocket_game(
         manager.disconnect(websocket)
 
 
+
+async def run_poker_bot_turn(table_id: str):
+    """Execute bot turn loop for poker."""
+    table = poker_engine["tables"].get(table_id)
+    if not table: return
+
+    # Loop in case multiple bots act in sequence
+    while True:
+        # Check if current player is bot
+        if table.state == "WAITING": break
+        
+        curr_seat = table.current_player_seat
+        player = table.seats.get(curr_seat)
+        
+        if not player or not player.is_bot:
+            break
+            
+        print(f"DEBUG: Poker Bot {player.name} turn.")
+        await asyncio.sleep(1.0 + random.random()) # Delay for realism
+        
+        # Bot Logic
+        action = "FOLD"
+        
+        # Check
+        if player.current_bet == table.current_bet:
+             action = "CHECK"
+        else:
+             rank, score = table.evaluate_hand(player.hand, table.community_cards)
+             if rank >= 1: # Pair or better
+                 action = "CALL"
+             else:
+                 action = "FOLD"
+        
+        resp = table.handle_action(player.user_id, action)
+        
+        # Broadcast
+        poker_scope = f"poker_{table_id}"
+        await manager.broadcast(poker_scope, {
+             "type": "GAME_UPDATE", 
+             "state": table.to_dict()
+        })
+        
+        # If hand ended, we might need to restart?
+        if table.state == "WAITING":
+            await asyncio.sleep(2.0)
+            if len(table.seats) >= 2:
+                 table.start_hand()
+                 await manager.broadcast(poker_scope, {
+                     "type": "GAME_UPDATE", 
+                     "state": table.to_dict()
+                 })
+                 # Deal cards
+                 for seat_num, p in table.seats.items():
+                      if p.hand and not p.is_folded and not p.is_bot:
+                           await manager.send_to_user(p.user_id, {
+                               "type": "HAND_UPDATE",
+                               "hand": [c.to_dict() for c in p.hand]
+                           })
+            break # Break loop if hand ended/restarted, let next turn trigger via natural flow or re-check?
+                  # We should probably continue loop if new hand starts and bot is first? 
+                  # But start_hand sets UTG.
+                  # Let's break to be safe and let recursion or next trigger handle it?
+                  # Actually, if we break, nobody calls run_poker_bot_turn again.
+                  # So we should Loop again.
+        
+        # Determine if we should continue looping (next player is bot)
+        # Handle Action already advanced turn.
+        
 async def _check_and_run_bot_turn(game_id: str):
     """Check if it's a bot's turn and run it with dice animation timing."""
     game = engine.games.get(game_id)

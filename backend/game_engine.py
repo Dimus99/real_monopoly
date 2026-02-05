@@ -172,7 +172,7 @@ CHARACTER_ABILITIES = {
     },
     "Xi": {
         "name": "CONSTRUCTION",
-        "description": "Infrastructure: Rebuild any destroyed property OR build 1 house on monopoly street.",
+        "description": "He is currently building: Free rebuild of any destroyed property OR build 1 free house on monopoly street.",
         "cooldown": 8
     },
     "Netanyahu": {

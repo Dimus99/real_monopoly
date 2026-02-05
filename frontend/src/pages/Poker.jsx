@@ -1,15 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play, Maximize2, Minimize2, Bot, Trash2 } from 'lucide-react';
 
 const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
     const [gameState, setGameState] = useState(null);
     const [socket, setSocket] = useState(null);
     const [betAmount, setBetAmount] = useState(0);
     const [connected, setConnected] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [_, setTick] = useState(0); // Force re-render for timer
     const messagesEndRef = useRef(null);
+    const tableRef = useRef(null);
     const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : window.location.origin);
     const wsBase = API_BASE.replace('http', 'ws');
+
+    // Timer ticker
+    useEffect(() => {
+        const interval = setInterval(() => setTick(t => t + 1), 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         const token = localStorage.getItem('monopoly_token');
@@ -69,27 +78,45 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
         }
     };
 
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            tableRef.current?.requestFullscreen();
+            setIsFullscreen(true);
+        } else {
+            document.exitFullscreen();
+            setIsFullscreen(false);
+        }
+    };
+
     if (!gameState) return <div className="text-center p-10 text-white">Loading Table...</div>;
 
     const mySeat = Object.entries(gameState.seats).find(([k, v]) => v.user_id === gameState.me?.user_id);
     const myPlayer = mySeat ? mySeat[1] : null;
 
     const renderCard = (card) => {
-        if (!card) return <div className="w-8 h-12 bg-blue-900 border border-blue-500 rounded m-1"></div>;
-        if (card.rank === '?') return <div className="w-8 h-12 bg-blue-800 border-2 border-blue-400 rounded m-1 flex items-center justify-center text-xs">?</div>;
+        if (!card) return <div className="w-10 h-14 bg-blue-900 border border-blue-500 rounded m-1"></div>;
+        if (card.rank === '?') return <div className="w-10 h-14 bg-blue-800 border-2 border-blue-400 rounded m-1 flex items-center justify-center text-xs">?</div>;
 
         const isRed = ['♥', '♦'].includes(card.suit);
         return (
-            <div className={`w-10 h-14 bg-white ${isRed ? 'text-red-600' : 'text-black'} rounded m-1 flex flex-col items-center justify-center font-bold text-sm shadow-lg`}>
+            <div className={`w-12 h-16 bg-white ${isRed ? 'text-red-600' : 'text-black'} rounded m-1 flex flex-col items-center justify-center font-bold text-lg shadow-lg`}>
                 <div>{card.rank}</div>
-                <div className="text-lg leading-none">{card.suit}</div>
+                <div className="text-xl leading-none">{card.suit}</div>
             </div>
         );
     };
 
+    // Calculate time remaining if deadline exists
+    const getTimeRemaining = () => {
+        if (!gameState.turn_deadline) return 0;
+        const total = Date.parse(gameState.turn_deadline) - Date.now();
+        return Math.max(0, Math.floor(total / 1000));
+    };
+
     return (
-        <div className="flex flex-col h-full w-full max-w-6xl mx-auto glass-card p-4 relative">
-            <div className="flex justify-between items-center mb-4">
+        <div ref={tableRef} className="flex flex-col h-full w-full max-w-7xl mx-auto glass-card p-4 relative bg-[#0f172a] overflow-hidden">
+            {/* Top Bar */}
+            <div className="flex justify-between items-center z-10">
                 <button onClick={() => { sendAction('LEAVE'); onLeave(); }} className="btn-ghost text-sm flex items-center gap-1">
                     <ArrowLeft size={16} /> Leave
                 </button>
@@ -97,116 +124,171 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
                     <h2 className="text-xl font-bold text-yellow-400">{gameState.name}</h2>
                     <div className="text-xs text-gray-400">Pot: {gameState.pot} • Blinds: {gameState.small_blind}/{gameState.big_blind}</div>
                 </div>
-                <div className="w-20"></div>
+                <div className="flex gap-2">
+                    <button onClick={() => sendAction('ADD_BOT')} className="btn-xs border border-white/20 p-1 rounded hover:bg-white/10" title="Add Bot">
+                        <Bot size={16} />
+                    </button>
+                    <button onClick={() => sendAction('REMOVE_BOT')} className="btn-xs border border-white/20 p-1 rounded hover:bg-white/10" title="Remove Bot">
+                        <Trash2 size={16} />
+                    </button>
+                    <button onClick={toggleFullscreen} className="btn-ghost p-1">
+                        {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                    </button>
+                </div>
             </div>
 
             {/* Table Area */}
-            <div className="flex-1 relative bg-green-900/40 rounded-full border-4 border-green-800 my-8 shadow-inner flex items-center justify-center min-h-[400px]">
-                {/* Community Cards */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex gap-2">
-                    {gameState.community_cards.map((c, i) => <div key={i}>{renderCard(c)}</div>)}
-                    {gameState.community_cards.length === 0 && <span className="text-green-500/20 font-bold uppercase tracking-widest">Community Cards</span>}
-                </div>
+            <div className="flex-1 relative my-4 flex items-center justify-center">
+                {/* Felt */}
+                <div className="w-[90%] aspect-[2/1] bg-[#1a472a] rounded-[200px] border-[12px] border-[#2d2a26] shadow-[inset_0_0_100px_rgba(0,0,0,0.5)] relative flex items-center justify-center">
 
-                {/* Pot */}
-                <div className="absolute top-[40%] text-yellow-400 font-mono font-bold bg-black/50 px-3 py-1 rounded-full text-xs">
-                    POT: {gameState.pot}
-                </div>
-
-                {/* Seats */}
-                {[0, 1, 2, 3, 4, 5].map(seatIdx => {
-                    const player = gameState.seats[seatIdx];
-                    const isMe = myPlayer && parseInt(mySeat[0]) === seatIdx;
-                    const isActive = gameState.current_player_seat === seatIdx;
-
-                    // Simple positioning (approximate circle)
-                    const positions = [
-                        { top: 'auto', bottom: '-40px', left: '50%', transform: 'translateX(-50%)' }, // 0 (Bottom - Me mostly)
-                        { top: 'auto', bottom: '20px', left: '10px', transform: 'none' }, // 1 (Bottom Left)
-                        { top: '20px', bottom: 'auto', left: '10px', transform: 'none' }, // 2 (Top Left)
-                        { top: '-40px', bottom: 'auto', left: '50%', transform: 'translateX(-50%)' }, // 3 (Top)
-                        { top: '20px', bottom: 'auto', right: '10px', transform: 'none' }, // 4 (Top Right)
-                        { top: 'auto', bottom: '20px', right: '10px', transform: 'none' }, // 5 (Bottom Right)
-                    ];
-
-                    const pos = positions[seatIdx]; // This needs improved mapping to ensure "Me" is always bottom if we want advanced UI, but simple fixed seats ok.
-
-                    return (
-                        <div key={seatIdx} className={`absolute flex flex-col items-center ${isActive ? 'scale-110 z-10' : ''}`} style={pos}>
-                            {player ? (
-                                <div className={`flex flex-col items-center group relative`}>
-                                    {/* Cards */}
-                                    <div className="flex -mb-4 z-0">
-                                        {player.hand.map((c, i) => <div key={i} className={`transform ${i === 0 ? '-rotate-6' : 'rotate-6'}`}>{renderCard(c)}</div>)}
-                                    </div>
-
-                                    {/* Avatar */}
-                                    <div className={`w-16 h-16 rounded-full border-4 overflow-hidden z-10 bg-gray-900 ${isActive ? 'border-yellow-400 shadow-[0_0_15px_yellow]' : 'border-gray-600'} ${player.is_folded ? 'opacity-50 grayscale' : ''}`}>
-                                        {player.avatar_url && player.avatar_url.length > 2 ? <img src={player.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>}
-                                    </div>
-
-                                    {/* Info */}
-                                    <div className="bg-black/80 px-3 py-1 rounded text-center -mt-2 z-20 border border-white/10 min-w-[80px]">
-                                        <div className="text-xs font-bold truncate max-w-[80px]">{player.name}</div>
-                                        <div className="text-xs text-yellow-400 font-mono">${player.chips}</div>
-                                    </div>
-
-                                    {/* Action Text */}
-                                    {player.last_action && (
-                                        <div className="absolute top-0 right-0 transform translate-x-full text-xs font-bold bg-blue-600 px-2 py-0.5 rounded text-white shadow animate-bounce">
-                                            {player.last_action}
-                                        </div>
-                                    )}
-
-                                    {/* Dealer Button */}
-                                    {gameState.dealer_seat === seatIdx && (
-                                        <div className="absolute top-0 left-0 bg-white text-black font-bold rounded-full w-5 h-5 flex items-center justify-center text-xs border border-gray-400 shadow-md transform -translate-x-1/2 -translate-y-1/2">D</div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center text-white/20 text-xs">Empty</div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Logs */}
-            <div className="h-24 overflow-y-auto bg-black/30 rounded p-2 text-[10px] text-gray-400 font-mono mb-4 custom-scrollbar">
-                {gameState.logs.map((l, i) => (
-                    <div key={i}><span className="text-gray-600">[{l.time.split('T')[1].split('.')[0]}]</span> {l.msg}</div>
-                ))}
-                <div ref={messagesEndRef} />
-            </div>
-
-            {/* Controls */}
-            {myPlayer && !myPlayer.is_folded && gameState.current_player_seat === parseInt(mySeat[0]) ? (
-                <div className="flex gap-2 justify-center p-4 bg-white/5 rounded-xl border border-white/10">
-                    <button onClick={() => sendAction('FOLD')} className="btn-sm bg-red-600 hover:bg-red-500 text-white font-bold">FOLD</button>
-                    <button onClick={() => sendAction('CHECK')} className="btn-sm bg-blue-600 hover:bg-blue-500 text-white font-bold">CHECK</button>
-                    <button onClick={() => sendAction('CALL')} className="btn-sm bg-green-600 hover:bg-green-500 text-white font-bold">CALL</button>
-
-                    <div className="flex items-center gap-2 bg-black/40 px-2 rounded">
-                        <input
-                            type="number"
-                            className="w-20 bg-transparent text-white text-center font-bold outline-none"
-                            value={betAmount || (gameState.current_bet + gameState.min_raise)}
-                            min={gameState.current_bet + gameState.min_raise}
-                            onChange={(e) => setBetAmount(parseInt(e.target.value))}
-                        />
-                        <button onClick={() => sendAction('RAISE', { amount: betAmount })} className="btn-sm bg-yellow-600 hover:bg-yellow-500 text-white font-bold">RAISE</button>
+                    {/* Community Cards */}
+                    <div className="flex gap-2 mb-8">
+                        {gameState.community_cards.map((c, i) => <div key={i}>{renderCard(c)}</div>)}
+                        {Array(5 - gameState.community_cards.length).fill(0).map((_, i) => (
+                            <div key={i} className="w-12 h-16 border-2 border-white/5 rounded m-1"></div>
+                        ))}
                     </div>
+
+                    {/* Pot Display */}
+                    <div className="absolute top-[60%] flex flex-col items-center">
+                        <div className="text-yellow-400 font-mono font-bold bg-black/60 px-4 py-1 rounded-full text-lg border border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.3)]">
+                            Pot: ${gameState.pot}
+                        </div>
+                    </div>
+
+                    {/* Seats */}
+                    {[0, 1, 2, 3, 4, 5].map(seatIdx => {
+                        const player = gameState.seats[seatIdx];
+                        const isMe = myPlayer && parseInt(mySeat[0]) === seatIdx;
+                        const isActive = gameState.current_player_seat === seatIdx;
+
+                        // Positioning
+                        const positions = [
+                            { top: 'auto', bottom: '-40px', left: '50%', transform: 'translateX(-50%)' }, // 0 (My Seat)
+                            { top: 'auto', bottom: '15%', left: '-5%', transform: 'none' }, // 1 (Bottom Left)
+                            { top: '15%', bottom: 'auto', left: '-5%', transform: 'none' }, // 2 (Top Left)
+                            { top: '-40px', bottom: 'auto', left: '50%', transform: 'translateX(-50%)' }, // 3 (Top)
+                            { top: '15%', bottom: 'auto', right: '-5%', transform: 'none' }, // 4 (Top Right)
+                            { top: 'auto', bottom: '15%', right: '-5%', transform: 'none' }, // 5 (Bottom Right)
+                        ];
+
+                        const pos = positions[seatIdx];
+
+                        return (
+                            <div key={seatIdx} className={`absolute flex flex-col items-center transition-all duration-300 ${isActive ? 'scale-110 z-20' : 'z-10'}`} style={pos}>
+                                {player ? (
+                                    <div className="flex flex-col items-center group relative">
+                                        {/* Timer Ring if Active */}
+                                        {isActive && (
+                                            <>
+                                                <div className="absolute w-[115%] h-[115%] -top-[7.5%] -left-[7.5%] border-2 border-yellow-400 rounded-full animate-pulse z-0"></div>
+                                                <div className="absolute -bottom-6 bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 rounded-full z-50 shadow-lg border border-yellow-200">
+                                                    {getTimeRemaining()}s
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Cards */}
+                                        <div className="flex -mb-6 z-10 filter drop-shadow-xl hover:-translate-y-2 transition-transform">
+                                            {player.hand.map((c, i) => (
+                                                <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-1' : 'rotate-6 -translate-x-1'} origin-bottom`}>
+                                                    {renderCard(c)}
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Avatar */}
+                                        <div className={`w-20 h-20 rounded-full border-4 overflow-hidden z-20 bg-[#1a1a2e] ${isActive ? 'border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.5)]' : 'border-[#2d2a26]'} ${player.is_folded ? 'opacity-50 grayscale' : ''} relative`}>
+                                            {player.avatar_url && player.avatar_url.length > 2 ? (
+                                                <img src={player.avatar_url} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-3xl">{player.is_bot ? '🤖' : '👤'}</div>
+                                            )}
+
+                                            {/* Dealer Button */}
+                                            {gameState.dealer_seat === seatIdx && (
+                                                <div className="absolute top-0 right-0 bg-white text-black font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs border border-gray-400 shadow-md">D</div>
+                                            )}
+                                        </div>
+
+                                        {/* Info Box */}
+                                        <div className="bg-[#0f172a]/90 backdrop-blur px-4 py-2 rounded-xl text-center -mt-3 z-30 border border-white/10 min-w-[100px] shadow-xl">
+                                            <div className="text-xs font-bold truncate max-w-[100px] text-gray-200">{player.name}</div>
+                                            <div className="text-sm text-yellow-500 font-mono font-bold">${player.chips}</div>
+                                        </div>
+
+                                        {/* Action Balloon */}
+                                        {player.last_action && (
+                                            <div className="absolute -top-8 right-0 transform translate-x-1/2 text-xs font-bold bg-blue-600 px-3 py-1 rounded-full text-white shadow-lg animate-bounce whitespace-nowrap z-40 border border-blue-400">
+                                                {player.last_action}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center text-white/10 text-xs hover:bg-white/5 transition-colors cursor-pointer">
+                                        Empty
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
-            ) : myPlayer ? (
-                <div className="text-center font-bold text-gray-500 p-2">Waiting for turn...</div>
-            ) : (
-                <div className="text-center p-2 text-yellow-500">Spectating Mode (Join via Lobby to play)</div>
-            )}
+            </div>
+
+            {/* Action Bar (Bottom) */}
+            <div className="h-24 relative mt-auto z-40">
+                {myPlayer && !myPlayer.is_folded && gameState.current_player_seat === parseInt(mySeat[0]) ? (
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-end gap-3 bg-[#0f172a]/90 backdrop-blur p-4 rounded-2xl border border-white/10 shadow-2xl">
+                        {/* Fold */}
+                        <button onClick={() => sendAction('FOLD')} className="btn bg-red-600/20 hover:bg-red-600 border border-red-600/50 text-red-500 hover:text-white h-16 w-24 rounded-xl flex flex-col items-center justify-center transition-all group">
+                            <span className="text-xs font-bold uppercase tracking-widest opacity-70 group-hover:opacity-100">Fold</span>
+                            <span className="text-2xl">✕</span>
+                        </button>
+
+                        {/* Check/Call */}
+                        <button onClick={() => sendAction(gameState.current_bet > myPlayer.current_bet ? 'CALL' : 'CHECK')} className={`btn bg-blue-600/20 hover:bg-blue-600 border border-blue-600/50 text-blue-500 hover:text-white h-20 w-32 rounded-xl flex flex-col items-center justify-center transition-all -mb-2 shadow-[0_0_20px_rgba(37,99,235,0.2)] group`}>
+                            <span className="text-xs font-bold uppercase tracking-widest opacity-70 group-hover:opacity-100">{gameState.current_bet > myPlayer.current_bet ? 'Call' : 'Check'}</span>
+                            <span className="text-xl font-bold font-mono">
+                                {gameState.current_bet > myPlayer.current_bet ? `$${gameState.current_bet - myPlayer.current_bet}` : '-'}
+                            </span>
+                        </button>
+
+                        {/* Raise */}
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2 bg-black/40 px-2 rounded-lg border border-white/5">
+                                <button onClick={() => setBetAmount(Math.max((gameState.current_bet + gameState.min_raise), betAmount - gameState.big_blind))} className="p-1 text-gray-400 hover:text-white">-</button>
+                                <input
+                                    type="number"
+                                    className="w-20 bg-transparent text-white text-center font-bold outline-none font-mono"
+                                    value={betAmount || (gameState.current_bet + gameState.min_raise)}
+                                    min={gameState.current_bet + gameState.min_raise}
+                                    onChange={(e) => setBetAmount(parseInt(e.target.value))}
+                                />
+                                <button onClick={() => setBetAmount(betAmount + gameState.big_blind)} className="p-1 text-gray-400 hover:text-white">+</button>
+                            </div>
+                            <button onClick={() => sendAction('RAISE', { amount: betAmount || (gameState.current_bet + gameState.min_raise) })} className="btn bg-yellow-600/20 hover:bg-yellow-600 border border-yellow-600/50 text-yellow-500 hover:text-white h-16 w-24 rounded-xl flex flex-col items-center justify-center transition-all group">
+                                <span className="text-xs font-bold uppercase tracking-widest opacity-70 group-hover:opacity-100">Raise</span>
+                                <span className="text-lg font-bold font-mono">↑</span>
+                            </button>
+                        </div>
+                    </div>
+                ) : myPlayer ? (
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 px-6 py-2 rounded-full border border-white/10 backdrop-blur">
+                        <span className="text-gray-400 font-bold animate-pulse">Waiting for opponents...</span>
+                    </div>
+                ) : (
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-yellow-900/50 px-6 py-2 rounded-full border border-yellow-500/30 backdrop-blur">
+                        <span className="text-yellow-500 font-bold">Spectator Mode</span>
+                    </div>
+                )}
+            </div>
 
             {/* Start Button (Dev/Host) */}
             {gameState.state === 'WAITING' && Object.keys(gameState.seats).length >= 2 && (
-                <button onClick={() => sendAction('START')} className="absolute bottom-4 right-4 btn-sm bg-green-500 text-black font-bold flex items-center gap-1">
-                    <Play size={12} /> Start Hand
+                <button onClick={() => sendAction('START')} className="absolute bottom-32 right-8 btn-sm bg-green-500 hover:bg-green-400 text-black font-bold flex items-center gap-2 px-6 py-3 rounded-xl shadow-lg shadow-green-900/20 z-50 animate-bounce">
+                    <Play size={16} fill="black" />
+                    Start Hand
                 </button>
             )}
         </div>
@@ -270,42 +352,17 @@ const Poker = () => {
     };
 
     const confirmJoin = () => {
-        // We actually establish the WS connection first then send JOIN, but logic is inside PokerTable.
-        // But PokerTable assumes it's already connected.
-        // Actually, logic: Connect WS -> Receive CONNECTED -> Send JOIN action.
-        // So we just set currentTableId, and PokerTable handles the WS.
-        // But how do we pass buy-in? 
-        // We'll pass `initialBuyIn` prop to PokerTable and it will auto-send JOIN?
-        // Or better: PokerTable renders. User is 'spectator' initially. Then user sends JOIN via a button inside?
-        // User requested "Choose balance when sitting".
-        // Let's pass the chosen buy-in to the PokerTable so it can send JOIN command immediately.
         setCurrentTableId(selectedTable.id);
         setShowBuyIn(false);
     };
 
-    // Auto-join wrapper
-    const AutoJoinPokerTable = ({ tableId, buyIn, onLeave }) => {
-        const [ws, setWs] = useState(null);
-        // We need to inject the JOIN message once connected
-        // This logic is tricky to standard component. 
-        // Simplified: The PokerTable component above waits for connection.
-        // We can modify PokerTable to take an optional 'autoJoinBuyIn' prop.
-
-        // Let's modify PokerTable inside the file context (it's in the same file).
-        // I will add useEffect to PokerTable to send JOIN if autoJoinBuyIn is present and connected.
-        // Actually simplest way is passing it down.
-        return <PokerTable tableId={tableId} onLeave={onLeave} />;
+    const PokerTableWithAutoJoin = ({ tableId, buyIn, onLeave }) => {
+        return <PokerTable tableId={tableId} onLeave={onLeave} autoBuyIn={buyIn} />;
     };
 
     if (currentTableId) {
         return (
-            <div className="min-h-screen bg-[#0c0c14] flex items-center justify-center p-4">
-                {/* Injecting JOIN logic via a small refactor or just expectation that user clicks? 
-                     User said: "Choose balance when connectiong to table". 
-                     So connection = Sitting.
-                     I need to ensure PokerTable sends JOIN. 
-                     I'll edit PokerTable above to handle this.
-                 */}
+            <div className="h-screen w-screen bg-[#0c0c14] overflow-hidden">
                 <PokerTableWithAutoJoin
                     tableId={currentTableId}
                     buyIn={buyInAmount}
@@ -385,21 +442,6 @@ const Poker = () => {
             )}
         </div>
     );
-};
-
-// Internal wrapper to handle auto-join logic
-const PokerTableWithAutoJoin = ({ tableId, buyIn, onLeave }) => {
-    const [sentJoin, setSentJoin] = useState(false);
-
-    // We attach a ref to access the socket from parent? No, we modify PokerTable.
-    // Let's just Paste PokerTable code here again but slightly modified?
-    // No, duplicate code is bad.
-    // I can assume PokerTable is smart enough. I will modify the PokerTable definition above to accept buyIn prop.
-    // Ah, I cannot modify the definition since I wrote it in the same file block.
-    // I will rewrite the PokerTable component in the same file to handle `buyIn`.
-
-    // Re-defining PokerTable for the file content...
-    return <PokerTable tableId={tableId} onLeave={onLeave} autoBuyIn={buyIn} />;
 };
 
 export default Poker;
