@@ -47,7 +47,10 @@ const GameRoom = () => {
     const effectivePlayers = (Object.keys(delayedPlayers).length > 0) ? delayedPlayers : (gameState?.players || {});
     const currentPlayer = effectivePlayers[playerId] || gameState?.players?.[playerId];
 
-    const isMyTurn = gameState?.player_order?.[gameState?.current_turn_index] === playerId;
+    const isMyTurn = React.useMemo(() => {
+        if (!gameState?.player_order || gameState?.current_turn_index === undefined) return false;
+        return gameState.player_order[gameState.current_turn_index] === playerId;
+    }, [gameState?.player_order, gameState?.current_turn_index, playerId]);
     const currentTurnPlayer = effectivePlayers[gameState?.player_order?.[gameState?.current_turn_index]];
     const playerChar = CHARACTERS[currentPlayer?.character] || CHARACTERS.Putin;
     const currentTile = gameState?.board?.[currentPlayer?.position];

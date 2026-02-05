@@ -582,6 +582,13 @@ class PokerTable:
                 
         return best_rank, best_score, best_hand
 
+    def get_hand_name(self, rank):
+        hand_ranks = {
+            0: "High Card", 1: "Pair", 2: "Two Pair", 3: "Three of a Kind",
+            4: "Straight", 5: "Flush", 6: "Full House", 7: "Four of a Kind", 8: "Straight Flush"
+        }
+        return hand_ranks.get(rank, "Unknown")
+
     def _eval_5(self, cards: List[Card]) -> Tuple[int, int]:
         ranks = sorted([c.value for c in cards], reverse=True)
         suits = [c.suit for c in cards]
@@ -641,8 +648,17 @@ class PokerTable:
         base = self.to_dict()
         for seat, p in self.seats.items():
             if p.user_id == user_id:
-                base["seats"][seat] = p.to_dict(show_hand=True)
-                base["me"] = p.to_dict(show_hand=True)
+                p_dict = p.to_dict(show_hand=True)
+                # Add current hand evaluation for the player themselves
+                if p.hand and len(p.hand) == 2:
+                    rank, score, best_hand = self.evaluate_hand(p.hand, self.community_cards)
+                    p_dict["current_hand"] = {
+                        "rank": rank,
+                        "name": self.get_hand_name(rank),
+                        "cards": [c.to_dict() for c in best_hand]
+                    }
+                base["seats"][seat] = p_dict
+                base["me"] = p_dict
                 break
         return base
 
