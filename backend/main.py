@@ -73,9 +73,23 @@ async def poker_timer_loop():
                     if table.state != "WAITING":
                         for seat_num, player in table.seats.items():
                              if player.hand and not player.is_folded and not player.is_bot:
+                                 # Evaluate Hand for Real-Time Feedback
+                                 rank_val, score_val, best_cards = table.evaluate_hand(player.hand, table.community_cards)
+                                 hand_name = table.get_hand_name(rank_val)
+                                 
+                                 my_cards_strs = [c.to_dict()["rank"] + c.to_dict()["suit"] for c in player.hand]
+                                 best_cards_strs = [c.to_dict()["rank"] + c.to_dict()["suit"] for c in best_cards] if best_cards else []
+                                 uses_my_cards = any(c in best_cards_strs for c in my_cards_strs)
+
                                  await manager.send_to_user(player.user_id, {
                                      "type": "HAND_UPDATE",
-                                     "hand": [c.to_dict() for c in player.hand]
+                                     "hand": [c.to_dict() for c in player.hand],
+                                     "evaluation": {
+                                         "rank": rank_val,
+                                         "name": hand_name,
+                                         "best_cards": [c.to_dict() for c in best_cards],
+                                         "uses_my_cards": uses_my_cards
+                                     }
                                  })
                     
                     # Check if next is bot
@@ -355,6 +369,17 @@ async def websocket_poker(
                  resp = {"success": True, "message": "Funds added to wallet" + (" and chips" if found_seated else "")}
                  # Actually if they are seated, their chips on table don't change, only wallet balance outside.
                  # But if they rebuy, it matters.
+            elif action == "REFRESH_HAND":
+                 # Find player seat
+                 for seat_num, player in table.seats.items():
+                      if player.user_id == user.id:
+                          if player.hand:
+                              await manager.send_to_user(user.id, {
+                                  "type": "HAND_UPDATE",
+                                  "hand": [c.to_dict() for c in player.hand]
+                              })
+                          break
+                 continue # No broadcast needed for this
 
             
             # Error handling
@@ -374,9 +399,24 @@ async def websocket_poker(
                  # 2. Update specific users with private info if needed (e.g. at start of hand)
                  for seat_num, player in table.seats.items():
                       if player.hand and not player.is_folded and not player.is_bot: # If they have cards
+                          # New: Evaluate Hand for Real-Time Feedback
+                          rank_val, score_val, best_cards = table.evaluate_hand(player.hand, table.community_cards)
+                          hand_name = table.get_hand_name(rank_val)
+                          
+                          # Check if my cards are in the best combination
+                          my_cards_strs = [c.to_dict()["rank"] + c.to_dict()["suit"] for c in player.hand]
+                          best_cards_strs = [c.to_dict()["rank"] + c.to_dict()["suit"] for c in best_cards] if best_cards else []
+                          uses_my_cards = any(c in best_cards_strs for c in my_cards_strs)
+
                           await manager.send_to_user(player.user_id, {
                               "type": "HAND_UPDATE",
-                              "hand": [c.to_dict() for c in player.hand]
+                              "hand": [c.to_dict() for c in player.hand],
+                              "evaluation": {
+                                  "rank": rank_val,
+                                  "name": hand_name,
+                                  "best_cards": [c.to_dict() for c in best_cards],
+                                  "uses_my_cards": uses_my_cards
+                              }
                           })
                 
                  # 3. Check for Bot Turn

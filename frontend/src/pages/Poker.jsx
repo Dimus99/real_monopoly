@@ -203,8 +203,18 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     if (!myUserId) return prev;
                     const mySeatKey = Object.keys(prev.seats).find(k => prev.seats[k].user_id === myUserId);
                     const newMe = { ...(prev.me || { user_id: myUserId }), hand: data.hand };
+
+                    if (data.evaluation) {
+                        newMe.current_hand = data.evaluation;
+                    }
+
                     const newSeats = { ...prev.seats };
-                    if (mySeatKey) newSeats[mySeatKey] = { ...newSeats[mySeatKey], hand: data.hand };
+                    if (mySeatKey) {
+                        newSeats[mySeatKey] = { ...newSeats[mySeatKey], hand: data.hand };
+                        if (data.evaluation) {
+                            newSeats[mySeatKey].current_hand = data.evaluation;
+                        }
+                    }
                     return { ...prev, me: newMe, seats: newSeats };
                 });
             } else if (data.type === 'ERROR') {
@@ -557,7 +567,21 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
                                         <div className="relative flex flex-col items-center">
                                             {/* Cards ABOVE Avatar now - with better centering and overlap */}
-                                            <div className="mb-[-15px] z-[60] flex flex-col items-center pointer-events-none">
+                                            <div
+                                                className={`mb-[-15px] z-[60] flex flex-col items-center ${player.user_id === gameState.me?.user_id ? 'cursor-pointer hover:scale-110 transition-transform' : 'pointer-events-none'}`}
+                                                onClick={() => {
+                                                    if (player.user_id === gameState.me?.user_id) {
+                                                        sendAction('REFRESH_HAND');
+                                                        // Visual feedback
+                                                        const el = document.getElementById('my-cards-container');
+                                                        if (el) {
+                                                            el.style.opacity = '0.5';
+                                                            setTimeout(() => el.style.opacity = '1', 200);
+                                                        }
+                                                    }
+                                                }}
+                                                id={player.user_id === gameState.me?.user_id ? 'my-cards-container' : undefined}
+                                            >
                                                 <div className="flex justify-center filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)] scale-125">
                                                     {!player.is_folded && (player.user_id === gameState.me?.user_id && gameState.me.hand[0]?.rank !== '?' ? gameState.me.hand : player.hand).map((c, i) => (
                                                         <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-2' : 'rotate-6 -translate-x-2'} origin-bottom transition-all ${player.is_folded ? 'opacity-0 scale-0' : 'opacity-100 scale-100'}`}>
@@ -567,7 +591,10 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                                 </div>
                                                 {/* Hand Combination Name */}
                                                 {player.user_id === gameState.me?.user_id && player.current_hand && !player.is_folded && (
-                                                    <div className="mt-2 bg-yellow-500 text-black px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl border-2 border-yellow-200/50 animate-in fade-in zoom-in duration-300">
+                                                    <div className={`mt-2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl border-2 animate-in fade-in zoom-in duration-300 ${player.current_hand.uses_my_cards
+                                                            ? 'bg-yellow-500 text-black border-yellow-200/50'
+                                                            : 'bg-gray-700 text-gray-300 border-gray-500'
+                                                        }`}>
                                                         {player.current_hand.name}
                                                     </div>
                                                 )}
