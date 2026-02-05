@@ -82,7 +82,7 @@ class PokerTable:
         self.id = table_id
         self.name = name
         self.seats: Dict[int, PokerPlayer] = {} # 0-8
-        self.max_seats = 6 
+        self.max_seats = 8
         self.small_blind = small_blind
         self.big_blind = big_blind
         self.min_buy_in = min_buy

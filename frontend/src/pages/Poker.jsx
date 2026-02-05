@@ -39,14 +39,26 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
             } else if (data.type === 'GAME_UPDATE') {
                 setGameState(prev => {
                     const newState = { ...prev, ...data.state };
-                    // Preserve my private hand logic
-                    if (prev?.me?.user_id) {
-                        const mySeatIdx = Object.keys(newState.seats).find(k => newState.seats[k].user_id === prev.me.user_id);
-                        if (mySeatIdx && prev.seats[mySeatIdx]?.hand && prev.seats[mySeatIdx].hand.length > 0 && prev.seats[mySeatIdx].hand[0].rank !== '?') {
-                            if (newState.seats[mySeatIdx]?.hand && (newState.seats[mySeatIdx].hand.length === 0 || newState.seats[mySeatIdx].hand[0].rank === '?')) {
-                                if (newState.state !== 'SHOWDOWN') { // Don't overwrite if showdown might reveal something else, though usually consistent
-                                    newState.seats[mySeatIdx].hand = prev.seats[mySeatIdx].hand;
-                                    if (newState.me) newState.me.hand = prev.seats[mySeatIdx].hand;
+
+                    // MERGE HAND LOGIC FOR ME:
+                    // If the update hides my hand (e.g. public broadcast), but I had one locally, keep it.
+                    // Only overwrite if the new State explicitly implies my hand changed (e.g. DEALING or empty)
+                    if (prev && prev.me && newState.seats) {
+                        const myUserId = prev.me.user_id;
+                        const mySeatKey = Object.keys(newState.seats).find(k => newState.seats[k].user_id === myUserId);
+
+                        if (mySeatKey) { // I am seated
+                            // If I have a hand locally, and the new state shows '?' or empty, but it's not a new deal...
+                            // Actually, START_HAND clears hands.
+                            // We should rely on HAND_UPDATE for cards.
+                            // But usually GAME_UPDATE comes first with hidden cards.
+
+                            // Let's assume HAND_UPDATE follows. But to prevent flicker:
+                            if (prev.seats[mySeatKey]?.hand && prev.seats[mySeatKey].hand.length && prev.seats[mySeatKey].hand[0].rank !== '?') {
+                                // I see my cards. New state is '??'
+                                if (newState.seats[mySeatKey].hand[0].rank === '?') {
+                                    // Restore my cache
+                                    newState.seats[mySeatKey].hand = prev.seats[mySeatKey].hand;
                                 }
                             }
                         }
@@ -54,17 +66,22 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                     return newState;
                 });
             } else if (data.type === 'HAND_UPDATE') {
-                setGameState(prev => ({
-                    ...prev,
-                    me: { ...prev.me, hand: data.hand },
-                    seats: {
-                        ...prev.seats,
-                        [prev.seats && Object.keys(prev.seats).find(k => prev.seats[k].user_id === prev.me?.user_id)]: {
-                            ...prev.seats[Object.keys(prev.seats).find(k => prev.seats[k].user_id === prev.me?.user_id)],
-                            hand: data.hand
-                        }
-                    }
-                }));
+                setGameState(prev => {
+                    if (!prev) return prev;
+                    if (!prev.me) return prev; // Should be there
+
+                    const mySeatKey = Object.keys(prev.seats).find(k => prev.seats[k].user_id === prev.me.user_id);
+                    if (!mySeatKey) return prev;
+
+                    const newSeats = { ...prev.seats };
+                    newSeats[mySeatKey] = { ...newSeats[mySeatKey], hand: data.hand };
+
+                    return {
+                        ...prev,
+                        me: { ...prev.me, hand: data.hand },
+                        seats: newSeats
+                    };
+                });
             } else if (data.type === 'ERROR') {
                 alert(data.message);
             }
@@ -100,8 +117,9 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 
     if (!gameState) return <div className="text-center p-10 text-white">Loading Table...</div>;
 
-    const mySeat = Object.entries(gameState.seats).find(([k, v]) => v.user_id === gameState.me?.user_id);
-    const myPlayer = mySeat ? mySeat[1] : null;
+    const mySeatEntry = Object.entries(gameState.seats).find(([k, v]) => v.user_id === gameState.me?.user_id);
+    const mySeatIdx = mySeatEntry ? parseInt(mySeatEntry[0]) : -1;
+    const myPlayer = mySeatEntry ? mySeatEntry[1] : null;
 
     const isWinningCard = (card) => {
         if (!gameState.winning_cards || !card) return false;
@@ -127,17 +145,48 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
         );
     };
 
-    const renderChips = (amount, isPot = false) => {
-        if (!amount || amount === 0) return null;
+    const ChipStack = ({ amount, isPot = false }) => {
+        if (!amount || amount <= 0) return null;
+
+        // Colors for denominations
+        // 1-99: White/Silver
+        // 100-499: Red
+        // 500-999: Blue
+        // 1000+: Yellow/Gold
+        let bgColor = "bg-gray-300";
+        let borderColor = "border-gray-400";
+        let textColor = "text-black";
+
+        if (amount >= 1000) {
+            bgColor = "bg-yellow-500";
+            borderColor = "border-yellow-600";
+        } else if (amount >= 500) {
+            bgColor = "bg-blue-600";
+            borderColor = "border-blue-700";
+            textColor = "text-white";
+        } else if (amount >= 100) {
+            bgColor = "bg-red-600";
+            borderColor = "border-red-700";
+            textColor = "text-white";
+        }
+
         const formatted = amount >= 1000 ? (amount / 1000).toFixed(1) + 'k' : amount;
+        const scale = isPot ? 'scale-125' : 'scale-100';
+
         return (
-            <div className={`flex flex-col items-center ${isPot ? 'scale-125' : ''}`}>
-                <div className="relative h-8 w-8">
-                    <div className="absolute bottom-0 w-8 h-8 rounded-full border-4 border-dashed border-white/30 bg-yellow-500 shadow-lg animate-bounce-slight flex items-center justify-center text-[10px] font-bold text-black font-mono">
-                        $
+            <div className={`flex flex-col items-center group relative z-40 ${scale}`}>
+                <div className="relative w-8 h-8 cursor-pointer transform hover:scale-110 transition-transform">
+                    {/* Simulated Stack - 3 chips */}
+                    <div className={`absolute top-0 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-lg`}></div>
+                    <div className={`absolute -top-1 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-md`}></div>
+                    <div className={`absolute -top-2 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-inner flex items-center justify-center`}>
+                        <div className={`w-5 h-5 rounded-full border border-white/30 border-dashed ${textColor} text-[9px] font-bold flex items-center justify-center font-mono`}>
+                            $
+                        </div>
                     </div>
                 </div>
-                <div className="bg-black/60 text-yellow-400 text-[10px] font-mono font-bold px-1.5 rounded mt-1 border border-yellow-500/30">
+                {/* Tooltip Value */}
+                <div className="bg-black/80 text-yellow-400 text-[10px] font-mono font-bold px-1.5 rounded mt-[-4px] border border-yellow-500/30 shadow-md backdrop-blur-sm z-50">
                     ${formatted}
                 </div>
             </div>
@@ -146,13 +195,36 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 
     const getTimeRemaining = () => {
         if (!gameState.turn_deadline) return 0;
-        // Backend now returns ISO string with Z (UTC) or compatible
         const total = Date.parse(gameState.turn_deadline) - Date.now();
         return Math.max(0, Math.floor(total / 1000));
     };
 
+    // Calculate rotation to put Me at bottom (pos 0)
+    // 8 Seats: 0, 1, 2, 3, 4, 5, 6, 7
+    // Mapping 0->Bottom, 1->BottomLeft, 2->Left, 3->TopLeft, 4->TopCenter, 5->TopRight, 6->Right, 7->BottomRight
+    const getSeatPosition = (serverSeatIdx) => {
+        let relativeIdx = serverSeatIdx;
+        if (mySeatIdx !== -1) {
+            relativeIdx = (serverSeatIdx - mySeatIdx + 8) % 8;
+        }
+
+        // Fixed styling for 8 positions
+        const styles = {
+            0: { bottom: '-30px', left: '50%', transform: 'translateX(-50%)' }, // ME (Bottom)
+            1: { bottom: '2%', left: '15%' }, // Bottom Left
+            2: { top: '50%', left: '-30px', transform: 'translateY(-50%)' }, // Left
+            3: { top: '15%', left: '10%' }, // Top Left
+            4: { top: '-20px', left: '50%', transform: 'translateX(-50%)' }, // Top Center (Opposite)
+            5: { top: '15%', right: '10%' }, // Top Right
+            6: { top: '50%', right: '-30px', transform: 'translateY(-50%)' }, // Right
+            7: { bottom: '2%', right: '15%' } // Bottom Right
+        };
+
+        return styles[relativeIdx] || { display: 'none' };
+    };
+
     return (
-        <div ref={tableRef} className="flex flex-col h-full w-full max-w-7xl mx-auto glass-card p-4 relative bg-[#0f172a] overflow-hidden">
+        <div ref={tableRef} className="flex flex-col h-full w-full max-w-7xl mx-auto glass-card p-4 relative bg-[#0f172a] overflow-hidden select-none">
             {/* Top Bar */}
             <div className="flex justify-between items-center z-10 text-white">
                 <button onClick={() => { sendAction('LEAVE'); onLeave(); }} className="btn-ghost text-sm flex items-center gap-1">
@@ -183,7 +255,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
             </div>
 
             {/* Chat / LOGS */}
-            <div className="absolute bottom-4 left-4 z-50 w-64 max-h-48 overflow-y-auto font-mono text-xs text-gray-400 bg-black/60 p-2 rounded pointer-events-none fade-mask">
+            <div className="absolute bottom-28 left-4 z-50 w-64 max-h-32 overflow-y-auto font-mono text-xs text-gray-400 bg-black/60 p-2 rounded pointer-events-none fade-mask">
                 {gameState.logs && gameState.logs.slice().reverse().map((log, i) => (
                     <div key={i} className="mb-1">
                         <span className="text-gray-600">[{new Date(log.time).toLocaleTimeString().split(' ')[0]}]</span> <span className="text-gray-300">{log.msg}</span>
@@ -194,18 +266,18 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
             {/* Table Area */}
             <div className="flex-1 relative my-4 flex items-center justify-center perspective-1000">
 
-                {/* Dealer Avatar (Top Center) */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -mt-4 z-20 flex flex-col items-center">
-                    <div className="relative w-24 h-24 rounded-full border-4 border-yellow-600 bg-black overflow-hidden shadow-2xl">
+                {/* Dealer Avatar (Shifted slightly up if players are at top) */}
+                <div className="absolute top-[10%] left-1/2 transform -translate-x-1/2 -mt-4 z-20 flex flex-col items-center opacity-80 pointer-events-none">
+                    <div className="relative w-16 h-16 rounded-full border-2 border-yellow-600 bg-black overflow-hidden shadow-2xl">
                         <img src="/assets/dealer.png" className="w-full h-full object-cover" onError={(e) => e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Dealer'} alt="Dealer" />
                     </div>
-                    <div className="bg-black/80 px-3 py-1 rounded-full border border-yellow-600/50 -mt-3 z-30">
-                        <span className="text-xs font-bold text-yellow-500 uppercase tracking-wider">Croupier</span>
+                    <div className="bg-black/80 px-2 py-0.5 rounded-full border border-yellow-600/50 -mt-2 z-30">
+                        <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-wider">Croupier</span>
                     </div>
                 </div>
 
                 {/* Felt */}
-                <div className="w-[90%] aspect-[2/1] bg-[#1a472a] rounded-[200px] border-[16px] border-[#2d2a26] shadow-[inset_0_0_100px_rgba(0,0,0,0.6)] relative flex items-center justify-center">
+                <div className="w-[90%] aspect-[2/1] bg-[#1a472a] rounded-[200px] border-[16px] border-[#2d2a26] shadow-[inset_0_0_100px_rgba(0,0,0,0.6)] relative flex items-center justify-center z-0">
 
                     {/* Center Start Button */}
                     {gameState.state === 'WAITING' && (
@@ -233,32 +305,20 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 
                     {/* Pot Display */}
                     <div className="absolute top-[60%] flex flex-col items-center gap-2 z-10">
-                        {renderChips(gameState.pot, true)}
+                        <ChipStack amount={gameState.pot} isPot={true} />
                         <div className="text-yellow-400 font-mono font-bold bg-black/60 px-4 py-1 rounded-full text-lg border border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.3)]">
                             Pot: ${gameState.pot}
                         </div>
                     </div>
 
-                    {/* Seats */}
-                    {[0, 1, 2, 4, 5].map(seatIdx => {
+                    {/* Seats (0-7) */}
+                    {[0, 1, 2, 3, 4, 5, 6, 7].map(seatIdx => {
                         const player = gameState.seats[seatIdx];
-                        const isMe = myPlayer && parseInt(mySeat[0]) === seatIdx;
                         const isActive = gameState.current_player_seat === seatIdx;
-
-                        // Positioning
-                        const positions = {
-                            0: { bottom: '-40px', left: '50%', transform: 'translateX(-50%)' },
-                            1: { bottom: '5%', left: '-40px' },
-                            2: { top: '20%', left: '-40px' },
-                            4: { top: '20%', right: '-40px' },
-                            5: { bottom: '5%', right: '-40px' },
-                        };
-
-                        const pos = positions[seatIdx];
-                        if (!pos) return null;
+                        const posStyle = getSeatPosition(seatIdx);
 
                         return (
-                            <div key={seatIdx} className={`absolute flex flex-col items-center transition-all duration-300 ${isActive ? 'scale-110 z-30' : 'z-20'}`} style={pos}>
+                            <div key={seatIdx} className={`absolute flex flex-col items-center transition-all duration-300 ${isActive ? 'scale-110 z-30' : 'z-20'}`} style={posStyle}>
                                 {player ? (
                                     <div className="flex flex-col items-center group relative">
                                         {/* Timer / Active Indicator */}
@@ -272,7 +332,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                         )}
 
                                         {/* Avatar */}
-                                        <div className={`w-24 h-24 rounded-full border-4 overflow-hidden z-20 bg-[#1a1a2e] ${isActive ? 'border-yellow-400 shadow-[0_0_30px_rgba(234,179,8,0.5)]' : 'border-[#2d2a26]'} ${player.is_folded ? 'opacity-50 grayscale' : ''} relative`}>
+                                        <div className={`w-20 h-20 rounded-full border-4 overflow-hidden z-20 bg-[#1a1a2e] ${isActive ? 'border-yellow-400 shadow-[0_0_30px_rgba(234,179,8,0.5)]' : 'border-[#2d2a26]'} ${player.is_folded ? 'opacity-50 grayscale' : ''} relative`}>
                                             {player.avatar_url && player.avatar_url.length > 2 ? (
                                                 <img src={player.avatar_url} className="w-full h-full object-cover" alt={player.name} onError={(e) => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}` }} />
                                             ) : (
@@ -281,20 +341,20 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 
                                             {/* Dealer Button */}
                                             {gameState.dealer_seat === seatIdx && (
-                                                <div className="absolute top-0 right-0 bg-white text-black font-bold rounded-full w-8 h-8 flex items-center justify-center text-sm border-2 border-gray-400 shadow-md transform translate-x-2 -translate-y-2">D</div>
+                                                <div className="absolute top-0 right-0 bg-white text-black font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs border border-gray-400 shadow-md transform translate-x-2 -translate-y-2">D</div>
                                             )}
                                         </div>
 
                                         {/* Player Info */}
-                                        <div className="bg-[#0f172a]/95 backdrop-blur px-4 py-2 rounded-xl text-center -mt-4 z-30 border border-white/10 min-w-[120px] shadow-xl">
-                                            <div className="text-sm font-bold truncate max-w-[120px] text-gray-200">{player.name}</div>
-                                            <div className="text-lg text-yellow-500 font-mono font-bold">${player.chips}</div>
+                                        <div className="bg-[#0f172a]/95 backdrop-blur px-3 py-1 rounded-xl text-center -mt-3 z-30 border border-white/10 min-w-[100px] shadow-xl">
+                                            <div className="text-xs font-bold truncate max-w-[100px] text-gray-200">{player.name}</div>
+                                            <div className="text-sm text-yellow-500 font-mono font-bold">${player.chips}</div>
                                         </div>
 
                                         {/* Cards */}
-                                        <div className="flex -mt-20 -z-10 filter drop-shadow-xl hover:-translate-y-6 transition-transform duration-300">
+                                        <div className="flex -mt-16 -z-10 filter drop-shadow-xl hover:-translate-y-6 transition-transform duration-300">
                                             {player.hand.map((c, i) => (
-                                                <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-2' : 'rotate-6 -translate-x-2'} origin-bottom`}>
+                                                <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-1' : 'rotate-6 -translate-x-1'} origin-bottom`}>
                                                     {renderCard(c, i)}
                                                 </div>
                                             ))}
@@ -303,19 +363,19 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                         {/* Chips Bet Display */}
                                         {player.current_bet > 0 && (
                                             <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 z-20">
-                                                {renderChips(player.current_bet)}
+                                                <ChipStack amount={player.current_bet} />
                                             </div>
                                         )}
 
                                         {/* Action Bubble */}
                                         {player.last_action && (
-                                            <div className="absolute top-0 right-0 transform translate-x-full -translate-y-full text-sm font-bold bg-blue-600 px-4 py-2 rounded-xl text-white shadow-lg animate-bounce z-50 border-2 border-blue-400">
+                                            <div className="absolute top-0 right-0 transform translate-x-full text-xs font-bold bg-blue-600 px-2 py-1 rounded text-white shadow-lg animate-bounce z-50 border border-blue-400">
                                                 {player.last_action}
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="w-20 h-20 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center text-white/20 text-xs">
+                                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center text-white/20 text-xs">
                                         Empty
                                     </div>
                                 )}
@@ -327,7 +387,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 
             {/* Bottom Controls */}
             <div className="h-28 relative z-50 flex items-center justify-center">
-                {myPlayer && !myPlayer.is_folded && gameState.current_player_seat === parseInt(mySeat[0]) ? (
+                {myPlayer && !myPlayer.is_folded && gameState.current_player_seat === mySeatIdx ? (
                     <div className="flex items-end gap-6 bg-[#0f172a]/95 backdrop-blur p-4 rounded-t-3xl border-t border-x border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] pb-6 animate-in slide-in-from-bottom">
 
                         {/* FOLD / PASS */}
@@ -369,11 +429,40 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 
                     </div>
                 ) : (
-                    null
+                    <div className="text-xs text-gray-600 animate-pulse">Waiting for turn...</div>
                 )}
             </div>
 
-            {/* Buy In Modal (Handled in Parent usually, but redundancy check) */}
+            {/* Buy In Modal */}
+            {showBuyIn && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                    <div className="glass-card max-w-sm w-full p-6 animate-in zoom-in">
+                        <h3 className="text-2xl font-bold mb-4">Buy In</h3>
+                        <p className="text-gray-400 text-sm mb-6">Choose how much to bring to the table.</p>
+
+                        <div className="mb-6">
+                            <label className="text-xs text-gray-500 uppercase font-bold block mb-2">Amount</label>
+                            <input
+                                type="number"
+                                className="input-field text-center text-2xl font-mono text-yellow-400"
+                                value={buyInAmount}
+                                onChange={e => setBuyInAmount(Math.min(userBalance, Math.max(selectedTable.min_buy || 100, parseInt(e.target.value) || 0)))}
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 mt-2">
+                                <span>Min: ${selectedTable?.min_buy || 100}</span>
+                                <span>Max: ${Math.min(userBalance, selectedTable?.max_buy || 100000)}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button onClick={() => setShowBuyIn(false)} className="btn-ghost flex-1">Cancel</button>
+                            <button onClick={confirmJoin} className="btn-primary flex-1" disabled={buyInAmount > userBalance || buyInAmount < (selectedTable?.min_buy || 100)}>
+                                Sit Down
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
