@@ -653,26 +653,37 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
             )}
 
             {/* Action Controls (Fixed HUD - Bottom Right) */}
-            <div className={`fixed bottom-4 right-4 z-[70] flex flex-col items-end gap-3 pointer-events-none transition-all duration-500 ${(['SHOWDOWN', 'WAITING'].includes(gameState.state) || isDealing) ? 'opacity-0 translate-y-10 scale-95 pointer-events-none' : 'opacity-100 translate-y-0 scale-100'
+            <div className={`fixed bottom-4 right-4 z-[70] flex flex-col items-end gap-3 pointer-events-none transition-all duration-500 ${(['SHOWDOWN', 'WAITING'].includes(gameState.state)) ? 'opacity-0 translate-y-10 scale-95 pointer-events-none' : 'opacity-100 translate-y-0 scale-100'
                 }`}>
-                {myPlayer && !myPlayer.is_folded && (
+                {myPlayer && (
                     <div className="flex flex-col gap-3 p-4 bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl pointer-events-auto items-end">
 
                         {/* Status Message */}
-                        {gameState.current_player_seat !== mySeatIdx && (
+                        {isDealing ? (
+                            <div className="text-[10px] text-yellow-500 uppercase tracking-widest mb-1 px-2 border-l-2 border-yellow-500 animate-pulse">
+                                Dealing Cards...
+                            </div>
+                        ) : myPlayer.is_folded ? (
+                            <div className="text-[10px] text-red-500 uppercase tracking-widest mb-1 px-2 border-l-2 border-red-500">
+                                You Folded
+                            </div>
+                        ) : gameState.current_player_seat !== mySeatIdx && (
                             <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1 px-2 border-l-2 border-yellow-500">
                                 {gameState.seats[gameState.current_player_seat]?.name || 'Player'}'s Turn
                             </div>
                         )}
 
-                        <div className="flex gap-3 items-end">
+                        <div className={`flex gap-3 items-end transition-all duration-300 ${myPlayer.is_folded ? 'opacity-30 grayscale pointer-events-none' : 'opacity-100'}`}>
+
                             {/* FOLD / PASS */}
                             <button
                                 onClick={() => {
+                                    if (isDealing) return;
                                     if (gameState.current_player_seat === mySeatIdx) sendAction('FOLD');
                                     else setPreAction(preAction === 'FOLD' ? null : 'FOLD');
                                 }}
-                                className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'FOLD' ? 'scale-105' : ''}`}
+                                disabled={isDealing}
+                                className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'FOLD' ? 'scale-105' : ''} ${isDealing ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <div className={`h-12 w-20 rounded-xl flex items-center justify-center transition-all border-b-4 shadow-lg active:border-b-0 active:translate-y-1 ${preAction === 'FOLD'
                                     ? 'bg-red-500 border-red-800 ring-2 ring-red-400'
@@ -686,6 +697,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                             {/* CHECK / CALL / HOLD */}
                             <button
                                 onClick={() => {
+                                    if (isDealing) return;
                                     if (gameState.current_player_seat === mySeatIdx) {
                                         sendAction(gameState.current_bet > myPlayer.current_bet ? 'CALL' : 'CHECK');
                                     } else {
@@ -694,8 +706,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                         }
                                     }
                                 }}
-                                className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'CHECK' ? 'scale-105' : ''} ${(gameState.current_player_seat !== mySeatIdx && gameState.current_bet > myPlayer.current_bet) ? 'opacity-30 pointer-events-none' : ''
-                                    }`}
+                                disabled={isDealing}
+                                className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'CHECK' ? 'scale-105' : ''} ${(gameState.current_player_seat !== mySeatIdx && gameState.current_bet > myPlayer.current_bet) ? 'opacity-30 pointer-events-none' : ''} ${isDealing ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <div className={`h-12 w-24 rounded-xl flex flex-col items-center justify-center transition-all border-b-4 shadow-xl active:border-b-0 active:translate-y-1 ${preAction === 'CHECK'
                                     ? 'bg-green-500 border-green-800 ring-2 ring-green-400'
@@ -740,6 +752,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                         <button
                                             key={idx}
                                             onClick={() => {
+                                                if (isDealing) return;
                                                 const finalAmount = Math.max(btn.val, gameState.current_bet + gameState.min_raise);
                                                 setBetAmount(finalAmount);
                                                 if (gameState.current_player_seat !== mySeatIdx) {
@@ -748,8 +761,9 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                                     setPreActionAmount(isSame ? 0 : finalAmount);
                                                 }
                                             }}
+                                            disabled={isDealing}
                                             className={`text-[10px] px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 text-gray-200 transition-all font-bold ${(preAction === 'RAISE' && preActionAmount === btn.val) || (gameState.current_player_seat === mySeatIdx && betAmount === btn.val)
-                                                ? 'bg-yellow-500/30 border-yellow-500 text-yellow-400 scale-105 shadow-lg' : ''}`}
+                                                ? 'bg-yellow-500/30 border-yellow-500 text-yellow-400 scale-105 shadow-lg' : ''} ${isDealing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         >
                                             {btn.l}
                                         </button>
@@ -767,6 +781,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                 </div>
                                 <button
                                     onClick={() => {
+                                        if (isDealing) return;
                                         const raiseVal = betAmount || (gameState.current_bet + gameState.min_raise);
                                         if (gameState.current_player_seat === mySeatIdx) {
                                             sendAction('RAISE', { amount: raiseVal });
@@ -775,7 +790,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                             setPreActionAmount(preAction === 'RAISE' && preActionAmount === raiseVal ? 0 : raiseVal);
                                         }
                                     }}
-                                    className={`bg-yellow-600 hover:bg-yellow-500 border-b-4 border-yellow-900 text-white h-14 w-28 rounded-2xl flex flex-col items-center justify-center transition-all active:border-b-0 active:translate-y-1 shadow-xl ${gameState.current_player_seat !== mySeatIdx && preAction !== 'RAISE' ? 'opacity-60 grayscale' : 'hover:scale-105'}`}
+                                    disabled={isDealing}
+                                    className={`bg-yellow-600 hover:bg-yellow-500 border-b-4 border-yellow-900 text-white h-14 w-28 rounded-2xl flex flex-col items-center justify-center transition-all active:border-b-0 active:translate-y-1 shadow-xl ${gameState.current_player_seat !== mySeatIdx && preAction !== 'RAISE' ? 'opacity-60 grayscale' : 'hover:scale-105'} ${isDealing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     <span className="text-lg font-black uppercase tracking-tight">Raise</span>
                                     <span className="text-[11px] font-mono font-bold leading-none text-yellow-200">
