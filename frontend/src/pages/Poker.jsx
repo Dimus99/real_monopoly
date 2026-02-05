@@ -136,6 +136,16 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     }, [gameError]);
 
     useEffect(() => {
+        // Auto-heal: If I see '?' in my own hand during active play, ask for refresh
+        if (gameState?.me?.hand && gameState.me.hand.length > 0 && gameState.me.hand[0].rank === '?') {
+            if (gameState.state !== 'WAITING' && gameState.state !== 'SHOWDOWN') {
+                console.log("Detected '?' in hand, requesting refresh...");
+                sendAction('REFRESH_HAND');
+            }
+        }
+    }, [gameState?.me?.hand, gameState?.state]);
+
+    useEffect(() => {
         const token = localStorage.getItem('monopoly_token');
         const ws = new WebSocket(`${wsBase}/ws/poker/${tableId}?token=${token}`);
         socketRef.current = ws;
