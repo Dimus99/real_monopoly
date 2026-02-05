@@ -272,10 +272,17 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
     const isWinningCard = (card) => {
         if (!card) return false;
-        // Highlighting in SHOWDOWN mode for winners
+
+        // Priority 1: Showdown Winning Cards (Server dictated for the round winner)
         if (gameState.state === 'SHOWDOWN' && gameState.winning_cards?.length > 0) {
             return gameState.winning_cards.some(c => c.rank === card.rank && c.suit === card.suit);
         }
+
+        // Priority 2: My Current Best Hand Helper (Highlight my combo during play)
+        if (gameState.me?.current_hand?.best_cards?.length > 0) {
+            return gameState.me.current_hand.best_cards.some(c => c.rank === card.rank && c.suit === card.suit);
+        }
+
         return false;
     };
 
@@ -419,7 +426,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     <ArrowLeft size={16} /> Leave
                 </button>
                 <div className="text-center">
-                    <h2 className="text-xl font-bold text-yellow-400">{gameState.name}</h2>
+                    {/* Hiding Table Name as requested */}
+                    {/* <h2 className="text-xl font-bold text-yellow-400">{gameState.name}</h2> */}
                     <div className="text-xs text-gray-400">Pot: {gameState.pot} • Blinds: {gameState.small_blind}/{gameState.big_blind}</div>
                 </div>
                 <div className="flex gap-2">
@@ -592,8 +600,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                                 {/* Hand Combination Name */}
                                                 {player.user_id === gameState.me?.user_id && player.current_hand && !player.is_folded && (
                                                     <div className={`mt-2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl border-2 animate-in fade-in zoom-in duration-300 ${player.current_hand.uses_my_cards
-                                                            ? 'bg-yellow-500 text-black border-yellow-200/50'
-                                                            : 'bg-gray-700 text-gray-300 border-gray-500'
+                                                        ? 'bg-yellow-500 text-black border-yellow-200/50'
+                                                        : 'bg-gray-700 text-gray-300 border-gray-500'
                                                         }`}>
                                                         {player.current_hand.name}
                                                     </div>
@@ -629,9 +637,9 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
                                             {/* Name & Chips UI Below Avatar */}
                                             <div className="mt-1 flex flex-col items-center z-30">
-                                                <div className={`px-3 py-0.5 rounded-full ${isActive ? 'bg-yellow-500 text-black' : 'bg-black/60 text-white'} text-[10px] font-bold shadow-lg flex items-center gap-1 border border-white/10`}>
+                                                <div className={`px-3 py-0.5 rounded-full ${isActive ? 'bg-yellow-500 text-black' : 'bg-black/60 text-white'} text-xs font-bold shadow-lg flex items-center gap-1 border border-white/10`}>
                                                     {player.name}
-                                                    {player.is_bot && <Bot size={10} />}
+                                                    {player.is_bot && <Bot size={12} />}
                                                 </div>
                                                 {gameState.winners_ids && gameState.winners_ids.includes(player.user_id) && (
                                                     <div className="mt-1 bg-yellow-500 text-black px-2 py-0.5 rounded text-[10px] font-black animate-pulse border border-yellow-300">
