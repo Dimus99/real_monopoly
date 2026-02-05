@@ -114,6 +114,11 @@ class PokerTable:
         if buy_in > self.max_buy_in:
              return {"error": f"Maximum buy-in is {self.max_buy_in}"}
 
+        # Check if already seated
+        for p in self.seats.values():
+            if p.user_id == user.id:
+                 return {"success": True, "seat": p.seat, "game_state": self.to_dict(), "message": "Already seated"}
+
         seat = self.get_empty_seat()
         if seat == -1:
             return {"error": "Table is full"}

@@ -124,7 +124,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
                     <h2 className="text-xl font-bold text-yellow-400">{gameState.name}</h2>
                     <div className="text-xs text-gray-400">Pot: {gameState.pot} • Blinds: {gameState.small_blind}/{gameState.big_blind}</div>
                 </div>
+                {/* Header Right */}
                 <div className="flex gap-2">
+                    <button onClick={() => sendAction('ADD_FUNDS')} className="btn-xs bg-green-900 border border-green-500/50 p-1 px-2 rounded hover:bg-green-800 text-green-200 font-mono font-bold" title="Cheat: Add $10k">
+                        +10k
+                    </button>
                     <button onClick={() => sendAction('ADD_BOT')} className="btn-xs border border-white/20 p-1 rounded hover:bg-white/10" title="Add Bot">
                         <Bot size={16} />
                     </button>
@@ -139,6 +143,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn }) => {
 
             {/* Table Area */}
             <div className="flex-1 relative my-4 flex items-center justify-center">
+                {/* Dealer Graphic - Absolute Top Center */}
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -mt-16 z-0 opacity-80 pointer-events-none">
+                    <img src="https://i.ibb.co/60V0Gz8/poker-dealer-girl-1770264455831.png" className="w-64 h-64 object-contain filter drop-shadow-[0_0_20px_rgba(234,179,8,0.3)]" alt="Dealer" />
+                </div>
+
                 {/* Felt */}
                 <div className="w-[90%] aspect-[2/1] bg-[#1a472a] rounded-[200px] border-[12px] border-[#2d2a26] shadow-[inset_0_0_100px_rgba(0,0,0,0.5)] relative flex items-center justify-center">
 
@@ -359,16 +368,12 @@ const Poker = () => {
         setShowBuyIn(false);
     };
 
-    const PokerTableWithAutoJoin = ({ tableId, buyIn, onLeave }) => {
-        return <PokerTable tableId={tableId} onLeave={onLeave} autoBuyIn={buyIn} />;
-    };
-
     if (currentTableId) {
         return (
             <div className="h-screen w-screen bg-[#0c0c14] overflow-hidden">
-                <PokerTableWithAutoJoin
+                <PokerTable
                     tableId={currentTableId}
-                    buyIn={buyInAmount}
+                    autoBuyIn={buyInAmount}
                     onLeave={() => setCurrentTableId(null)}
                 />
             </div>
@@ -384,7 +389,7 @@ const Poker = () => {
                         <ArrowLeft /> Back
                     </button>
                     <h1 className="text-3xl font-display font-bold text-yellow-400">TEXAS HOLD'EM</h1>
-                    <div className="bg-black/40 px-4 py-2 rounded-lg border border-yellow-500/30 flex items-center gap-2">
+                    <div className="bg-black/40 px-4 py-2 rounded-lg border border-yellow-500/30 flex items-center gap-2 hidden">
                         <span className="text-xs text-gray-400 uppercase">Balance</span>
                         <span className="font-mono font-bold text-xl text-yellow-400">${userBalance}</span>
                     </div>

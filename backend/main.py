@@ -316,6 +316,17 @@ async def websocket_poker(
                  resp = table.remove_bot()
                  should_broadcast = True
             
+            elif action == "ADD_FUNDS":
+                 # Cheat: Add 10k
+                 async with async_session() as session:
+                     await session.execute(text("UPDATE users SET balance = balance + 10000 WHERE id = :uid"), {"uid": user.id})
+                     await session.commit()
+                 resp = {"success": True, "message": "Funds added"}
+                 # No need to broadcast game state, but maybe send user update?
+                 # Actually if they are seated, their chips on table don't change, only wallet balance outside.
+                 # But if they rebuy, it matters.
+
+            
             # Error handling
             if resp and resp.get("error"):
                  await websocket.send_json({"type": "ERROR", "message": resp["message"] if "message" in resp else resp["error"]})
