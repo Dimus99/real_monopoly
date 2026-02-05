@@ -276,7 +276,7 @@ async def websocket_poker(
                      else:
                          await session.execute(text("UPDATE users SET balance = balance - :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})
                          await session.commit()
-                         resp = table.add_player(user, buy_in)
+                         resp = table.add_player(user, buy_in, requested_seat=data.get("requested_seat"))
                          if resp.get("error"):
                              await session.execute(text("UPDATE users SET balance = balance + :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})
                              await session.commit()

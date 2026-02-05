@@ -8,17 +8,43 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
     const [betAmount, setBetAmount] = useState(0);
     const [connected, setConnected] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [_, setTick] = useState(0); // Force re-render for timer
+    const [showBuyIn, setShowBuyIn] = useState(false);
+    const [buyInAmount, setBuyInAmount] = useState(1000);
+    const [selectedSeat, setSelectedSeat] = useState(null);
+    const [winnerAnim, setWinnerAnim] = useState(null);
     const messagesEndRef = useRef(null);
     const tableRef = useRef(null);
     const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : window.location.origin);
     const wsBase = API_BASE.replace('http', 'ws');
+
+    const handleBuyInConfirm = () => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                action: 'JOIN',
+                buy_in: buyInAmount,
+                requested_seat: selectedSeat
+            }));
+            setShowBuyIn(false);
+        }
+    };
 
     // Timer ticker
     useEffect(() => {
         const interval = setInterval(() => setTick(t => t + 1), 1000);
         return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        if (gameState?.state === "SHOWDOWN" && gameState?.winners_ids?.length > 0 && !winnerAnim) {
+            setWinnerAnim(gameState.winners_ids);
+            // Hide after 5 seconds or when hand resets
+            const t = setTimeout(() => setWinnerAnim(null), 6000);
+            return () => clearTimeout(t);
+        }
+        if (gameState?.state === "WAITING" || gameState?.state === "PREFLOP") {
+            setWinnerAnim(null);
+        }
+    }, [gameState?.winners_ids, gameState?.state]);
 
     useEffect(() => {
         const token = localStorage.getItem('monopoly_token');
@@ -28,7 +54,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
             console.log('Connected to Poker Table');
             setConnected(true);
             if (autoBuyIn) {
-                ws.send(JSON.stringify({ action: 'JOIN', buy_in: autoBuyIn }));
+                // ws.send(JSON.stringify({ action: 'JOIN', buy_in: autoBuyIn }));
             }
         };
 
@@ -136,8 +162,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
         const isRed = ['♥', '♦'].includes(card.suit);
         return (
             <div
-                className={`w-12 h-16 bg-white ${isRed ? 'text-red-600' : 'text-black'} rounded m-1 flex flex-col items-center justify-center font-bold text-lg shadow-lg border border-gray-300 ${glowClass} transition-all duration-300 animate-in fade-in zoom-in`}
-                style={{ animationDelay: `${i * 100}ms` }}
+                className={`w-12 h-16 bg-white ${isRed ? 'text-red-600' : 'text-black'} rounded m-1 flex flex-col items-center justify-center font-bold text-lg shadow-lg border border-gray-300 ${glowClass} transition-all duration-300`}
+                style={{
+                    animation: `dealCard 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards`,
+                    animationDelay: `${i * 100}ms`
+                }}
             >
                 <div>{card.rank}</div>
                 <div className="text-xl leading-none">{card.suit}</div>
@@ -225,6 +254,23 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 
     return (
         <div ref={tableRef} className="flex flex-col h-full w-full max-w-7xl mx-auto glass-card p-4 relative bg-[#0f172a] overflow-hidden select-none">
+            <style>{`
+                @keyframes dealCard {
+                    0% { transform: translateY(-100px) rotate(-15deg) scale(0); opacity: 0; }
+                    100% { transform: translateY(0) rotate(0) scale(1); opacity: 1; }
+                }
+                @keyframes winnerFlow {
+                    0% { transform: translate(-50%, -50%) scale(0); top: 50%; left: 50%; opacity: 0; }
+                    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); top: 50%; left: 50%; }
+                    80% { opacity: 1; transform: scale(1.2); }
+                    100% { opacity: 0; transform: scale(1); }
+                }
+                @keyframes chipWin {
+                    0% { transform: scale(0); opacity: 0; }
+                    50% { transform: scale(1.5); opacity: 1; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+            `}</style>
             {/* Top Bar */}
             <div className="flex justify-between items-center z-10 text-white">
                 <button onClick={() => { sendAction('LEAVE'); onLeave(); }} className="btn-ghost text-sm flex items-center gap-1">
@@ -312,8 +358,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                         </div>
                     </div>
 
-                    {/* Seats (0-7) */}
-                    {[0, 1, 2, 3, 4, 5, 6, 7].map(seatIdx => {
+                    {/* Seats (0-7, excluding 4 reserved for Dealer) */}
+                    {[0, 1, 2, 3, 5, 6, 7].map(seatIdx => {
                         const player = gameState.seats[seatIdx];
                         const isActive = gameState.current_player_seat === seatIdx;
                         const posStyle = getSeatPosition(seatIdx);
@@ -394,8 +440,23 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center text-white/20 text-xs">
-                                        Empty
+                                    <div
+                                        onClick={() => { setSelectedSeat(seatIdx); setBuyInAmount(1000); setShowBuyIn(true); }}
+                                        className="w-16 h-16 rounded-full border-2 border-dashed border-white/10 flex items-center justify-center text-white/20 text-xs cursor-pointer hover:border-yellow-500 hover:text-yellow-500 hover:bg-white/5 transition-all"
+                                    >
+                                        Sit Here
+                                    </div>
+                                )}
+
+                                {/* Winner Overlay */}
+                                {winnerAnim && winnerAnim.includes(player?.user_id) && (
+                                    <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center pointer-events-none animate-in fade-in zoom-in duration-500">
+                                        <div className="bg-yellow-500/20 rounded-full p-4 backdrop-blur-sm border-2 border-yellow-500 shadow-[0_0_30px_rgba(234,179,8,0.5)] animate-bounce">
+                                            <Trophy className="text-yellow-400 w-12 h-12" />
+                                        </div>
+                                        <div className="text-yellow-400 font-bold text-xl mt-2 drop-shadow-lg uppercase tracking-tighter bg-black/60 px-3 rounded-full border border-yellow-500/50">
+                                            Winner!
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -404,10 +465,41 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                 </div>
             </div>
 
+            {showBuyIn && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                    <div className="glass-card max-w-sm w-full p-6 animate-in zoom-in bg-[#1a1a2e] border border-white/10">
+                        <h3 className="text-2xl font-bold mb-4 text-white">Sit at Seat {selectedSeat}</h3>
+                        <p className="text-gray-400 text-sm mb-6">Choose how much to bring to the table.</p>
+
+                        <div className="mb-6">
+                            <label className="text-xs text-gray-500 uppercase font-bold block mb-2">Buy-In Amount</label>
+                            <input
+                                type="number"
+                                className="input-field w-full bg-black/50 border border-white/10 rounded p-2 text-center text-2xl font-mono text-yellow-400 focus:outline-none focus:border-yellow-500"
+                                value={buyInAmount}
+                                onChange={e => setBuyInAmount(parseInt(e.target.value) || 0)}
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 mt-2">
+                                <span>Min: ${gameState.limits?.min || 100}</span>
+                                <span>Max: ${gameState.limits?.max || 100000}</span>
+                                <span>Balance: ${balance}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button onClick={() => setShowBuyIn(false)} className="btn-ghost flex-1 py-2 rounded bg-gray-700 hover:bg-gray-600">Cancel</button>
+                            <button onClick={handleBuyInConfirm} className="btn-primary flex-1 py-2 rounded bg-yellow-600 hover:bg-yellow-500 text-black font-bold" disabled={buyInAmount > balance || buyInAmount < (gameState.limits?.min || 100)}>
+                                Join Game
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Bottom Controls */}
-            <div className="h-28 relative z-50 flex items-center justify-center">
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center justify-center pointer-events-none w-full max-w-4xl">
                 {myPlayer && !myPlayer.is_folded && gameState.current_player_seat === mySeatIdx ? (
-                    <div className="flex items-end gap-6 bg-[#0f172a]/95 backdrop-blur p-4 rounded-t-3xl border-t border-x border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] pb-6 animate-in slide-in-from-bottom">
+                    <div className="flex items-end gap-6 bg-[#0f172a]/95 backdrop-blur p-4 rounded-t-3xl border-t border-x border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] pb-6 animate-in slide-in-from-bottom pointer-events-auto">
 
                         {/* FOLD / PASS */}
                         <button onClick={() => sendAction('FOLD')} className="group flex flex-col items-center gap-1">
@@ -448,7 +540,9 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
 
                     </div>
                 ) : (
-                    <div className="text-xs text-gray-600 animate-pulse">Waiting for turn...</div>
+                    <div className="text-xs text-gray-600 animate-pulse bg-black/50 px-4 py-1 rounded-full backdrop-blur">
+                        {gameState.seats[gameState.current_player_seat]?.name || 'Player'} is thinking...
+                    </div>
                 )}
             </div>
 
@@ -463,9 +557,6 @@ const Poker = () => {
     const [currentTableId, setCurrentTableId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [userBalance, setUserBalance] = useState(0);
-    const [showBuyIn, setShowBuyIn] = useState(false);
-    const [selectedTable, setSelectedTable] = useState(null);
-    const [buyInAmount, setBuyInAmount] = useState(1000);
 
     const authFetch = async (url, method = 'GET') => {
         const token = localStorage.getItem('monopoly_token');
@@ -508,14 +599,7 @@ const Poker = () => {
     }, []);
 
     const handleJoinClick = (table) => {
-        setSelectedTable(table);
-        setBuyInAmount(Math.max(table.min_buy || 100, Math.min(table.max_buy || 100000, 1000)));
-        setShowBuyIn(true);
-    };
-
-    const confirmJoin = () => {
-        setCurrentTableId(selectedTable.id);
-        setShowBuyIn(false);
+        setCurrentTableId(table.id);
     };
 
     if (currentTableId) {
@@ -523,7 +607,6 @@ const Poker = () => {
             <div className="h-screen w-screen bg-[#0c0c14] overflow-hidden">
                 <PokerTable
                     tableId={currentTableId}
-                    autoBuyIn={buyInAmount}
                     balance={userBalance}
                     onLeave={() => setCurrentTableId(null)}
                 />
@@ -583,35 +666,7 @@ const Poker = () => {
                 </div>
             </div>
 
-            {showBuyIn && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="glass-card max-w-sm w-full p-6 animate-in zoom-in">
-                        <h3 className="text-2xl font-bold mb-4">Buy In</h3>
-                        <p className="text-gray-400 text-sm mb-6">Choose how much to bring to the table.</p>
-
-                        <div className="mb-6">
-                            <label className="text-xs text-gray-500 uppercase font-bold block mb-2">Amount</label>
-                            <input
-                                type="number"
-                                className="input-field text-center text-2xl font-mono text-yellow-400"
-                                value={buyInAmount}
-                                onChange={e => setBuyInAmount(Math.min(userBalance, Math.max(selectedTable.min_buy || 100, parseInt(e.target.value) || 0)))}
-                            />
-                            <div className="flex justify-between text-xs text-gray-500 mt-2">
-                                <span>Min: ${selectedTable?.min_buy || 100}</span>
-                                <span>Max: ${Math.min(userBalance, selectedTable?.max_buy || 100000)}</span>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-4">
-                            <button onClick={() => setShowBuyIn(false)} className="btn-ghost flex-1">Cancel</button>
-                            <button onClick={confirmJoin} className="btn-primary flex-1" disabled={buyInAmount > userBalance || buyInAmount < (selectedTable?.min_buy || 100)}>
-                                Sit Down
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Modal Moved to Table */}
         </div>
     );
 };

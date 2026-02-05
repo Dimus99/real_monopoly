@@ -52,6 +52,7 @@ class PokerPlayer:
         self.last_action = None
         self.consecutive_timeouts = 0
         self.is_bot = False
+        self.acted_street = False
     
     def to_dict(self, show_hand=False):
         return {
@@ -114,7 +115,7 @@ class PokerTable:
                 return i
         return -1
 
-    def add_player(self, user: User, buy_in: int) -> Dict:
+    def add_player(self, user: User, buy_in: int, requested_seat: int = None) -> Dict:
         if buy_in < self.min_buy_in:
              return {"error": f"Minimum buy-in is {self.min_buy_in}"}
         if buy_in > self.max_buy_in:
@@ -125,7 +126,14 @@ class PokerTable:
             if p.user_id == user.id:
                  return {"success": True, "seat": p.seat, "state": self.to_dict(), "message": "Already seated"}
 
-        seat = self.get_empty_seat()
+        seat = -1
+        if requested_seat is not None:
+             if 0 <= requested_seat < self.max_seats and requested_seat != 4 and requested_seat not in self.seats:
+                 seat = requested_seat
+        
+        if seat == -1:
+            seat = self.get_empty_seat()
+            
         if seat == -1:
             return {"error": "Table is full"}
         
@@ -234,6 +242,7 @@ class PokerTable:
             p.is_folded = False
             p.is_all_in = False
             p.last_action = None
+            p.acted_street = False
         
         sb_seat = active_seats[(dealer_idx + 1) % len(active_seats)]
         bb_seat = active_seats[(dealer_idx + 2) % len(active_seats)]
@@ -391,6 +400,7 @@ class PokerTable:
             player.consecutive_timeouts = 0
             self.add_log(f"{player.name} raised to {total_bet}.")
 
+        player.acted_street = True
         result = self.next_turn()
         return {"success": True, "game_state": self.to_dict(), "next_is_bot": result.get("next_is_bot", False) if result else False}
 
@@ -419,6 +429,7 @@ class PokerTable:
             loop_count += 1
             
         all_matched = True
+        all_acted = True
         active_players = [p for p in self.seats.values() if not p.is_folded]
         not_all_in_players = [p for p in active_players if not p.is_all_in]
         
@@ -426,12 +437,17 @@ class PokerTable:
             if p.current_bet != self.current_bet and not p.is_all_in:
                 all_matched = False
                 break
+            if not p.acted_street and not p.is_all_in:
+                 # Big Blind Special Case: If Preflop, and p is BB, and no raises -> BB still needs to Check
+                 # Generally, assume if not acted, can't advance.
+                 all_acted = False
         
-        can_advance = all_matched
+        can_advance = all_matched and all_acted
         
-        if self.state == "PREFLOP" and all_matched:
-             # Preflop special case: If active player is BB and bets are matched
-             pass
+        # Special Case: Walk (Everyone folded to BB) happens in FOLD logic end_hand(winner_by_fold).
+        # Special Case: Preflop, BB matches but hasn't acted?
+        # If all_matched is True, but all_acted is False (BB needs to act).
+        # Logic holds: can_advance = False. Action goes to BB.
         
         if can_advance and (len(not_all_in_players) <= 1 or self.are_all_bets_equal()):
              if self.check_advance_street():
@@ -453,6 +469,7 @@ class PokerTable:
     def check_advance_street(self):
          for p in self.seats.values():
              p.current_bet = 0
+             p.acted_street = False
          self.current_bet = 0
          self.min_raise = self.big_blind
          
@@ -522,9 +539,18 @@ class PokerTable:
                         winning_cards = best_cards
 
         share = self.pot // len(winners) if winners else 0
+        
+        hand_name = ""
+        if not winner_by_fold:
+             hand_ranks = {
+                0: "High Card", 1: "Pair", 2: "Two Pair", 3: "Three of a Kind",
+                4: "Straight", 5: "Flush", 6: "Full House", 7: "Four of a Kind", 8: "Straight Flush"
+            }
+             hand_name = f" with {hand_ranks.get(best_rank, 'Hand')}"
+
         for w in winners:
             w.chips += share
-            self.add_log(f"{w.name} wins {share}!")
+            self.add_log(f"{w.name} wins {share}{hand_name}!")
         
         self.winners_ids = [w.user_id for w in winners]
         self.winning_cards = winning_cards
