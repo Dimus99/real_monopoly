@@ -287,8 +287,8 @@ async def websocket_poker(
                     async with async_session() as session:
                         # Get fresh user to check real balance
                         db_user = await db_service.get_user(session, user.id)
-                        if not db_user or db_user.balance < buy_in:
-                            await websocket.send_json({"type": "ERROR", "message": f"Недостаточно средств. Нужно ${buy_in}, у вас ${db_user.balance if db_user else 0}"})
+                        if not db_user:
+                            await websocket.send_json({"type": "ERROR", "message": "User not found"})
                             continue
                         
                         await session.execute(text("UPDATE users SET balance = balance - :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})

@@ -30,6 +30,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const messagesEndRef = useRef(null);
     const tableRef = useRef(null);
     const socketRef = useRef(null);
+    const myHandRef = useRef(null); // Persistence for my cards
 
     const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : window.location.origin);
     const wsBase = API_BASE.replace('http', 'ws');
@@ -147,21 +148,37 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if (data.type === 'CONNECTED') {
-                setGameState(data.state);
+                const state = data.state;
+                // Capture initial hand if present
+                if (state.me && state.me.hand && state.me.hand.length && state.me.hand[0].rank !== '?') {
+                    myHandRef.current = state.me.hand;
+                }
+                setGameState(state);
                 if (data.your_id) setMyId(data.your_id);
             } else if (data.type === 'GAME_UPDATE') {
                 setGameState(prev => {
                     const newState = { ...prev, ...data.state };
                     if (prev && prev.me) newState.me = prev.me;
 
-                    // Keep hand persistent if missing in update
-                    if (newState.me && newState.seats && prev.seats) {
+                    // Robust Hand Persistence using Ref
+                    if (newState.me && newState.seats) {
                         const myUserId = newState.me.user_id;
                         const mySeatKey = Object.keys(newState.seats).find(k => newState.seats[k].user_id === myUserId);
-                        if (mySeatKey && prev.seats[mySeatKey]) {
-                            if (prev.seats[mySeatKey]?.hand?.length && prev.seats[mySeatKey].hand[0].rank !== '?') {
-                                if (newState.seats[mySeatKey].hand[0].rank === '?') {
-                                    newState.seats[mySeatKey].hand = prev.seats[mySeatKey].hand;
+
+                        // If we have a stored hand, apply it if the update tries to hide it
+                        if (mySeatKey && myHandRef.current) {
+                            const incomingHand = newState.seats[mySeatKey].hand;
+                            const isHidden = !incomingHand || incomingHand.length === 0 || (incomingHand[0] && incomingHand[0].rank === '?');
+
+                            if (isHidden) {
+                                // Restore from ref
+                                newState.seats[mySeatKey].hand = myHandRef.current;
+                                // Also sync 'me'
+                                if (newState.me) newState.me.hand = myHandRef.current;
+                            } else {
+                                // Incoming is real? Update ref (e.g. at Showdown)
+                                if (incomingHand && incomingHand.length > 0 && incomingHand[0].rank !== '?') {
+                                    myHandRef.current = incomingHand;
                                 }
                             }
                         }
@@ -175,6 +192,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     return newState;
                 });
             } else if (data.type === 'HAND_UPDATE') {
+                // Update Ref immediately
+                if (data.hand && data.hand.length && data.hand[0].rank !== '?') {
+                    myHandRef.current = data.hand;
+                }
+
                 setGameState(prev => {
                     if (!prev) return prev;
                     const myUserId = myId || prev.me?.user_id;
@@ -428,7 +450,10 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     </div>
                     {gameState.logs && gameState.logs.slice().reverse().map((log, i) => (
                         <div key={i} className="mb-0.5 break-words transition-opacity duration-1000" style={{ opacity: isChatExpanded ? 1 : Math.max(0.3, 1 - (i * 0.15)) }}>
-                            <span className="text-gray-600">[{new Date(log.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]</span> <span className="text-gray-300">{log.msg}</span>
+                            <span className="text-gray-600">[{new Date(log.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]</span>
+                            <span className={log.msg.toLowerCase().includes('wins') ? "font-black text-yellow-500 drop-shadow-md text-sm" : "text-gray-300"}>
+                                {log.msg}
+                            </span>
                         </div>
                     ))}
                 </div>
