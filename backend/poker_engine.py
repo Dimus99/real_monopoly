@@ -1,6 +1,6 @@
 import random
 import asyncio
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime, timedelta
 from models import User
 
@@ -15,6 +15,9 @@ class Card:
     
     def __repr__(self):
         return f"{self.rank}{self.suit}"
+    
+    def __eq__(self, other):
+        return isinstance(other, Card) and self.rank == other.rank and self.suit == other.suit
     
     def to_dict(self):
         return {"rank": self.rank, "suit": self.suit, "display": str(self)}
@@ -94,6 +97,8 @@ class PokerTable:
         self.current_player_seat = -1
         self.deck = None
         self.min_raise = 0
+        self.winning_cards = []
+        self.winners_ids = []
         
         # Turn Management
         self.turn_deadline = None # Datetime when turn expires
@@ -128,9 +133,9 @@ class PokerTable:
         self.seats[seat] = player
         self.add_log(f"{user.name} joined the table.")
         
-        # Start game if enough players and not active
-        if len(self.seats) >= 2 and self.state == "WAITING":
-            self.start_hand()
+        # REMOVED AUTO START
+        # if len(self.seats) >= 2 and self.state == "WAITING":
+        #    self.start_hand()
             
         return {"success": True, "seat": seat, "game_state": self.to_dict()}
     
@@ -144,8 +149,9 @@ class PokerTable:
         self.seats[seat] = bot
         self.add_log(f"Bot {name} added at seat {seat}.")
         
-        if len(self.seats) >= 2 and self.state == "WAITING":
-            self.start_hand()
+        # REMOVED AUTO START
+        # if len(self.seats) >= 2 and self.state == "WAITING":
+        #    self.start_hand()
             
         return {"success": True, "seat": seat, "game_state": self.to_dict()}
 
@@ -201,6 +207,8 @@ class PokerTable:
         self.pot = 0
         self.current_bet = 0
         self.logs = []
+        self.winning_cards = []
+        self.winners_ids = []
         
         # Move dealer button
         active_seats = sorted([s for s in self.seats.keys()])
@@ -253,6 +261,17 @@ class PokerTable:
         if self.state == "WAITING" or not self.turn_deadline:
             return None
             
+        # New: Auto-restart after Showdown
+        if self.state == "SHOWDOWN":
+             if self.turn_deadline and datetime.utcnow() > self.turn_deadline:
+                 if len(self.seats) >= 2:
+                     self.start_hand()
+                     return {"type": "GAME_UPDATE", "state": self.to_dict(), "message": "Next hand starting..."}
+                 else:
+                     self.state = "WAITING"
+                     return {"type": "GAME_UPDATE", "state": self.to_dict(), "message": "Waiting for players..."}
+             return None
+
         if datetime.utcnow() > self.turn_deadline:
              # Timeout!
              seat = self.current_player_seat
@@ -401,8 +420,7 @@ class PokerTable:
         can_advance = all_matched
         
         if self.state == "PREFLOP" and all_matched:
-             # Preflop special case: If active player is BB and bets are matched, 
-             # usually BB gets option to check. But here we simplify.
+             # Preflop special case: If active player is BB and bets are matched
              pass
         
         if can_advance and (len(not_all_in_players) <= 1 or self.are_all_bets_equal()):
@@ -461,6 +479,9 @@ class PokerTable:
 
     def end_hand(self, winner_by_fold=False):
         winners = []
+        winning_score = -1
+        winning_cards = []
+        
         if winner_by_fold:
             for p in self.seats.values():
                 if not p.is_folded:
@@ -469,84 +490,97 @@ class PokerTable:
         else:
             active = [p for p in self.seats.values() if not p.is_folded]
             
-            # Simple Scoring
             best_rank = -1
             best_score = -1
             
             for p in active:
-                rank, score = self.evaluate_hand(p.hand, self.community_cards)
+                rank, score, best_cards = self.evaluate_hand(p.hand, self.community_cards)
                 if rank > best_rank:
                     best_rank = rank
                     best_score = score
                     winners = [p]
+                    winning_cards = best_cards
                 elif rank == best_rank:
                     if score > best_score:
                         best_score = score
                         winners = [p]
+                        winning_cards = best_cards
                     elif score == best_score:
                         winners.append(p)
-                    
+                        # In split pot, showing one set of winning cards is acceptable or show all intersection?
+                        # Usually show the first one's winning cards or both. We'll just show current.
+                        winning_cards = best_cards
+
         share = self.pot // len(winners) if winners else 0
         for w in winners:
             w.chips += share
             self.add_log(f"{w.name} wins {share}!")
-            
-        self.state = "WAITING"
-        self.pot = 0
         
-    def evaluate_hand(self, hole_cards, community_cards):
-        # Returns (Rank, Score)
+        self.winners_ids = [w.user_id for w in winners]
+        self.winning_cards = winning_cards
+        
+        self.state = "SHOWDOWN" # Ensure state is designated as finished/showdown
+        
+        self.turn_deadline = datetime.utcnow() + timedelta(seconds=10) # 10s to see results
+
+    def evaluate_hand(self, hole_cards: List[Card], community_cards: List[Card]) -> Tuple[int, int, List[Card]]:
+        # Returns (Rank, Score, BestCards)
         # 0: High Card, 1: Pair, 2: Two Pair, 3: Trips, 4: Straight, 5: Flush, 6: FH, 7: Quads, 8: SF
         
-        cards = hole_cards + community_cards
+        all_cards = hole_cards + community_cards
+        # This is a simplified evaluator. For a perfect one, we need to try all 5-card combinations.
+        # We will try all 5-card combos for accuracy.
+        import itertools
+        
+        best_rank = -1
+        best_score = -1
+        best_hand = []
+        
+        for combo in itertools.combinations(all_cards, 5):
+            combo = list(combo)
+            rank, score = self._eval_5(combo)
+            if rank > best_rank or (rank == best_rank and score > best_score):
+                best_rank = rank
+                best_score = score
+                best_hand = combo
+                
+        return best_rank, best_score, best_hand
+
+    def _eval_5(self, cards: List[Card]) -> Tuple[int, int]:
         ranks = sorted([c.value for c in cards], reverse=True)
         suits = [c.suit for c in cards]
         
-        # Flush
-        is_flush = False
-        for s in SUITS:
-            if suits.count(s) >= 5:
-                is_flush = True
-                break
+        is_flush = len(set(suits)) == 1
         
-        # Straight
         unique_ranks = sorted(list(set(ranks)), reverse=True)
-        is_straight = False
-        streak = 0
-        last_val = -2
-        for r in unique_ranks:
-            if r == last_val - 1:
-                streak += 1
-            else:
-                streak = 1
-            last_val = r
-            if streak >= 5:
-                is_straight = True
-                break
+        is_straight = (len(unique_ranks) == 5) and (unique_ranks[0] - unique_ranks[-1] == 4)
+        # Wheel (A, 2, 3, 4, 5) -> A=12, 5=3, ... this logic needs A check
+        if not is_straight and len(unique_ranks) == 5:
+             if unique_ranks == [12, 3, 2, 1, 0]: # A, 5, 4, 3, 2
+                 is_straight = True
+                 ranks = [3, 2, 1, 0, -1] # treat A as low
         
-        # Multiples
         counts = {}
         for r in ranks: counts[r] = counts.get(r, 0) + 1
         
-        pairs = [r for r, c in counts.items() if c == 2]
-        trips = [r for r, c in counts.items() if c == 3]
-        quads = [r for r, c in counts.items() if c == 4]
+        start_counts = sorted(counts.values(), reverse=True)
         
-        score = sum(ranks[:5]) 
+        # Score calculation is simplified
+        score = sum([r * (10**i) for i, r in enumerate(reversed(ranks))]) # generic score
         
         if is_straight and is_flush: return 8, score
-        if quads: return 7, score
-        if trips and pairs: return 6, score
+        if 4 in start_counts: return 7, score
+        if 3 in start_counts and 2 in start_counts: return 6, score
         if is_flush: return 5, score
         if is_straight: return 4, score
-        if trips: return 3, score
-        if len(pairs) >= 2: return 2, score
-        if pairs: return 1, score
+        if 3 in start_counts: return 3, score
+        if start_counts.count(2) == 2: return 2, score
+        if 2 in start_counts: return 1, score
         
         return 0, score
         
     def add_log(self, msg):
-        self.logs.append({"time": datetime.utcnow().isoformat(), "msg": msg})
+        self.logs.append({"time": datetime.utcnow().isoformat() + "Z", "msg": msg})
         if len(self.logs) > 50: self.logs.pop(0)
 
     def to_dict(self):
@@ -554,15 +588,17 @@ class PokerTable:
             "id": self.id,
             "name": self.name,
             "state": self.state,
-            "seats": {k: v.to_dict(show_hand=False) for k, v in self.seats.items()}, 
+            "seats": {k: v.to_dict(show_hand=(self.state == "SHOWDOWN")) for k, v in self.seats.items()}, 
             "community_cards": [c.to_dict() for c in self.community_cards],
             "pot": self.pot,
             "current_bet": self.current_bet,
             "dealer_seat": self.dealer_seat,
             "current_player_seat": self.current_player_seat,
             "logs": self.logs,
-            "turn_deadline": self.turn_deadline.isoformat() if self.turn_deadline else None,
-            "limits": {"min": self.min_buy_in, "max": self.max_buy_in, "sb": self.small_blind, "bb": self.big_blind}
+            "turn_deadline": (self.turn_deadline.isoformat() + "Z") if self.turn_deadline else None,
+            "limits": {"min": self.min_buy_in, "max": self.max_buy_in, "sb": self.small_blind, "bb": self.big_blind},
+            "winning_cards": [c.to_dict() for c in self.winning_cards],
+            "winners_ids": self.winners_ids
         }
     
     def get_player_state(self, user_id):
@@ -572,39 +608,7 @@ class PokerTable:
                 base["seats"][seat] = p.to_dict(show_hand=True)
                 base["me"] = p.to_dict(show_hand=True)
                 break
-    def check_timers(self):
-        if self.state == "WAITING": return None
-        
-        # Check active player timeout
-        if self.turn_deadline and datetime.utcnow() > self.turn_deadline:
-             current_player = self.seats.get(self.current_player_seat)
-             if current_player and not current_player.is_folded and not current_player.is_all_in:
-                 # Auto Fold
-                 self.add_log(f"{current_player.name} timed out and folded.")
-                 current_player.is_folded = True
-                 current_player.consecutive_timeouts += 1
-                 
-                 # Check if kick needed (3 timeouts)
-                 kick_result = None
-                 if current_player.consecutive_timeouts >= 3:
-                     # Kick
-                     chip_refund = current_player.chips
-                     uid = current_player.user_id
-                     seat = self.current_player_seat
-                     del self.seats[self.current_player_seat]
-                     self.add_log(f"{current_player.name} kicked for inactivity.")
-                     kick_result = {"type": "KICKED", "user_id": uid, "refund": chip_refund, "seat": seat}
-                 
-                 # Move to next turn
-                 result = self.next_turn()
-                 
-                 return {
-                     "type": "GAME_UPDATE",
-                     "state": self.to_dict(),
-                     "kick": kick_result,
-                     "next_is_bot": result.get("next_is_bot", False) if result else False
-                 }
-        return None
+        return base
 
 poker_engine = {
     "tables": {
