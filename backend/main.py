@@ -858,70 +858,86 @@ async def websocket_game(
 
 async def run_poker_bot_turn(table_id: str):
     """Execute bot turn loop for poker."""
-    table = poker_engine["tables"].get(table_id)
-    if not table: return
+    try:
+        table = poker_engine["tables"].get(table_id)
+        if not table: return
 
-    # Loop in case multiple bots act in sequence
-    while True:
-        # Check if current player is bot
-        if table.state == "WAITING": break
-        
-        curr_seat = table.current_player_seat
-        player = table.seats.get(curr_seat)
-        
-        if not player or not player.is_bot:
-            break
+        # Loop in case multiple bots act in sequence
+        while True:
+            # Check if current player is bot
+            if table.state == "WAITING" or table.state == "SHOWDOWN": 
+                # Let timer loop handle restart or waiting
+                break
             
-        print(f"DEBUG: Poker Bot {player.name} turn.")
-        await asyncio.sleep(1.0 + random.random()) # Delay for realism
-        
-        # Bot Logic
-        action = "FOLD"
-        
-        # Check
-        if player.current_bet == table.current_bet:
-             action = "CHECK"
-        else:
-             rank, score = table.evaluate_hand(player.hand, table.community_cards)
-             if rank >= 1: # Pair or better
-                 action = "CALL"
-             else:
-                 action = "FOLD"
-        
-        resp = table.handle_action(player.user_id, action)
-        
-        # Broadcast
-        poker_scope = f"poker_{table_id}"
-        await manager.broadcast(poker_scope, {
-             "type": "GAME_UPDATE", 
-             "state": table.to_dict()
-        })
-        
-        # If hand ended, we might need to restart?
-        if table.state == "WAITING":
-            await asyncio.sleep(2.0)
-            if len(table.seats) >= 2:
-                 table.start_hand()
-                 await manager.broadcast(poker_scope, {
-                     "type": "GAME_UPDATE", 
-                     "state": table.to_dict()
-                 })
-                 # Deal cards
-                 for seat_num, p in table.seats.items():
-                      if p.hand and not p.is_folded and not p.is_bot:
-                           await manager.send_to_user(p.user_id, {
-                               "type": "HAND_UPDATE",
-                               "hand": [c.to_dict() for c in p.hand]
-                           })
-            break # Break loop if hand ended/restarted, let next turn trigger via natural flow or re-check?
-                  # We should probably continue loop if new hand starts and bot is first? 
-                  # But start_hand sets UTG.
-                  # Let's break to be safe and let recursion or next trigger handle it?
-                  # Actually, if we break, nobody calls run_poker_bot_turn again.
-                  # So we should Loop again.
-        
-        # Determine if we should continue looping (next player is bot)
-        # Handle Action already advanced turn.
+            curr_seat = table.current_player_seat
+            player = table.seats.get(curr_seat)
+            
+            if not player or not player.is_bot:
+                break
+                
+            print(f"DEBUG: Poker Bot {player.name} turn.")
+            await asyncio.sleep(1.0 + random.random()) # Delay for realism
+            
+            # Bot Logic
+            action = "FOLD"
+            
+            # Simple Bot Strategy
+            can_check = (player.current_bet == table.current_bet)
+            
+            # Randomness
+            luck = random.random()
+            
+            if can_check:
+                if luck > 0.1: action = "CHECK"
+                else: action = "RAISE" # Bluiff
+            else:
+                 rank, score, _ = table.evaluate_hand(player.hand, table.community_cards)
+                 # 0: High Card, 1: Pair...
+                 to_call = table.current_bet - player.current_bet
+                 pot_odds = to_call / (table.pot + to_call) if (table.pot + to_call) > 0 else 0
+                 
+                 if rank >= 1 or luck > 0.8: # Play any pair or bluff
+                     if luck > 0.95 and table.min_raise < player.chips // 2:
+                         action = "RAISE"
+                         amount = table.current_bet + table.min_raise
+                     else:
+                         action = "CALL"
+                 else:
+                     # High Card
+                     if to_call < (table.big_blind * 2): # Cheap
+                         action = "CALL"
+                     else:
+                         action = "FOLD"
+            
+            if action == "RAISE":
+                resp = table.handle_action(player.user_id, action, amount=table.current_bet + table.min_raise)
+            else:
+                resp = table.handle_action(player.user_id, action)
+            
+            if resp.get("error"):
+                # Fallback
+                print(f"Bot error: {resp.get('error')}")
+                if can_check: table.handle_action(player.user_id, "CHECK")
+                else: table.handle_action(player.user_id, "FOLD")
+            
+            # Broadcast
+            poker_scope = f"poker_{table_id}"
+            await manager.broadcast(poker_scope, {
+                 "type": "GAME_UPDATE", 
+                 "state": table.to_dict()
+            })
+            
+            # Check if hand ended (SHOWDOWN) or Next is Human
+            # If Showdown -> Next turn logic in handle_action returns next_is_bot=False usually (because no next player in Showdown)
+            # We break loop, and let Timer loop restart hand.
+            if table.state == "SHOWDOWN" or table.state == "WAITING":
+                break
+                
+            # If next is bot, loop continues.
+            # We check table.current_player_seat in next iteration.
+            
+    except Exception as e:
+        print(f"Bot loop error: {e}")
         
 async def _check_and_run_bot_turn(game_id: str):
     """Check if it's a bot's turn and run it with dice animation timing."""

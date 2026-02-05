@@ -109,7 +109,7 @@ class PokerTable:
 
     def get_empty_seat(self) -> int:
         for i in range(self.max_seats):
-            if i == 3: continue # Reserve Top Seat for Dealer
+            if i == 4: continue # Reserve Top Center for Dealer (matches Frontend visual)
             if i not in self.seats:
                 return i
         return -1
@@ -123,7 +123,7 @@ class PokerTable:
         # Check if already seated
         for p in self.seats.values():
             if p.user_id == user.id:
-                 return {"success": True, "seat": p.seat, "game_state": self.to_dict(), "message": "Already seated"}
+                 return {"success": True, "seat": p.seat, "state": self.to_dict(), "message": "Already seated"}
 
         seat = self.get_empty_seat()
         if seat == -1:
@@ -137,7 +137,7 @@ class PokerTable:
         # if len(self.seats) >= 2 and self.state == "WAITING":
         #    self.start_hand()
             
-        return {"success": True, "seat": seat, "game_state": self.to_dict()}
+        return {"success": True, "seat": seat, "state": self.to_dict()}
     
     def add_bot(self) -> Dict:
         seat = self.get_empty_seat()
@@ -153,7 +153,7 @@ class PokerTable:
         # if len(self.seats) >= 2 and self.state == "WAITING":
         #    self.start_hand()
             
-        return {"success": True, "seat": seat, "game_state": self.to_dict()}
+        return {"success": True, "seat": seat, "state": self.to_dict()}
 
     def remove_player(self, user_id: str) -> Dict:
         seat_to_remove = None
@@ -193,7 +193,7 @@ class PokerTable:
                          self.end_hand(winner_by_fold=True)
                     elif self.current_player_seat == seat:
                          self.next_turn()
-                return {"success": True, "game_state": self.to_dict()}
+                return {"success": True, "state": self.to_dict()}
         return {"error": "No bots to remove"}
 
     def start_hand(self):
@@ -266,7 +266,8 @@ class PokerTable:
              if self.turn_deadline and datetime.utcnow() > self.turn_deadline:
                  if len(self.seats) >= 2:
                      self.start_hand()
-                     return {"type": "GAME_UPDATE", "state": self.to_dict(), "message": "Next hand starting..."}
+                     next_is_bot = self.seats[self.current_player_seat].is_bot if self.current_player_seat in self.seats else False
+                     return {"type": "GAME_UPDATE", "state": self.to_dict(), "message": "Next hand starting...", "next_is_bot": next_is_bot}
                  else:
                      self.state = "WAITING"
                      return {"type": "GAME_UPDATE", "state": self.to_dict(), "message": "Waiting for players..."}
@@ -289,14 +290,14 @@ class PokerTable:
                      # Check if game should end
                      if len(self.seats) < 2:
                          self.end_hand(winner_by_fold=True)
-                         return {"type": "KICKED", "user_id": player.user_id, "refund": refund, "game_state": self.to_dict()}
+                         return {"type": "KICKED", "user_id": player.user_id, "refund": refund, "state": self.to_dict()}
                      
                      self.next_turn()
                      return {
                         "type": "KICKED", 
                         "user_id": player.user_id, 
                         "refund": refund, 
-                        "game_state": self.to_dict(), 
+                        "state": self.to_dict(), 
                         "next_is_bot": self.seats[self.current_player_seat].is_bot if self.current_player_seat in self.seats else False
                      }
                  
@@ -313,13 +314,16 @@ class PokerTable:
                          
                      return {
                         "type": "TIMEOUT", 
-                        "game_state": self.to_dict(), 
+                        "state": self.to_dict(), 
                         "next_is_bot": self.seats[self.current_player_seat].is_bot if self.current_player_seat in self.seats else False
                      }
 
         return None
 
     def handle_action(self, user_id: str, action: str, amount: int = 0) -> Dict:
+        if self.state == "SHOWDOWN":
+            return {"error": "Hand is over, waiting for next deal"}
+
         player = None
         for p in self.seats.values():
             if p.user_id == user_id:
