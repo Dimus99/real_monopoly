@@ -255,10 +255,10 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
             </div>
 
             {/* Chat / LOGS */}
-            <div className="absolute bottom-28 left-4 z-50 w-64 max-h-32 overflow-y-auto font-mono text-xs text-gray-400 bg-black/60 p-2 rounded pointer-events-none fade-mask">
+            <div className="absolute bottom-28 left-4 z-50 w-80 max-h-48 overflow-y-auto font-mono text-xs text-gray-400 bg-black/80 p-2 rounded border border-white/10 shadow-xl flex flex-col-reverse group hover:bg-black/90 transition-colors">
                 {gameState.logs && gameState.logs.slice().reverse().map((log, i) => (
-                    <div key={i} className="mb-1">
-                        <span className="text-gray-600">[{new Date(log.time).toLocaleTimeString().split(' ')[0]}]</span> <span className="text-gray-300">{log.msg}</span>
+                    <div key={i} className="mb-1 break-words">
+                        <span className="text-gray-500">[{new Date(log.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]</span> <span className="text-gray-300">{log.msg}</span>
                     </div>
                 ))}
             </div>
@@ -267,12 +267,13 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
             <div className="flex-1 relative my-4 flex items-center justify-center perspective-1000">
 
                 {/* Dealer Avatar (Shifted slightly up if players are at top) */}
-                <div className="absolute top-[10%] left-1/2 transform -translate-x-1/2 -mt-4 z-20 flex flex-col items-center opacity-80 pointer-events-none">
-                    <div className="relative w-16 h-16 rounded-full border-2 border-yellow-600 bg-black overflow-hidden shadow-2xl">
+                {/* Dealer Avatar */}
+                <div className="absolute top-[8%] left-1/2 transform -translate-x-1/2 -mt-4 z-10 flex flex-col items-center opacity-90 pointer-events-none">
+                    <div className="relative w-14 h-14 rounded-full border-2 border-yellow-600 bg-black overflow-hidden shadow-2xl">
                         <img src="/assets/dealer.png" className="w-full h-full object-cover" onError={(e) => e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Dealer'} alt="Dealer" />
                     </div>
-                    <div className="bg-black/80 px-2 py-0.5 rounded-full border border-yellow-600/50 -mt-2 z-30">
-                        <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-wider">Croupier</span>
+                    <div className="bg-black/80 px-2 py-0.5 rounded-full border border-yellow-600/50 -mt-2 z-20">
+                        <span className="text-[9px] font-bold text-yellow-500 uppercase tracking-wider">Croupier</span>
                     </div>
                 </div>
 
@@ -317,6 +318,15 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                         const isActive = gameState.current_player_seat === seatIdx;
                         const posStyle = getSeatPosition(seatIdx);
 
+                        // Calculate Blind Badges
+                        const activeSeatKeys = Object.keys(gameState.seats).map(Number).sort((a, b) => a - b);
+                        const dealerIdx = activeSeatKeys.indexOf(gameState.dealer_seat);
+                        const sbSeat = dealerIdx !== -1 ? activeSeatKeys[(dealerIdx + 1) % activeSeatKeys.length] : -1;
+                        const bbSeat = dealerIdx !== -1 ? activeSeatKeys[(dealerIdx + 2) % activeSeatKeys.length] : -1;
+
+                        const isSB = seatIdx === sbSeat && gameState.state !== 'WAITING';
+                        const isBB = seatIdx === bbSeat && gameState.state !== 'WAITING';
+
                         return (
                             <div key={seatIdx} className={`absolute flex flex-col items-center transition-all duration-300 ${isActive ? 'scale-110 z-30' : 'z-20'}`} style={posStyle}>
                                 {player ? (
@@ -339,10 +349,18 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                                 <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`} className="w-full h-full object-cover" alt="avatar" />
                                             )}
 
-                                            {/* Dealer Button */}
-                                            {gameState.dealer_seat === seatIdx && (
-                                                <div className="absolute top-0 right-0 bg-white text-black font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs border border-gray-400 shadow-md transform translate-x-2 -translate-y-2">D</div>
-                                            )}
+                                            {/* Dealer / Blind Buttons */}
+                                            <div className="absolute top-0 right-0 flex flex-col gap-1 transform translate-x-3 -translate-y-2">
+                                                {gameState.dealer_seat === seatIdx && (
+                                                    <div className="bg-white text-black font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs border border-gray-400 shadow-md">D</div>
+                                                )}
+                                                {isSB && (
+                                                    <div className="bg-blue-500 text-white font-bold rounded-full w-6 h-6 flex items-center justify-center text-[10px] border border-blue-300 shadow-md">SB</div>
+                                                )}
+                                                {isBB && (
+                                                    <div className="bg-orange-500 text-white font-bold rounded-full w-6 h-6 flex items-center justify-center text-[10px] border border-orange-300 shadow-md">BB</div>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Player Info */}
@@ -352,7 +370,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                         </div>
 
                                         {/* Cards */}
-                                        <div className="flex -mt-16 -z-10 filter drop-shadow-xl hover:-translate-y-6 transition-transform duration-300">
+                                        {/* Cards */}
+                                        <div className="flex -mt-8 z-40 filter drop-shadow-xl hover:-translate-y-6 transition-transform duration-300">
                                             {player.hand.map((c, i) => (
                                                 <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-1' : 'rotate-6 -translate-x-1'} origin-bottom`}>
                                                     {renderCard(c, i)}
