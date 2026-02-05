@@ -19,7 +19,8 @@ import TradeNotification from '../components/TradeNotification';
 import ChanceModal from '../components/ChanceModal';
 import CasinoModal from '../components/CasinoModal';
 import AuctionModal from '../components/AuctionModal';
-import { BuyoutAnimation, AidAnimation, NukeThreatAnimation, SanctionsAnimation, BeltRoadAnimation } from '../components/AbilityAnimations';
+// Imports updated
+import { BuyoutAnimation, AidAnimation, NukeThreatAnimation, SanctionsAnimation, ConstructionAnimation } from '../components/AbilityAnimations';
 import BankruptcyAnimation from '../components/BankruptcyAnimation';
 import { soundManager } from '../utils/sounds';
 
@@ -227,8 +228,8 @@ const GameRoom = () => {
     const [showAid, setShowAid] = useState(false);
     const [showNuke, setShowNuke] = useState(false);
     const [showSanctions, setShowSanctions] = useState(false);
-    const [showBeltRoad, setShowBeltRoad] = useState(false);
-    const [abilityBonus, setAbilityBonus] = useState(0); // For Belt Road
+    const [showConstruction, setShowConstruction] = useState(false);
+    const [abilityAction, setAbilityAction] = useState('rebuild');
     const [abilityTargetName, setAbilityTargetName] = useState('');
     const [abilityAmount, setAbilityAmount] = useState(0);
     const [showVictory, setShowVictory] = useState(false);
@@ -316,7 +317,7 @@ const GameRoom = () => {
     const handleCloseAid = React.useCallback(() => setShowAid(false), []);
     const handleCloseNuke = React.useCallback(() => setShowNuke(false), []);
     const handleCloseSanctions = React.useCallback(() => setShowSanctions(false), []);
-    const handleCloseBeltRoad = React.useCallback(() => setShowBeltRoad(false), []);
+    const handleCloseConstruction = React.useCallback(() => setShowConstruction(false), []);
 
     // Escape to cancel targeting
     useEffect(() => {
@@ -921,9 +922,9 @@ const GameRoom = () => {
                 setAbilityTargetName(lastAction.target_name || '');
                 setShowSanctions(true);
                 break;
-            case 'BELT_ROAD':
-                setAbilityBonus(lastAction.total_bonus || 0);
-                setShowBeltRoad(true);
+            case 'CONSTRUCTION':
+                setAbilityAction(lastAction.action || 'rebuild');
+                setShowConstruction(true);
                 break;
             case 'ISOLATION':
                 // Could add a small toast or sound for isolation if no specific full-screen animation exists
@@ -1649,7 +1650,7 @@ const GameRoom = () => {
                 <AidAnimation isVisible={showAid} onComplete={handleCloseAid} amount={abilityAmount} />
                 <NukeThreatAnimation isVisible={showNuke} onComplete={handleCloseNuke} />
                 <SanctionsAnimation isVisible={showSanctions} onComplete={handleCloseSanctions} />
-                <BeltRoadAnimation isVisible={showBeltRoad} onComplete={handleCloseBeltRoad} bonus={abilityBonus} />
+                <ConstructionAnimation isVisible={showConstruction} onComplete={handleCloseConstruction} action={abilityAction} />
                 <BankruptcyAnimation
                     isVisible={!!bankruptPlayer}
                     playerName={bankruptPlayer?.name || ''}

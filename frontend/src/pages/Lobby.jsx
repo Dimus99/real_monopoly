@@ -22,7 +22,7 @@ const LOBBY_CHARACTERS = [
     { id: 'Zelensky', name: 'Зеленский', avatar: '/avatars/zelensky.png', color: '#0057B8', ability: 'AID', abilityName: 'Помощь Запада', country: 'UA', abilityDesc: 'Собрать помощь со всех игроков.' },
     { id: 'Kim', name: 'Ким', avatar: '/avatars/kim.png', color: '#8B0000', ability: 'NUKE', abilityName: 'Ядерная Угроза', country: 'NK', abilityDesc: 'Ядерная угроза блокирует аренду.' },
     { id: 'Biden', name: 'Байден', avatar: '/avatars/biden.png', color: '#3C3B6E', ability: 'SANCTIONS', abilityName: 'Санкции', country: 'USA', abilityDesc: 'Заморозить оппонента: он пропустит следующий ход.' },
-    { id: 'Xi', name: 'Си', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'DEBT', abilityName: 'Пояс и Путь', country: 'CN', abilityDesc: 'Получить по $50 за каждый свой город.' },
+    { id: 'Xi', name: 'Си', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'CONSTRUCTION', abilityName: 'Строительство', country: 'CN', abilityDesc: 'Он сейчас отстраивает: бесплатно восстановить разрушенное поле ИЛИ построить 1 дом на монополии.' },
     { id: 'Netanyahu', name: 'Нетаньяху', avatar: '/avatars/israel.png', color: '#0038b8', ability: 'TELEPORT', abilityName: 'Манёвры', country: 'IL', abilityDesc: 'Стратегический ход: перемещение в любую точку.' },
     { id: 'BinLaden', name: 'Бен Ладен', avatar: '/avatars/binladen.png', color: '#2F4F4F', ability: 'SEPTEMBER_11', abilityName: '11 Сентября', country: 'AF', abilityDesc: 'Уничтожить 2 соседних поля (Башни-близнецы).' }
 ];

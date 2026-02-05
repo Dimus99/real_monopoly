@@ -363,7 +363,8 @@ export const SanctionsAnimation = ({ isVisible, onComplete }) => {
 };
 
 // Xi's Belt & Road Animation
-export const BeltRoadAnimation = ({ isVisible, onComplete, bonus = 0 }) => {
+// Xi's Construction Animation
+export const ConstructionAnimation = ({ isVisible, onComplete, action = 'rebuild' }) => {
     return (
         <AnimatePresence>
             {isVisible && (
@@ -382,16 +383,14 @@ export const BeltRoadAnimation = ({ isVisible, onComplete, bonus = 0 }) => {
                         className="absolute inset-0 bg-gradient-to-r from-red-600/90 to-red-900/40"
                     />
 
-                    {/* Moving Train/Road effect */}
+                    {/* Crane/Construction effect */}
                     <motion.div
-                        initial={{ x: '-100%' }}
-                        animate={{ x: '100%' }}
-                        transition={{ duration: 1.5, delay: 0.2, ease: 'linear' }}
-                        className="absolute top-1/2 -translate-y-1/2 w-full h-32 bg-amber-500/20 flex items-center"
+                        initial={{ y: '100%' }}
+                        animate={{ y: '20%' }}
+                        transition={{ duration: 1, delay: 0.2, type: 'spring' }}
+                        className="absolute bottom-0 left-10 text-[150px]"
                     >
-                        <div className="text-6xl mx-10">🚂</div>
-                        <div className="flex-1 border-b-4 border-dashed border-amber-400/50"></div>
-                        <div className="text-6xl mx-10">🏗️</div>
+                        🏗️
                     </motion.div>
 
                     {/* Text */}
@@ -402,20 +401,11 @@ export const BeltRoadAnimation = ({ isVisible, onComplete, bonus = 0 }) => {
                         className="absolute top-1/3 left-0 right-0 text-center"
                     >
                         <div className="font-display text-6xl text-amber-400 font-black uppercase text-shadow">
-                            BELT & ROAD
+                            CONSTRUCTION
                         </div>
                         <div className="text-3xl text-white font-bold mt-2">
-                            Infrastructure Bonus Collected!
+                            {action === 'rebuild' ? 'City Rebuilt from Ruins!' : 'New House Built!'}
                         </div>
-                        {bonus > 0 && (
-                            <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1.5 }}
-                                className="text-4xl text-green-400 font-mono mt-6 font-bold"
-                            >
-                                +${bonus}
-                            </motion.div>
-                        )}
                     </motion.div>
                 </motion.div>
             )}
