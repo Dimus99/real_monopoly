@@ -18,7 +18,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const [preActionAmount, setPreActionAmount] = useState(0);
     const [tick, setTick] = useState(0);
     const [dealerImageIdx, setDealerImageIdx] = useState(0);
-    const dealerImages = ['/assets/croupier.png', '/assets/dealer.png'];
+    const dealerImages = ['/assets/croupier.png', '/assets/dealer.png', '/assets/dealer_megan.png', '/assets/dealer_zhirinovsky.png'];
 
     const [isChatVisible, setIsChatVisible] = useState(true);
     const [isChatPinned, setIsChatPinned] = useState(false);
@@ -455,7 +455,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     <div className="relative w-48 h-48 rounded-full border-4 border-yellow-500/40 bg-black overflow-hidden shadow-[0_0_80px_rgba(234,179,8,0.3)] group">
                         <img
                             src={dealerImages[dealerImageIdx]}
-                            className="w-full h-full object-cover object-top transition-all duration-700 group-hover:scale-110"
+                            className={`w-full h-full object-cover object-top transition-all duration-700 group-hover:scale-110 ${dealerImages[dealerImageIdx].includes('zhirinovsky') ? 'animate-aggressive-breathing' : ''}`}
                             alt="Dealer"
                             onError={(e) => { e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'; }}
                         />

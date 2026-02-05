@@ -624,6 +624,32 @@ body {
   box-shadow: 0 4px 20px rgba(0, 87, 184, 0.5);
 }
 
+@keyframes aggressive-breathing {
+  0% {
+    transform: scale(1) translateY(0);
+  }
+
+  25% {
+    transform: scale(1.02) translateY(-2px) rotate(-1deg);
+  }
+
+  50% {
+    transform: scale(1.05) translateY(-4px) rotate(0deg);
+  }
+
+  75% {
+    transform: scale(1.02) translateY(-2px) rotate(1deg);
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-aggressive-breathing {
+  animation: aggressive-breathing 3s ease-in-out infinite;
+}
+
 /* ===== Animations ===== */
 @keyframes fadeIn {
   from {
