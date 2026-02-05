@@ -267,6 +267,7 @@ async def authenticate_telegram_user(
             avatar_url=existing.avatar_url,
             friend_code=existing.friend_code,
             created_at=existing.created_at,
+            balance=existing.balance,
             stats=UserStats(
                 games_played=existing.games_played,
                 wins=existing.wins,
@@ -311,6 +312,7 @@ async def authenticate_telegram_user(
         avatar_url=user_db.avatar_url,
         friend_code=user_db.friend_code,
         created_at=user_db.created_at,
+        balance=user_db.balance,
         stats=UserStats(
             games_played=user_db.games_played,
             wins=user_db.wins,
@@ -352,6 +354,7 @@ async def get_current_user(
         avatar_url=user_db.avatar_url,
         friend_code=user_db.friend_code,
         created_at=user_db.created_at,
+        balance=user_db.balance,
         stats=UserStats(
             games_played=user_db.games_played,
             wins=user_db.wins,

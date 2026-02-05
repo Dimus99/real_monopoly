@@ -269,17 +269,29 @@ async def websocket_poker(
             should_broadcast = False
             
             if action == "JOIN":
-                buy_in = data.get("buy_in", 1000)
-                async with async_session() as session:
-                     # Skip balance check to allow infinite/credit play
-                     await session.execute(text("UPDATE users SET balance = balance - :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})
-                     await session.commit()
-                     resp = table.add_player(user, buy_in, requested_seat=data.get("requested_seat"))
-                     if resp.get("error"):
-                         await session.execute(text("UPDATE users SET balance = balance + :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})
-                         await session.commit()
-                     else:
-                         should_broadcast = True
+                buy_in = int(data.get("buy_in", 1000))
+                # Check for existing seat to avoid double charge on rejoin
+                is_rejoin = any(p.user_id == user.id for p in table.seats.values())
+                
+                if not is_rejoin:
+                    async with async_session() as session:
+                        # Get fresh user to check real balance
+                        db_user = await db_service.get_user(session, user.id)
+                        if not db_user or db_user.balance < buy_in:
+                            await websocket.send_json({"type": "ERROR", "message": f"Недостаточно средств. Нужно ${buy_in}, у вас ${db_user.balance if db_user else 0}"})
+                            continue
+                        
+                        await session.execute(text("UPDATE users SET balance = balance - :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})
+                        await session.commit()
+                
+                resp = table.add_player(user, buy_in, requested_seat=data.get("requested_seat"))
+                if resp.get("error"):
+                    if not is_rejoin:
+                        async with async_session() as session:
+                            await session.execute(text("UPDATE users SET balance = balance + :amt WHERE id = :uid"), {"amt": buy_in, "uid": user.id})
+                            await session.commit()
+                else:
+                    should_broadcast = True
             
             elif action == "LEAVE":
                  leave_res = table.remove_player(user.id)

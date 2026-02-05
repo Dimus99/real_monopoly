@@ -664,7 +664,7 @@ class PokerTable:
 
 poker_engine = {
     "tables": {
-        "4": PokerTable("4", "Penny Slots", small_blind=5, big_blind=10, min_buy=50, max_buy=10000),
+        "4": PokerTable("4", "Micro Stakes", small_blind=5, big_blind=10, min_buy=50, max_buy=10000),
         "5": PokerTable("5", "Casual", small_blind=15, big_blind=30, min_buy=150, max_buy=30000),
         "1": PokerTable("1", "Rookie Table", small_blind=50, big_blind=100, min_buy=500, max_buy=100000),
         "2": PokerTable("2", "Pro Table", small_blind=250, big_blind=500, min_buy=2500, max_buy=500000),
