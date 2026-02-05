@@ -297,11 +297,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
         }
 
         const styles = {
-            0: { bottom: '15px', left: '50%', transform: 'translateX(-50%)' }, // ME (Bottom) - Raised to prevent card cut-off
+            0: { bottom: '0px', left: '50%', transform: 'translateX(-50%)' }, // ME (Bottom Edge)
             1: { bottom: '5%', left: '12%' }, // Bottom Left
             2: { top: '55%', left: '-35px', transform: 'translateY(-50%)' }, // Left
             3: { top: '15%', left: '10%' }, // Top Left
-            4: { top: '-20px', left: '50%', transform: 'translateX(-50%)' }, // NEVER USED FOR PLAYERS
+            4: { top: '-20px', left: '50%', transform: 'translateX(-50%)' }, // Dealer Spot
             5: { top: '15%', right: '10%' }, // Top Right
             6: { top: '55%', right: '-35px', transform: 'translateY(-50%)' }, // Right
             7: { bottom: '5%', right: '12%' } // Bottom Right
@@ -396,14 +396,19 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
             {/* Table Area */}
             <div className="flex-1 relative my-4 flex items-center justify-center perspective-1000">
 
-                {/* Dealer Avatar (Shifted slightly up if players are at top) */}
-                {/* Dealer Avatar */}
-                <div className="absolute top-[5%] left-1/2 transform -translate-x-1/2 -mt-4 z-10 flex flex-col items-center opacity-90 pointer-events-none transition-all duration-500">
-                    <div className="relative w-28 h-28 rounded-full border-4 border-yellow-500 bg-black overflow-hidden shadow-[0_0_40px_rgba(234,179,8,0.3)]">
-                        <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Sophie&hair=long&hairColor=brown&skinColor=faded" className="w-full h-full object-cover scale-110" alt="Croupier" />
+                {/* Dealer Avatar - Close Up */}
+                <div className="absolute top-[-2%] left-1/2 transform -translate-x-1/2 z-[5] flex flex-col items-center opacity-95 transition-all duration-1000 hover:scale-105">
+                    <div className="relative w-48 h-48 rounded-full border-4 border-yellow-500/40 bg-black overflow-hidden shadow-[0_0_80px_rgba(234,179,8,0.3)] group">
+                        <img
+                            src="/assets/croupier.png"
+                            className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
+                            alt="Croupier"
+                            onError={(e) => { e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'; }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                     </div>
-                    <div className="bg-black/90 px-4 py-1 rounded-full border-2 border-yellow-500 shadow-xl -mt-4 z-20">
-                        <span className="text-xs font-bold text-yellow-500 uppercase tracking-widest">Croupier</span>
+                    <div className="bg-black/80 backdrop-blur-xl px-6 py-1.5 rounded-full border-2 border-yellow-500/50 shadow-2xl -mt-8 z-10 scale-110">
+                        <span className="text-sm font-black text-yellow-500 uppercase tracking-[0.4em] drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">The Dealer</span>
                     </div>
                 </div>
 
@@ -471,60 +476,73 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                             </>
                                         )}
 
-                                        {/* Avatar */}
-                                        <div
-                                            onClick={() => { if (player.user_id === gameState.me?.user_id) setShowStandUpConfirm(true); }}
-                                            className={`w-20 h-20 rounded-full border-4 overflow-hidden z-20 bg-[#1a1a2e] ${isActive ? 'border-yellow-400 shadow-[0_0_30px_rgba(234,179,8,0.5)]' : 'border-[#2d2a26]'} ${player.is_folded ? 'opacity-50 grayscale' : ''} relative ${player.user_id === gameState.me?.user_id ? 'cursor-pointer hover:brightness-125 transition-all' : ''}`}>
-                                            {player.avatar_url && player.avatar_url.length > 2 ? (
-                                                <img src={player.avatar_url} className="w-full h-full object-cover" alt={player.name} onError={(e) => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}` }} />
-                                            ) : (
-                                                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`} className="w-full h-full object-cover" alt="avatar" />
-                                            )}
-
-                                            {/* Dealer / Blind Buttons */}
-                                            <div className="absolute top-0 right-0 flex flex-col gap-1 transform translate-x-3 -translate-y-2">
-                                                {gameState.dealer_seat === seatIdx && (
-                                                    <div className="bg-white text-black font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs border border-gray-400 shadow-md">D</div>
-                                                )}
-                                                {isSB && (
-                                                    <div className="bg-blue-500 text-white font-bold rounded-full w-6 h-6 flex items-center justify-center text-[10px] border border-blue-300 shadow-md">SB</div>
-                                                )}
-                                                {isBB && (
-                                                    <div className="bg-orange-500 text-white font-bold rounded-full w-6 h-6 flex items-center justify-center text-[10px] border border-orange-300 shadow-md">BB</div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Player Info */}
-                                        <div className="bg-[#0f172a]/95 backdrop-blur px-3 py-1 rounded-xl text-center -mt-3 z-30 border border-white/10 min-w-[100px] shadow-xl">
-                                            <div className="text-xs font-bold truncate max-w-[100px] text-gray-200">{player.name}</div>
-                                            <div className="text-sm text-yellow-500 font-mono font-bold">${player.chips}</div>
-                                        </div>
-
-                                        {/* Cards */}
-                                        {/* Cards */}
-                                        <div className="flex flex-col items-center mt-2 z-50">
-                                            <div className="flex filter drop-shadow-xl hover:-translate-y-4 transition-transform duration-300">
-                                                {(player.user_id === gameState.me?.user_id && gameState.me.hand[0]?.rank !== '?' ? gameState.me.hand : player.hand).map((c, i) => (
-                                                    <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-1' : 'rotate-6 -translate-x-1'} origin-bottom`}>
-                                                        {renderCard(c, i)}
+                                        <div className="relative flex flex-col items-center">
+                                            {/* Cards ABOVE Avatar now - with better centering and overlap */}
+                                            <div className="mb-[-15px] z-[60] flex flex-col items-center pointer-events-none">
+                                                <div className="flex justify-center filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)] scale-125">
+                                                    {(player.user_id === gameState.me?.user_id && gameState.me.hand[0]?.rank !== '?' ? gameState.me.hand : player.hand).map((c, i) => (
+                                                        <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-2' : 'rotate-6 -translate-x-2'} origin-bottom transition-all`}>
+                                                            {renderCard(c, i)}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                {/* Hand Combination Name */}
+                                                {player.user_id === gameState.me?.user_id && player.current_hand && !player.is_folded && (
+                                                    <div className="mt-2 bg-yellow-500 text-black px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl border-2 border-yellow-200/50 animate-in fade-in zoom-in duration-300">
+                                                        {player.current_hand.name}
                                                     </div>
-                                                ))}
+                                                )}
                                             </div>
-                                            {/* Hand Combination Name */}
-                                            {player.user_id === gameState.me?.user_id && player.current_hand && !player.is_folded && (
-                                                <div className="mt-1 bg-yellow-500 text-black px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter shadow-lg border border-yellow-200/50 scale-90">
-                                                    {player.current_hand.name}
+
+                                            {/* Avatar at bottom */}
+                                            <div className={`relative transition-all duration-500 ${isActive ? 'scale-110' : 'scale-90 opacity-80'}`}>
+                                                <div
+                                                    onClick={() => { if (player.user_id === gameState.me?.user_id) setShowStandUpConfirm(true); }}
+                                                    className={`w-16 h-16 rounded-full border-4 overflow-hidden z-20 bg-[#1a1a2e] ${isActive ? 'border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.6)]' : 'border-gray-600'} ${player.is_folded ? 'opacity-50 grayscale' : ''} relative ${player.user_id === gameState.me?.user_id ? 'cursor-pointer hover:brightness-125 transition-all' : ''}`}>
+                                                    {player.avatar_url && player.avatar_url.length > 2 ? (
+                                                        <img src={player.avatar_url} className="w-full h-full object-cover" alt={player.name} onError={(e) => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}` }} />
+                                                    ) : (
+                                                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`} className="w-full h-full object-cover" alt="avatar" />
+                                                    )}
+                                                    {player.is_folded && <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-white text-[10px] font-bold">FOLDED</div>}
+                                                </div>
+
+                                                {/* Dealer / Blind Buttons */}
+                                                <div className="absolute top-0 right-0 flex flex-col gap-1 transform translate-x-3 -translate-y-2">
+                                                    {gameState.dealer_seat === seatIdx && (
+                                                        <div className="bg-white text-black font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs border border-gray-400 shadow-md">D</div>
+                                                    )}
+                                                    {isSB && (
+                                                        <div className="bg-blue-500 text-white font-bold rounded-full w-6 h-6 flex items-center justify-center text-[10px] border border-blue-300 shadow-md">SB</div>
+                                                    )}
+                                                    {isBB && (
+                                                        <div className="bg-orange-500 text-white font-bold rounded-full w-6 h-6 flex items-center justify-center text-[10px] border border-orange-300 shadow-md">BB</div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Name & Chips UI Below Avatar */}
+                                            <div className="mt-1 flex flex-col items-center z-30">
+                                                <div className={`px-3 py-0.5 rounded-full ${isActive ? 'bg-yellow-500 text-black' : 'bg-black/60 text-white'} text-[10px] font-bold shadow-lg flex items-center gap-1 border border-white/10`}>
+                                                    {player.name}
+                                                    {player.is_bot && <Bot size={10} />}
+                                                </div>
+                                                <div className="mt-1 flex items-center gap-1 bg-black/80 px-2 py-0.5 rounded border border-yellow-500/30">
+                                                    <Coins size={10} className="text-yellow-500" />
+                                                    <span className="text-xs font-mono font-black text-yellow-400">${player.chips}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Chips Bet Display (Shifted to side) */}
+                                            {player.current_bet > 0 && (
+                                                <div className="absolute -top-8 -right-16 z-40 transform scale-75">
+                                                    <ChipStack amount={player.current_bet} />
+                                                    <div className="text-[10px] font-bold text-yellow-400 bg-black/60 px-2 rounded-full mt-1">
+                                                        ${player.current_bet}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
-
-                                        {/* Chips Bet Display */}
-                                        {player.current_bet > 0 && (
-                                            <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 z-20">
-                                                <ChipStack amount={player.current_bet} />
-                                            </div>
-                                        )}
 
                                         {/* Action Bubble */}
                                         {player.last_action && (
@@ -542,14 +560,10 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance }) => {
                                     </div>
                                 )}
 
-                                {/* Winner Overlay */}
                                 {winnerAnim && winnerAnim.includes(player?.user_id) && (
                                     <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center pointer-events-none animate-in fade-in zoom-in duration-500">
-                                        <div className="bg-yellow-500/20 rounded-full p-4 backdrop-blur-sm border-2 border-yellow-500 shadow-[0_0_30px_rgba(234,179,8,0.5)] animate-bounce">
+                                        <div className="bg-yellow-500/20 rounded-full p-4 backdrop-blur-sm border-2 border-yellow-500 shadow-[0_0_80px_rgba(234,179,8,0.6)] animate-bounce">
                                             <Trophy className="text-yellow-400 w-12 h-12" />
-                                        </div>
-                                        <div className="text-yellow-400 font-bold text-xl mt-2 drop-shadow-lg uppercase tracking-tighter bg-black/60 px-3 rounded-full border border-yellow-500/50">
-                                            Winner!
                                         </div>
                                     </div>
                                 )}
