@@ -17,14 +17,14 @@ const Globe = ({ size, className }) => (
 
 // Character data constant
 const LOBBY_CHARACTERS = [
-    { id: 'Putin', name: 'Путин', avatar: '/avatars/putin.png', color: '#C41E3A', ability: 'ORESHNIK', abilityName: 'Орешник', country: 'RU', abilityDesc: 'Запустить ракету, уничтожающую клетку.' },
-    { id: 'Trump', name: 'Трамп', avatar: '/avatars/trump.png', color: '#FF6B35', ability: 'BUYOUT', abilityName: 'Рейдерский Захват', country: 'USA', abilityDesc: 'Купить любую недвижимость, даже чужую.' },
+    { id: 'Putin', name: 'Путин', avatar: '/avatars/putin.png', color: '#C41E3A', ability: 'ORESHNIK', abilityName: 'Орешник', country: 'RU', abilityDesc: 'Орешник делает бум бум.' },
+    { id: 'Trump', name: 'Трамп', avatar: '/avatars/trump.png', color: '#FF6B35', ability: 'BUYOUT', abilityName: 'Рейдерский Захват', country: 'USA', abilityDesc: 'Выкупить любое чужое поле.' },
     { id: 'Zelensky', name: 'Зеленский', avatar: '/avatars/zelensky.png', color: '#0057B8', ability: 'AID', abilityName: 'Помощь Запада', country: 'UA', abilityDesc: 'Собрать помощь со всех игроков.' },
-    { id: 'Kim', name: 'Ким', avatar: '/avatars/kim.png', color: '#8B0000', ability: 'NUKE', abilityName: 'Ядерная Угроза', country: 'NK', abilityDesc: 'Ядерная угроза блокирует аренду.' },
+    { id: 'Kim', name: 'Ким', avatar: '/avatars/kim.png', color: '#8B0000', ability: 'NUKE', abilityName: 'Ядерная Угроза', country: 'NK', abilityDesc: 'Ядерная угроза блокирует аренду чужого поля.' },
     { id: 'Biden', name: 'Байден', avatar: '/avatars/biden.png', color: '#3C3B6E', ability: 'SANCTIONS', abilityName: 'Санкции', country: 'USA', abilityDesc: 'Заморозить оппонента: он пропустит следующий ход.' },
-    { id: 'Xi', name: 'Си', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'CONSTRUCTION', abilityName: 'Строительство', country: 'CN', abilityDesc: 'Он сейчас отстраивает: бесплатно восстановить разрушенное поле ИЛИ построить 1 дом на монополии.' },
+    { id: 'Xi', name: 'Си', avatar: '/avatars/xi.png', color: '#DE2910', ability: 'CONSTRUCTION', abilityName: 'Строительство', country: 'CN', abilityDesc: 'Восстановить разрушенное поле ИЛИ построить 1 дом.' },
     { id: 'Netanyahu', name: 'Нетаньяху', avatar: '/avatars/israel.png', color: '#0038b8', ability: 'TELEPORT', abilityName: 'Манёвры', country: 'IL', abilityDesc: 'Стратегический ход: перемещение в любую точку.' },
-    { id: 'BinLaden', name: 'Бен Ладен', avatar: '/avatars/binladen.png', color: '#2F4F4F', ability: 'SEPTEMBER_11', abilityName: '11 Сентября', country: 'AF', abilityDesc: 'Уничтожить 2 соседних поля (Башни-близнецы).' }
+    { id: 'BinLaden', name: 'Бен Ладен', avatar: '/avatars/binladen.png', color: '#2F4F4F', ability: 'SEPTEMBER_11', abilityName: '11 Сентября', country: 'AF', abilityDesc: '(Башни-близнецы).' }
 ];
 
 const getApiBase = () => {
