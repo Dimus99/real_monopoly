@@ -27,9 +27,35 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const [isActionPanelHovered, setIsActionPanelHovered] = useState(false);
     const [gameError, setGameError] = useState(null);
     const [showStandUpConfirm, setShowStandUpConfirm] = useState(false);
-    const [highlightEnabled, setHighlightEnabled] = useState(true); // New Toggle State
+    const [raiseAnims, setRaiseAnims] = useState({});
+    const prevSeatsRef = useRef({});
 
-    const messagesEndRef = useRef(null);
+    // Detect Raises for Animation
+    useEffect(() => {
+        if (!gameState) return;
+        const newAnims = { ...raiseAnims };
+        let hasNewUpdates = false;
+
+        Object.keys(gameState.seats).forEach(seatIdx => {
+            const player = gameState.seats[seatIdx];
+            const prevPlayer = prevSeatsRef.current[seatIdx];
+
+            if (player && player.last_action && player.last_action.startsWith('RAISE')) {
+                if (!prevPlayer || prevPlayer.last_action !== player.last_action) {
+                    newAnims[seatIdx] = true;
+                    hasNewUpdates = true;
+                    setTimeout(() => {
+                        setRaiseAnims(prev => ({ ...prev, [seatIdx]: false }));
+                    }, 2000);
+                }
+            }
+        });
+
+        if (hasNewUpdates) {
+            setRaiseAnims(newAnims);
+        }
+        prevSeatsRef.current = gameState.seats;
+    }, [gameState?.seats]);
     const tableRef = useRef(null);
     const socketRef = useRef(null);
     const myHandRef = useRef(null); // Persistence for my cards
@@ -512,38 +538,6 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
             </div>
         );
     };
-
-    const [raiseAnims, setRaiseAnims] = useState({});
-    const prevSeatsRef = useRef({});
-
-    // Detect Raises for Animation
-    useEffect(() => {
-        const newAnims = { ...raiseAnims };
-        let hasNewUpdates = false;
-
-        Object.keys(gameState.seats).forEach(seatIdx => {
-            const player = gameState.seats[seatIdx];
-            const prevPlayer = prevSeatsRef.current[seatIdx];
-
-            if (player && player.last_action && player.last_action.startsWith('RAISE')) {
-                // If it's a new raise action (either different from prev or prev didn't exist/wasn't raise)
-                // Note: last_action usually persists, so we check if it CHANGED to Raise.
-                if (!prevPlayer || prevPlayer.last_action !== player.last_action) {
-                    newAnims[seatIdx] = true;
-                    hasNewUpdates = true;
-                    // Auto-clear after 2s
-                    setTimeout(() => {
-                        setRaiseAnims(prev => ({ ...prev, [seatIdx]: false }));
-                    }, 2000);
-                }
-            }
-        });
-
-        if (hasNewUpdates) {
-            setRaiseAnims(newAnims);
-        }
-        prevSeatsRef.current = gameState.seats;
-    }, [gameState.seats]);
 
     const getTimeRemaining = () => {
         if (!gameState.turn_deadline) return 0;
