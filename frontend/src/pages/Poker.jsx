@@ -456,18 +456,18 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
         return (
             <div className={`flex flex-col items-center group relative z-40 ${scale}`}>
-                <div className="relative w-6 h-6 cursor-pointer transform hover:scale-110 transition-transform">
+                <div className="relative w-9 h-9 cursor-pointer transform hover:scale-110 transition-transform">
                     {/* Simulated Stack - 3 chips */}
                     <div className={`absolute top-0 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-lg`}></div>
-                    <div className={`absolute -top-0.5 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-md`}></div>
-                    <div className={`absolute -top-1 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-inner flex items-center justify-center`}>
-                        <div className={`w-4 h-4 rounded-full border border-white/30 border-dashed ${textColor} text-[8px] font-bold flex items-center justify-center font-mono`}>
+                    <div className={`absolute -top-1 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-md`}></div>
+                    <div className={`absolute -top-1.5 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-inner flex items-center justify-center`}>
+                        <div className={`w-6 h-6 rounded-full border border-white/30 border-dashed ${textColor} text-[10px] font-black flex items-center justify-center font-mono`}>
                             $
                         </div>
                     </div>
                 </div>
                 {/* Tooltip Value */}
-                <div className="bg-black/80 text-yellow-400 text-[9px] font-mono font-bold px-1 rounded mt-[-2px] border border-yellow-500/30 shadow-md backdrop-blur-sm z-50">
+                <div className="bg-black/90 text-yellow-400 text-xs font-mono font-black px-2 py-0.5 rounded mt-0.5 border border-yellow-500/50 shadow-md backdrop-blur-sm z-50 whitespace-nowrap">
                     ${formatted}
                 </div>
             </div>
@@ -666,7 +666,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     {/* Pot Display */}
                     <div className="absolute top-[60%] flex flex-col items-center gap-2 z-10">
                         <ChipStack amount={gameState.pot} isPot={true} />
-                        <div className="text-yellow-400 font-mono font-bold bg-black/60 px-4 py-1 rounded-full text-lg border border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.3)]">
+                        <div className="text-yellow-400 font-mono font-black bg-black/60 px-6 py-2 rounded-full text-2xl border-2 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.3)] min-w-[120px] text-center">
                             Pot: ${gameState.pot}
                         </div>
                     </div>
@@ -686,63 +686,40 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                         const isSB = seatIdx === sbSeat && gameState.state !== 'WAITING';
                         const isBB = seatIdx === bbSeat && gameState.state !== 'WAITING';
 
+                        const isMe = player?.user_id === gameState.me?.user_id;
+
                         return (
                             <div key={seatIdx} className={`absolute flex flex-col items-center transition-all duration-300 ${isActive ? 'scale-110 z-30' : 'z-20'}`} style={posStyle}>
                                 {player ? (
-                                    <div className="flex flex-col items-center group relative">
+                                    <div className={`flex items-center group relative ${isMe ? 'flex-row gap-4 items-end' : 'flex-col'}`}>
                                         {/* Timer / Active Indicator */}
                                         {isActive && (
                                             <>
-                                                <div className="absolute w-[120%] h-[120%] -top-[10%] -left-[10%] border-4 border-yellow-500 rounded-full animate-pulse z-0"></div>
-                                                <div className="absolute -top-10 bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full z-50 shadow-lg border-2 border-white">
+                                                <div className="absolute w-[120%] h-[120%] -top-[10%] -left-[10%] border-4 border-yellow-500 rounded-full animate-pulse z-0 hidden"></div>
+                                                {/* Hidden Pulse for ME in row mode is tricky, relying on avatar border mostly */}
+
+                                                <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full z-50 shadow-lg border-2 border-white whitespace-nowrap">
                                                     {getTimeRemaining()}s
                                                 </div>
                                             </>
                                         )}
 
-                                        <div className="relative flex flex-col items-center">
-                                            {/* Cards ABOVE Avatar now - with better centering and overlap */}
-                                            <div
-                                                className={`mb-[-15px] z-[60] flex flex-col items-center ${player.user_id === gameState.me?.user_id ? 'cursor-pointer hover:scale-110 transition-transform' : 'pointer-events-none'}`}
-                                                onClick={() => {
-                                                    if (player.user_id === gameState.me?.user_id) {
-                                                        sendAction('REFRESH_HAND');
-                                                        // Visual feedback
-                                                        const el = document.getElementById('my-cards-container');
-                                                        if (el) {
-                                                            el.style.opacity = '0.5';
-                                                            setTimeout(() => el.style.opacity = '1', 200);
-                                                        }
-                                                    }
-                                                }}
-                                                id={player.user_id === gameState.me?.user_id ? 'my-cards-container' : undefined}
-                                            >
-                                                <div className={`flex justify-center filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)] scale-125 ${player.is_folded && player.user_id === gameState.me?.user_id ? 'grayscale opacity-60' : ''}`}>
-                                                    {/* Show cards if NOT folded OR if it's ME (even if folded) */}
-                                                    {(!player.is_folded || player.user_id === gameState.me?.user_id) &&
-                                                        (player.user_id === gameState.me?.user_id && gameState.me.hand[0]?.rank !== '?' ? gameState.me.hand : player.hand).map((c, i) => (
-                                                            <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-2' : 'rotate-6 -translate-x-2'} origin-bottom transition-all ${player.is_folded && player.user_id !== gameState.me?.user_id ? 'opacity-0 scale-0' : 'opacity-100 scale-100'}`}>
-                                                                {renderCard(c, i)}
-                                                            </div>
-                                                        ))}
-                                                </div>
-                                                {/* Hand Combination Name - Always show for ME, even if folded */}
-                                                {player.user_id === gameState.me?.user_id && player.current_hand && (
-                                                    <div className={`mt-3 relative z-[70] px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_4px_10px_rgba(0,0,0,0.5)] border-2 animate-in fade-in zoom-in duration-300 ${player.is_folded ? 'bg-gray-900 text-gray-500 border-gray-700' :
-                                                        (player.current_hand.uses_my_cards
-                                                            ? 'bg-yellow-500 text-black border-yellow-200'
-                                                            : 'bg-gray-800 text-gray-300 border-gray-600')
-                                                        }`}>
-                                                        {player.current_hand.name}
-                                                    </div>
-                                                )}
-                                            </div>
+                                        {/* 1. Avatar & Info Group (Order 1 for ME, Order 2 for Others effectively by DOM order if we swap) */}
+                                        {/* For ME: we want Avatar Left, Cards Right. 
+                                            For Others: Cards Top, Avatar Bottom.
+                                            We will use standard DOM order: Cards, then Avatar group.
+                                            For ME: flex-row => Cards Left, Avatar Right? No, user wants Cards Right.
+                                            So for ME: flex-row. We place Cards SECOND in DOM, or use 'order' classes.
+                                            Let's use 'order' classes to keep logic simple.
+                                        */}
 
+                                        {/* Avatar + Info Container */}
+                                        <div className={`flex flex-col items-center relative z-20 ${isMe ? 'order-1' : 'order-2'}`}>
                                             {/* Avatar at bottom */}
                                             <div className={`relative transition-all duration-500 ${isActive ? 'scale-110' : 'scale-90 opacity-80'}`}>
                                                 <div
-                                                    onClick={() => { if (player.user_id === gameState.me?.user_id) setShowStandUpConfirm(true); }}
-                                                    className={`w-16 h-16 rounded-full border-4 overflow-hidden z-20 bg-[#1a1a2e] ${isActive ? 'border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.6)]' : 'border-gray-600'} ${player.is_folded ? 'opacity-50 grayscale' : ''} relative ${player.user_id === gameState.me?.user_id ? 'cursor-pointer hover:brightness-125 transition-all' : ''}`}>
+                                                    onClick={() => { if (isMe) setShowStandUpConfirm(true); }}
+                                                    className={`w-16 h-16 rounded-full border-4 overflow-hidden z-20 bg-[#1a1a2e] ${isActive ? 'border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.6)]' : 'border-gray-600'} ${player.is_folded ? 'opacity-50 grayscale' : ''} relative ${isMe ? 'cursor-pointer hover:brightness-125 transition-all' : ''}`}>
                                                     {player.avatar_url && player.avatar_url.length > 2 ? (
                                                         <img src={player.avatar_url} className="w-full h-full object-cover" alt={player.name} onError={(e) => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}` }} />
                                                     ) : (
@@ -767,7 +744,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
                                             {/* Name & Chips UI Below Avatar */}
                                             <div className="mt-1 flex flex-col items-center z-30">
-                                                <div className={`px-3 py-0.5 rounded-full ${isActive ? 'bg-yellow-500 text-black' : 'bg-black/60 text-white'} text-xs font-bold shadow-lg flex items-center gap-1 border border-white/10`}>
+                                                <div className={`px-3 py-0.5 rounded-full ${isActive ? 'bg-yellow-500 text-black' : 'bg-black/60 text-white'} text-xs font-bold shadow-lg flex items-center gap-1 border border-white/10 whitespace-nowrap`}>
                                                     {player.name}
                                                     {player.is_bot && <Bot size={12} />}
                                                 </div>
@@ -781,22 +758,51 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                                     <span className="text-xs font-mono font-black text-yellow-400">${player.chips}</span>
                                                 </div>
                                             </div>
+                                        </div>
 
-                                            {/* Chips Bet Display (Shifted to side) */}
-                                            {player.current_bet > 0 && (
-                                                <div className={`absolute -top-12 -right-16 z-40 transform scale-75 ${winnerAnim ? 'winning-chips' : ''}`}>
-                                                    <ChipStack amount={player.current_bet} />
-                                                    <div className="text-[10px] font-bold text-yellow-400 bg-black/60 px-2 rounded-full mt-1">
-                                                        ${player.current_bet}
-                                                    </div>
+                                        {/* 2. Cards Group (Order 2 for ME, Order 1 for Others) */}
+                                        <div
+                                            className={`${isMe ? 'order-2 mb-0' : 'order-1 mb-[-15px]'} z-[60] flex flex-col items-center ${isMe ? 'cursor-pointer hover:scale-105 transition-transform origin-left' : 'pointer-events-none'}`}
+                                            onClick={() => {
+                                                if (isMe) {
+                                                    sendAction('REFRESH_HAND');
+                                                    const el = document.getElementById('my-cards-container');
+                                                    if (el) {
+                                                        el.style.opacity = '0.5';
+                                                        setTimeout(() => el.style.opacity = '1', 200);
+                                                    }
+                                                }
+                                            }}
+                                            id={isMe ? 'my-cards-container' : undefined}
+                                        >
+                                            <div className={`flex justify-center filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)] scale-125 ${player.is_folded && isMe ? 'grayscale opacity-60' : ''}`}>
+                                                {/* Show cards if NOT folded OR if it's ME (even if folded) */}
+                                                {(!player.is_folded || isMe) &&
+                                                    (isMe && gameState.me.hand[0]?.rank !== '?' ? gameState.me.hand : player.hand).map((c, i) => (
+                                                        <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-2' : 'rotate-6 -translate-x-2'} origin-bottom transition-all ${player.is_folded && !isMe ? 'opacity-0 scale-0' : 'opacity-100 scale-100'}`}>
+                                                            {renderCard(c, i)}
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                            {/* Hand Combination Name - Always show for ME */}
+                                            {isMe && player.current_hand && (
+                                                <div className={`mt-3 relative z-[70] px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_4px_10px_rgba(0,0,0,0.5)] border-2 animate-in fade-in zoom-in duration-300 ${player.is_folded ? 'bg-gray-900 text-gray-500 border-gray-700' :
+                                                    (player.current_hand.uses_my_cards
+                                                        ? 'bg-yellow-500 text-black border-yellow-200'
+                                                        : 'bg-gray-800 text-gray-300 border-gray-600')
+                                                    }`}>
+                                                    {player.current_hand.name}
                                                 </div>
                                             )}
                                         </div>
 
-                                        {/* Action Bubble */}
-                                        {player.last_action && (
-                                            <div className="absolute top-0 right-0 transform translate-x-full text-xs font-bold bg-blue-600 px-2 py-1 rounded text-white shadow-lg animate-bounce z-50 border border-blue-400">
-                                                {player.last_action}
+                                        {/* Chips Bet Display (Shifted to side) */}
+                                        {player.current_bet > 0 && (
+                                            <div className={`absolute ${isMe ? '-top-16 left-0' : '-top-12 -right-16'} z-40 transform scale-75 ${winnerAnim ? 'winning-chips' : ''} flex flex-row items-center gap-2`}>
+                                                <ChipStack amount={player.current_bet} />
+                                                <div className="text-sm font-black text-yellow-400 bg-black/80 px-3 py-1 rounded-full border border-yellow-500/30 shadow-lg">
+                                                    ${player.current_bet}
+                                                </div>
                                             </div>
                                         )}
                                     </div>
