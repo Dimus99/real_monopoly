@@ -27,6 +27,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const [isActionPanelHovered, setIsActionPanelHovered] = useState(false);
     const [gameError, setGameError] = useState(null);
     const [showStandUpConfirm, setShowStandUpConfirm] = useState(false);
+    const [highlightEnabled, setHighlightEnabled] = useState(true); // New Toggle State
+    const messagesEndRef = useRef(null);
     const [raiseAnims, setRaiseAnims] = useState({});
     const prevSeatsRef = useRef({});
 
