@@ -174,6 +174,10 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     const isNewRound = data.state.state === 'PREFLOP' && prev?.state !== 'PREFLOP';
                     if (isNewRound) {
                         myHandRef.current = null;
+                        // Force refresh immediately to ensure cards appear if HAND_UPDATE raced
+                        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                            socketRef.current.send(JSON.stringify({ action: 'REFRESH_HAND' }));
+                        }
                     }
 
                     if (prev && prev.me) {
@@ -426,7 +430,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
         );
     };
 
-    const ChipStack = ({ amount, isPot = false }) => {
+    const ChipStack = ({ amount, isPot = false, showLabel = true }) => {
         if (!amount || amount <= 0) return null;
 
         // Colors for denominations
@@ -467,9 +471,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     </div>
                 </div>
                 {/* Tooltip Value */}
-                <div className="bg-black/90 text-yellow-400 text-xs font-mono font-black px-2 py-0.5 rounded mt-0.5 border border-yellow-500/50 shadow-md backdrop-blur-sm z-50 whitespace-nowrap">
-                    ${formatted}
-                </div>
+                {showLabel && (
+                    <div className="bg-black/90 text-yellow-400 text-xs font-mono font-black px-2 py-0.5 rounded mt-0.5 border border-yellow-500/50 shadow-md backdrop-blur-sm z-50 whitespace-nowrap">
+                        ${formatted}
+                    </div>
+                )}
             </div>
         );
     };
@@ -546,7 +552,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                 <div className="text-center">
                     {/* Hiding Table Name as requested */}
                     {/* <h2 className="text-xl font-bold text-yellow-400">{gameState.name}</h2> */}
-                    <div className="text-xs text-gray-400">Pot: {gameState.pot} • Blinds: {gameState.small_blind}/{gameState.big_blind}</div>
+                    <div className="text-xs text-gray-400">Blinds: {gameState.small_blind}/{gameState.big_blind}</div>
                 </div>
                 <div className="flex gap-2">
                     {/* Highlight Toggle */}
@@ -664,11 +670,13 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     </div>
 
                     {/* Pot Display */}
-                    <div className="absolute top-[60%] flex flex-col items-center gap-2 z-10">
-                        <ChipStack amount={gameState.pot} isPot={true} />
-                        <div className="text-yellow-400 font-mono font-black bg-black/60 px-6 py-2 rounded-full text-2xl border-2 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.3)] min-w-[120px] text-center">
-                            Pot: ${gameState.pot}
-                        </div>
+                    <div className="absolute top-[48%] flex flex-col items-center gap-2 z-10">
+                        <ChipStack amount={gameState.pot} isPot={true} showLabel={false} />
+                        {gameState.pot > 0 && (
+                            <div className="text-yellow-400 font-mono font-black bg-black/60 px-6 py-2 rounded-full text-2xl border-2 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.3)] min-w-[120px] text-center">
+                                Pot: ${gameState.pot}
+                            </div>
+                        )}
                     </div>
 
                     {/* Seats (0-7, excluding 4 reserved for Dealer) */}
@@ -798,11 +806,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
                                         {/* Chips Bet Display (Shifted to side) */}
                                         {player.current_bet > 0 && (
-                                            <div className={`absolute ${isMe ? '-top-16 left-0' : '-top-12 -right-16'} z-40 transform scale-75 ${winnerAnim ? 'winning-chips' : ''} flex flex-row items-center gap-2`}>
-                                                <ChipStack amount={player.current_bet} />
-                                                <div className="text-sm font-black text-yellow-400 bg-black/80 px-3 py-1 rounded-full border border-yellow-500/30 shadow-lg">
-                                                    ${player.current_bet}
-                                                </div>
+                                            <div className={`absolute ${isMe ? '-top-16 left-0' : '-top-12 -right-16'} z-40 transform scale-75 ${winnerAnim ? 'winning-chips' : ''}`}>
+                                                <ChipStack amount={player.current_bet} showLabel={true} />
                                             </div>
                                         )}
                                     </div>
