@@ -1033,14 +1033,15 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                             <button
                                 onClick={() => {
                                     if (isDealing) return;
-                                    setPreAction(preAction === 'CHECK' ? null : 'CHECK');
+                                    if (gameState.current_player_seat === mySeatIdx) sendAction('CHECK');
+                                    else setPreAction(preAction === 'CHECK' ? null : 'CHECK');
                                 }}
                                 disabled={isDealing || (gameState.current_bet - (myPlayer.current_bet || 0)) > 0}
                                 className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'CHECK' ? 'scale-105' : ''} ${(isDealing || (gameState.current_bet - (myPlayer.current_bet || 0)) > 0) ? 'opacity-20 grayscale cursor-not-allowed' : ''}`}
                             >
                                 <div className={`h-12 w-24 rounded-xl flex flex-col items-center justify-center transition-all border-b-4 shadow-xl active:border-b-0 active:translate-y-1 ${preAction === 'CHECK'
                                     ? 'bg-green-500 border-green-800 ring-2 ring-green-400'
-                                    : 'bg-gray-700/40 border-gray-900 opacity-60 hover:opacity-100'
+                                    : (gameState.current_player_seat === mySeatIdx && (gameState.current_bet - (myPlayer.current_bet || 0)) === 0 ? 'bg-green-600 hover:bg-green-500 border-green-900' : 'bg-gray-700/40 border-gray-900 opacity-60 hover:opacity-100')
                                     }`}>
                                     <span className="text-base font-black uppercase text-white tracking-tight leading-none text-center">CHECK<br /><span className="text-[10px] font-normal opacity-70">FOLD</span></span>
                                 </div>
@@ -1051,16 +1052,19 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                             <button
                                 onClick={() => {
                                     if (isDealing) return;
-                                    const isSelected = preAction === 'CALL';
-                                    setPreAction(isSelected ? null : 'CALL');
-                                    setPreActionCallAmount(isSelected ? 0 : gameState.current_bet);
+                                    if (gameState.current_player_seat === mySeatIdx) sendAction('CALL');
+                                    else {
+                                        const isSelected = preAction === 'CALL';
+                                        setPreAction(isSelected ? null : 'CALL');
+                                        setPreActionCallAmount(isSelected ? 0 : gameState.current_bet);
+                                    }
                                 }}
                                 disabled={isDealing || (gameState.current_bet - (myPlayer.current_bet || 0)) === 0}
                                 className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'CALL' ? 'scale-105' : ''} ${(isDealing || (gameState.current_bet - (myPlayer.current_bet || 0)) === 0) ? 'opacity-20 grayscale cursor-not-allowed' : ''}`}
                             >
                                 <div className={`h-12 w-24 rounded-xl flex flex-col items-center justify-center transition-all border-b-4 shadow-xl active:border-b-0 active:translate-y-1 ${preAction === 'CALL'
                                     ? 'bg-blue-500 border-blue-800 ring-2 ring-blue-400'
-                                    : 'bg-gray-700/40 border-gray-900 opacity-60 hover:opacity-100'
+                                    : (gameState.current_player_seat === mySeatIdx && (gameState.current_bet - (myPlayer.current_bet || 0)) > 0 ? 'bg-blue-600 hover:bg-blue-500 border-blue-900' : 'bg-gray-700/40 border-gray-900 opacity-60 hover:opacity-100')
                                     }`}>
                                     <span className="text-xl font-black uppercase text-white tracking-tighter">
                                         CALL
