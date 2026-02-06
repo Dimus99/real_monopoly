@@ -526,17 +526,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     <div className={`absolute top-0 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-lg`}></div>
                     <div className={`absolute -top-1 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-md`}></div>
                     <div className={`absolute -top-1.5 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-inner flex items-center justify-center`}>
-                        <div className={`w-6 h-6 rounded-full border border-white/30 border-dashed ${textColor} text-[10px] font-black flex items-center justify-center font-mono`}>
-                            $
+                        <div className={`w-6 h-6 rounded-full border border-white/30 border-dashed ${textColor} text-[7px] font-black flex items-center justify-center font-mono overflow-hidden`}>
+                            {formatted}
                         </div>
                     </div>
                 </div>
-                {/* Tooltip Value */}
-                {showLabel && (
-                    <div className="bg-black/90 text-yellow-400 text-xs font-mono font-black px-2 py-0.5 rounded mt-0.5 border border-yellow-500/50 shadow-md backdrop-blur-sm z-50 whitespace-nowrap">
-                        ${formatted}
-                    </div>
-                )}
             </div>
         );
     };
@@ -1041,8 +1035,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                     if (isDealing) return;
                                     setPreAction(preAction === 'CHECK' ? null : 'CHECK');
                                 }}
-                                disabled={isDealing}
-                                className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'CHECK' ? 'scale-105' : ''} ${isDealing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={isDealing || (gameState.current_bet - (myPlayer.current_bet || 0)) > 0}
+                                className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'CHECK' ? 'scale-105' : ''} ${(isDealing || (gameState.current_bet - (myPlayer.current_bet || 0)) > 0) ? 'opacity-20 grayscale cursor-not-allowed' : ''}`}
                             >
                                 <div className={`h-12 w-24 rounded-xl flex flex-col items-center justify-center transition-all border-b-4 shadow-xl active:border-b-0 active:translate-y-1 ${preAction === 'CHECK'
                                     ? 'bg-green-500 border-green-800 ring-2 ring-green-400'
@@ -1061,8 +1055,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                     setPreAction(isSelected ? null : 'CALL');
                                     setPreActionCallAmount(isSelected ? 0 : gameState.current_bet);
                                 }}
-                                disabled={isDealing}
-                                className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'CALL' ? 'scale-105' : ''} ${isDealing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={isDealing || (gameState.current_bet - (myPlayer.current_bet || 0)) === 0}
+                                className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'CALL' ? 'scale-105' : ''} ${(isDealing || (gameState.current_bet - (myPlayer.current_bet || 0)) === 0) ? 'opacity-20 grayscale cursor-not-allowed' : ''}`}
                             >
                                 <div className={`h-12 w-24 rounded-xl flex flex-col items-center justify-center transition-all border-b-4 shadow-xl active:border-b-0 active:translate-y-1 ${preAction === 'CALL'
                                     ? 'bg-blue-500 border-blue-800 ring-2 ring-blue-400'
