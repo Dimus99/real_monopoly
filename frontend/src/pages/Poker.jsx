@@ -169,7 +169,27 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
             } else if (data.type === 'GAME_UPDATE') {
                 setGameState(prev => {
                     const newState = { ...prev, ...data.state };
-                    if (prev && prev.me) newState.me = prev.me;
+
+                    // Detect New Round (PREFLOP transition) to clear stale hand persistence
+                    const isNewRound = data.state.state === 'PREFLOP' && prev?.state !== 'PREFLOP';
+                    if (isNewRound) {
+                        myHandRef.current = null;
+                    }
+
+                    if (prev && prev.me) {
+                        newState.me = prev.me;
+                        // If new round, force clear 'me.hand' so we don't carry over old cards.
+                        // We set it to the incoming seat's hand (likely '?'s) to trigger auto-heal or wait for HAND_UPDATE
+                        if (isNewRound) {
+                            const myUserId = prev.me.user_id;
+                            const mySeatKey = Object.keys(newState.seats || {}).find(k => newState.seats[k].user_id === myUserId);
+                            if (mySeatKey && newState.seats[mySeatKey]) {
+                                newState.me = { ...newState.me, hand: newState.seats[mySeatKey].hand };
+                            } else {
+                                newState.me = { ...newState.me, hand: null };
+                            }
+                        }
+                    }
 
                     // Robust Hand Persistence using Ref
                     if (newState.me && newState.seats) {
@@ -177,6 +197,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                         const mySeatKey = Object.keys(newState.seats).find(k => newState.seats[k].user_id === myUserId);
 
                         // If we have a stored hand, apply it if the update tries to hide it
+                        // BUT: If it's a new round (isNewRound), we deliberately cleared ref, so we won't restore old cards
                         if (mySeatKey && myHandRef.current) {
                             const incomingHand = newState.seats[mySeatKey].hand;
                             const isHidden = !incomingHand || incomingHand.length === 0 || (incomingHand[0] && incomingHand[0].rank === '?');
