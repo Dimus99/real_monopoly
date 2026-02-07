@@ -606,31 +606,34 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const getHandToRender = (player, isMe) => {
         if (!player) return [];
         let hand = [];
+        let source = "none";
 
         // Priority 1: Ref (Most reliable for immediate updates)
         if (isMe && myHandRef.current && myHandRef.current.length > 0 && myHandRef.current[0].rank !== '?') {
             hand = myHandRef.current;
+            source = "ref";
         }
         // Priority 2: GameState 'me' (Snapshot)
         else if (isMe && gameState.me?.hand?.[0]?.rank !== '?') {
             hand = gameState.me.hand;
+            source = "state_me";
         }
         // Priority 3: Seat info (Public/Showdown)
         else {
             hand = player.hand;
+            source = "seat_player";
         }
 
-        // Fallback Logic: If I have no cards (empty array) but I am in the game (not waiting, not folded), show placeholders.
-        // This handles cases where backend sends empty hand or sync is delayed.
+        // Fallback Logic
         const showFallback = isMe && (!hand || hand.length === 0) && gameState.state !== 'WAITING' && !player.is_folded;
 
         if (showFallback) {
             hand = [{ rank: '?', suit: '?' }, { rank: '?', suit: '?' }];
+            source = "fallback_placeholder";
         }
 
-        // Logging for debugging
         if (isMe) {
-            console.log(`[MyHandRender] State: ${gameState.state}, Folded: ${player.is_folded}, MyHand (Global):`, gameState.me?.hand, "SeatHand:", player.hand, "Final Render:", hand, "Using Fallback:", showFallback);
+            console.log(`[RenderHand] ForSeat:${player.name}, Source:${source}, HandCount:${hand?.length}, First:${hand?.[0]?.rank}, Folded:${player.is_folded}, IsMe:${isMe}`);
         }
 
         return hand || [];
