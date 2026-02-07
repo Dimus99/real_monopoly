@@ -615,7 +615,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
             source = "ref";
         }
         // Priority 2: GameState 'me' (Snapshot)
-        else if (isMe && gameState.me?.hand?.[0]?.rank !== '?') {
+        else if (isMe && gameState?.me?.hand?.[0]?.rank !== '?') {
             hand = gameState.me.hand;
             source = "state_me";
         }
@@ -626,7 +626,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
         }
 
         // Fallback Logic
-        const showFallback = isMe && (!hand || hand.length === 0) && gameState.state !== 'WAITING' && !player.is_folded;
+        const showFallback = isMe && (!hand || hand.length === 0) && gameState?.state !== 'WAITING' && !player.is_folded;
 
         if (showFallback) {
             hand = [{ rank: '?', suit: '?' }, { rank: '?', suit: '?' }];
