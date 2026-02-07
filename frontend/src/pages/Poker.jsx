@@ -149,11 +149,14 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                 setIsDealing(true);
                 setTimeout(() => setIsDealing(false), 800); // Wait for cards to fly
             }
-            setPreAction(null);
+            // User Request: Don't clear CHECK on new card (street change), only if bet changes (handled in pre-action logic)
+            if (preAction !== 'CHECK') {
+                setPreAction(null);
+            }
             setPreActionAmount(0);
             prevStreet.current = gameState.state;
         }
-    }, [gameState?.state]);
+    }, [gameState?.state, preAction]);
 
     // Chat auto-fade logic
 
@@ -521,12 +524,12 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
         return (
             <div className={`flex flex-col items-center group relative z-40 ${scale}`}>
-                <div className="relative w-9 h-9 cursor-pointer transform hover:scale-110 transition-transform">
+                <div className="relative w-11 h-11 cursor-pointer transform hover:scale-110 transition-transform">
                     {/* Simulated Stack - 3 chips */}
                     <div className={`absolute top-0 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-lg`}></div>
                     <div className={`absolute -top-1 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-md`}></div>
                     <div className={`absolute -top-1.5 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-inner flex items-center justify-center`}>
-                        <div className={`w-7 h-7 rounded-full border border-white/30 border-dashed ${textColor} text-[10px] font-black flex items-center justify-center font-mono overflow-hidden tracking-tighter`}>
+                        <div className={`w-9 h-9 rounded-full border border-white/30 border-dashed ${textColor} text-xs font-black flex items-center justify-center font-mono overflow-hidden tracking-tighter`}>
                             {formatted}
                         </div>
                     </div>
@@ -574,6 +577,33 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
         };
 
         return styles[relativePos] || { display: 'none' };
+    };
+
+    const getHandToRender = (player, isMe) => {
+        if (!player) return [];
+        let hand = [];
+
+        // Default Logic: If it's me and I have a real hand in 'me', use it. Otherwise use the seat's hand.
+        if (isMe && gameState.me?.hand?.[0]?.rank !== '?') {
+            hand = gameState.me.hand;
+        } else {
+            hand = player.hand;
+        }
+
+        // Fallback Logic: If I have no cards (empty array) but I am in the game (not waiting, not folded), show placeholders.
+        // This handles cases where backend sends empty hand or sync is delayed.
+        const showFallback = isMe && (!gameState.me?.hand?.length && (!player.hand?.length || player.hand.length === 0)) && gameState.state !== 'WAITING' && !player.is_folded;
+
+        if (showFallback) {
+            hand = [{ rank: '?', suit: '?' }, { rank: '?', suit: '?' }];
+        }
+
+        // Logging for debugging
+        if (isMe) {
+            console.log(`[MyHandRender] State: ${gameState.state}, Folded: ${player.is_folded}, MyHand (Global):`, gameState.me?.hand, "SeatHand:", player.hand, "Final Render:", hand, "Using Fallback:", showFallback);
+        }
+
+        return hand || [];
     };
 
     return (
@@ -871,10 +901,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                             <div className={`flex justify-center filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)] scale-125 ${player.is_folded && isMe ? 'grayscale opacity-60' : ''}`}>
                                                 {/* Show cards if NOT folded OR if it's ME (even if folded) */}
                                                 {(!player.is_folded || isMe) &&
-                                                    ((isMe && (!gameState.me?.hand?.length && (!player.hand?.length || player.hand.length === 0)) && gameState.state !== 'WAITING' && !player.is_folded)
-                                                        ? [{ rank: '?', suit: '?' }, { rank: '?', suit: '?' }]
-                                                        : (isMe && gameState.me?.hand?.[0]?.rank !== '?' ? gameState.me?.hand : player.hand) || []
-                                                    ).map((c, i) => (
+                                                    getHandToRender(player, isMe).map((c, i) => (
                                                         <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-2' : 'rotate-6 -translate-x-2'} origin-bottom transition-all ${player.is_folded && !isMe ? 'opacity-0 scale-0' : 'opacity-100 scale-100'}`}>
                                                             {renderCard(c, i)}
                                                         </div>
@@ -1046,9 +1073,9 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                     ? 'bg-green-500 border-green-800 ring-2 ring-green-400'
                                     : (gameState.current_player_seat === mySeatIdx && (gameState.current_bet - (myPlayer.current_bet || 0)) === 0 ? 'bg-green-600 hover:bg-green-500 border-green-900' : 'bg-gray-700/40 border-gray-900 opacity-60 hover:opacity-100')
                                     }`}>
-                                    <span className="text-base font-black uppercase text-white tracking-tight leading-none text-center">CHECK<br /><span className="text-[10px] font-normal opacity-70">FOLD</span></span>
+                                    <span className="text-base font-black uppercase text-white tracking-tight leading-none text-center">CHECK</span>
                                 </div>
-                                <span className="text-[9px] uppercase font-bold text-gray-400">{preAction === 'CHECK' ? 'Selected' : 'Check/Fold'}</span>
+                                <span className="text-[9px] uppercase font-bold text-gray-400">{preAction === 'CHECK' ? 'Selected' : 'Check'}</span>
                             </button>
 
                             {/* CALL PRE-ACTION */}
