@@ -860,6 +860,16 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     </div>
                 </div>
 
+                {/* Dealer Message Bubble (Moved to Parent Scope) */}
+                {dealerMessage && (
+                    <div className="absolute top-[8%] left-1/2 transform -translate-x-1/2 -translate-y-full bg-white text-black px-4 py-2 rounded-2xl rounded-bl-none shadow-[0_0_20px_rgba(0,0,0,0.5)] z-[1000] animate-bounce-in max-w-[250px] text-center border-2 border-gray-800 text-sm font-bold pointer-events-none drop-shadow-2xl">
+                        {dealerMessage}
+                        {/* Little triangle for speech bubble tail */}
+                        <div className="absolute bottom-[-8px] left-4 w-0 h-0 border-l-[10px] border-l-transparent border-t-[10px] border-t-gray-800 border-r-[0px] border-r-transparent"></div>
+                        <div className="absolute bottom-[-5px] left-[18px] w-0 h-0 border-l-[8px] border-l-transparent border-t-[8px] border-t-white border-r-[0px] border-r-transparent"></div>
+                    </div>
+                )}
+
                 {/* Felt */}
                 <div className="w-[90%] aspect-[2/1] bg-[#1a472a] rounded-[200px] border-[16px] border-[#2d2a26] shadow-[inset_0_0_100px_rgba(0,0,0,0.6)] relative flex items-center justify-center z-0">
 
@@ -886,13 +896,6 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                             <div key={i} className="w-12 h-16 border-2 border-white/5 rounded m-1 bg-black/20"></div>
                         ))}
                     </div>
-
-                    {/* Dealer Message Bubble */}
-                    {dealerMessage && (
-                        <div className="absolute top-[15%] left-1/2 transform -translate-x-1/2 -translate-y-full bg-white text-black px-4 py-2 rounded-2xl rounded-bl-none shadow-xl z-[1000] animate-bounce-in max-w-[250px] text-center border-2 border-gray-800 text-sm font-bold pointer-events-none drop-shadow-2xl">
-                            {dealerMessage}
-                        </div>
-                    )}
 
                     {/* Pot Display */}
                     <div className="absolute top-[52%] left-1/2 transform -translate-x-1/2 z-10 flex flex-col items-center">
