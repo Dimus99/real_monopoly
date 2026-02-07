@@ -605,6 +605,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
     const getHandToRender = (player, isMe) => {
         if (!player) return [];
+        // console.log(`getHandToRender for ${player.name}, isMe=${isMe}`);
         let hand = [];
         let source = "none";
 
@@ -830,7 +831,15 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                         const isSB = seatIdx === sbSeat && gameState.state !== 'WAITING';
                         const isBB = seatIdx === bbSeat && gameState.state !== 'WAITING';
 
-                        const isMe = player?.user_id === gameState.me?.user_id;
+                        // Robust ID comparison
+                        const myUserId = String(gameState.me?.user_id || myId);
+                        const seatUserId = String(player?.user_id);
+                        const isMe = seatUserId === myUserId;
+
+                        // Debug IsMe for my seat
+                        if (seatUserId === myUserId && !isMe) {
+                            console.error("Critical: isMe check failed due to types!", player.user_id, gameState.me?.user_id);
+                        }
 
                         // Calculate Physical Position for Chip Logic
                         // Reuse logic from getSeatPosition (simplified)
