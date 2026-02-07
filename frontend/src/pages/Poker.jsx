@@ -19,7 +19,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const [preActionCallAmount, setPreActionCallAmount] = useState(0); // Track specific call amount
     const [tick, setTick] = useState(0);
     const [dealerImageIdx, setDealerImageIdx] = useState(0);
-    const dealerImages = ['/assets/croupier.png', '/assets/dealer.png', '/assets/dealer_megan.png', '/assets/dealer_zhirinovsky.png'];
+    const dealerImages = ['/assets/croupier.png', '/assets/dealer.png', '/assets/dealer_megan.png', '/assets/dealer_zhirinovsky.png', '/assets/dealer_hitler.png'];
 
     const [isChatVisible, setIsChatVisible] = useState(true);
     const [isChatPinned, setIsChatPinned] = useState(false);
@@ -526,14 +526,23 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                 'bg-gradient-to-br from-blue-600 to-blue-900 border-blue-400', // Classic Blue
                 'bg-gradient-to-br from-red-600 to-red-900 border-red-400',     // Classic Red
                 'bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-800 border-purple-400', // Megan
-                'bg-gradient-to-br from-white via-blue-600 to-red-600 border-yellow-400' // Zhirinovsky (Flag Style)
+                'bg-gradient-to-br from-white via-blue-600 to-red-600 border-yellow-400', // Zhirinovsky (Flag Style)
+                'bg-red-600 border-black border-4' // Hitler (Black on Red)
             ];
             return backs[dealerImageIdx % backs.length] || backs[0];
         };
 
         const backPattern = (
             <div className="absolute inset-2 border-2 border-dashed border-white/20 rounded-sm opacity-50 flex items-center justify-center">
-                <div className="w-4 h-4 rounded-full bg-white/10"></div>
+                {(dealerImageIdx % dealerImages.length) === 4 ? (
+                    // Fascist Symbol (Geometric Swastika-like for style)
+                    <div className="relative w-8 h-8 flex items-center justify-center">
+                        <div className="absolute w-8 h-2 bg-black rotate-45"></div>
+                        <div className="absolute w-8 h-2 bg-black -rotate-45"></div>
+                    </div>
+                ) : (
+                    <div className="w-4 h-4 rounded-full bg-white/10"></div>
+                )}
             </div>
         );
 
@@ -759,6 +768,9 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
                         <div className="w-px h-6 bg-white/20 mx-1"></div>
 
+                        <button onClick={() => setDealerImageIdx(prev => (prev + 1) % dealerImages.length)} className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/70 hover:text-white transition-colors" title="Change Dealer Skin">
+                            <Users size={16} />
+                        </button>
                         <button
                             onClick={() => {
                                 console.log("Manual Refresh Clicked");
