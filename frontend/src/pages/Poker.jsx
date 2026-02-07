@@ -889,7 +889,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
                     {/* Dealer Message Bubble */}
                     {dealerMessage && (
-                        <div className="absolute top-[24%] left-1/2 transform -translate-x-1/2 -translate-y-full bg-white text-black px-4 py-2 rounded-2xl rounded-bl-none shadow-xl z-[1000] animate-bounce-in max-w-[250px] text-center border-2 border-gray-800 text-sm font-bold pointer-events-none drop-shadow-2xl">
+                        <div className="absolute top-[15%] left-1/2 transform -translate-x-1/2 -translate-y-full bg-white text-black px-4 py-2 rounded-2xl rounded-bl-none shadow-xl z-[1000] animate-bounce-in max-w-[250px] text-center border-2 border-gray-800 text-sm font-bold pointer-events-none drop-shadow-2xl">
                             {dealerMessage}
                         </div>
                     )}
