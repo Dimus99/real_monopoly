@@ -34,41 +34,6 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const [dealerMessage, setDealerMessage] = useState(null);
     const prevSeatsRef = useRef({});
 
-    // Dealer Messages Logic
-    useEffect(() => {
-        if (!gameState || !gameState.seats) return;
-
-        const currentPlayerSeat = gameState.current_player_seat;
-        const player = gameState.seats[currentPlayerSeat];
-
-        if (player && gameState.state !== 'WAITING' && gameState.state !== 'SHOWDOWN') {
-            const phrases = [
-                "{name}, ты такой пупсик!",
-                "Ну что, {name}, покажи класс!",
-                "{name}, только не фолди!",
-                "Ой, {name}, какие глазки...",
-                "Вперед, {name}, мы верим!",
-                "{name}, рискуй или не пей шампанского!",
-                "{name} сегодня в ударе?",
-                "Ну-ка удиви нас, {name}!",
-                "{name}, фишки жгут карман?",
-                "Дерзай, {name}, удача рядом!"
-            ];
-
-            // 20% chance to show message on turn change
-            // Actually user asked "in the beginning of each turn", so let's do 100% or high chance? 
-            // "в начале каждого хода" -> "at the start of each turn". Let's do it always or frequently.
-            // Let's do it always for now as requested.
-
-            const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-            const message = randomPhrase.replace("{name}", player.name);
-
-            setDealerMessage(message);
-            const timer = setTimeout(() => setDealerMessage(null), 3500);
-            return () => clearTimeout(timer);
-        }
-    }, [gameState?.current_player_seat]);
-
     // Detect Raises for Animation
     useEffect(() => {
         if (!gameState) return;
@@ -186,6 +151,51 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
             if (gameState.state !== 'WAITING') {
                 setIsDealing(true);
                 setTimeout(() => setIsDealing(false), 800); // Wait for cards to fly
+
+                // Dealer Message: Only once per hand (at start/PREFLOP)
+                if (gameState.state === 'PREFLOP') {
+                    const players = Object.values(gameState.seats || {});
+                    const activePlayers = players.filter(p => !p.is_folded && p.chips > 0);
+
+                    if (activePlayers.length > 0) {
+                        const randomPlayer = activePlayers[Math.floor(Math.random() * activePlayers.length)];
+
+                        let phrases = [
+                            "{name}, ты такой пупсик!",
+                            "Ну что, {name}, покажи класс!",
+                            "{name}, только не фолди!",
+                            "Ой, {name}, какие глазки...",
+                            "Вперед, {name}, мы верим!",
+                            "{name}, рискуй или не пей шампанского!",
+                            "{name} сегодня в ударе?",
+                            "Ну-ка удиви нас, {name}!",
+                            "{name}, фишки жгут карман?",
+                            "Дерзай, {name}, удача рядом!"
+                        ];
+
+                        // Hitler Effects (German accent/phrases)
+                        if ((dealerImageIdx % dealerImages.length) === 4) {
+                            phrases = [
+                                "Achtung! {name}!",
+                                "Schneller, {name}, schneller!",
+                                "Das ist ein Befehl, {name}!",
+                                "Kaput, {name}?",
+                                "Nein! Nein! Nein! {name}!",
+                                "Disziplin, {name}!",
+                                "Kampf, {name}!",
+                                "Alles oder nichts, {name}!",
+                                "Blitzkrieg, {name}!",
+                                "Zeigen Sie Ihre Karten, {name}!"
+                            ];
+                        }
+
+                        const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+                        const message = randomPhrase.replace("{name}", randomPlayer.name);
+
+                        setDealerMessage(message);
+                        setTimeout(() => setDealerMessage(null), 4000);
+                    }
+                }
             }
             // User Request: Don't clear CHECK on new card (street change), only if bet changes (handled in pre-action logic)
             if (preAction !== 'CHECK') {
@@ -194,7 +204,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
             setPreActionAmount(0);
             prevStreet.current = gameState.state;
         }
-    }, [gameState?.state, preAction]);
+    }, [gameState?.state, preAction, dealerImageIdx]);
 
     // Chat auto-fade logic
 
@@ -535,10 +545,9 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
         const backPattern = (
             <div className="absolute inset-2 border-2 border-dashed border-white/20 rounded-sm opacity-50 flex items-center justify-center">
                 {(dealerImageIdx % dealerImages.length) === 4 ? (
-                    // Fascist Symbol (Geometric Swastika-like for style)
+                    // Custom symbol for this skin as requested
                     <div className="relative w-8 h-8 flex items-center justify-center">
-                        <div className="absolute w-8 h-2 bg-black rotate-45"></div>
-                        <div className="absolute w-8 h-2 bg-black -rotate-45"></div>
+                        <span className="text-4xl text-black font-bold leading-none select-none">卐</span>
                     </div>
                 ) : (
                     <div className="w-4 h-4 rounded-full bg-white/10"></div>
