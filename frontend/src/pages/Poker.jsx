@@ -220,9 +220,19 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                             const myUserId = prev.me.user_id;
                             const mySeatKey = Object.keys(newState.seats || {}).find(k => newState.seats[k].user_id === myUserId);
                             if (mySeatKey && newState.seats[mySeatKey]) {
-                                newState.me = { ...newState.me, hand: newState.seats[mySeatKey].hand };
-                            } else {
-                                newState.me = { ...newState.me, hand: null };
+                                const newSeatHand = newState.seats[mySeatKey].hand;
+
+                                // FORCE SYNC 'me' hand if 'me' is empty or '?' but 'seat' has real cards
+                                const seatHasRealCards = newSeatHand?.length > 0 && newSeatHand[0].rank !== '?';
+                                const meHasBadCards = !newState.me?.hand?.length || newState.me.hand[0].rank === '?';
+
+                                if (isNewRound || (meHasBadCards && seatHasRealCards)) {
+                                    newState.me = { ...newState.me, hand: newSeatHand };
+                                    myHandRef.current = newSeatHand;
+                                } else if (isNewRound) {
+                                    // New round but seat also '?': Clear 'me'
+                                    newState.me = { ...newState.me, hand: null };
+                                }
                             }
                         }
                     }
@@ -232,22 +242,16 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                         const myUserId = newState.me.user_id;
                         const mySeatKey = Object.keys(newState.seats).find(k => newState.seats[k].user_id === myUserId);
 
-                        // If we have a stored hand, apply it if the update tries to hide it
-                        // BUT: If it's a new round (isNewRound), we deliberately cleared ref, so we won't restore old cards
-                        if (mySeatKey && myHandRef.current) {
+                        // Restore from ref IF not overridden by above sync
+                        if (mySeatKey && myHandRef.current && !isNewRound) {
                             const incomingHand = newState.seats[mySeatKey].hand;
                             const isHidden = !incomingHand || incomingHand.length === 0 || (incomingHand[0] && incomingHand[0].rank === '?');
 
                             if (isHidden) {
-                                // Restore from ref
                                 newState.seats[mySeatKey].hand = myHandRef.current;
-                                // Also sync 'me'
-                                if (newState.me) newState.me.hand = myHandRef.current;
-                            } else {
-                                // Incoming is real? Update ref (e.g. at Showdown)
-                                if (incomingHand && incomingHand.length > 0 && incomingHand[0].rank !== '?') {
-                                    myHandRef.current = incomingHand;
-                                }
+                                newState.me.hand = myHandRef.current;
+                            } else if (incomingHand && incomingHand.length > 0 && incomingHand[0].rank !== '?') {
+                                myHandRef.current = incomingHand;
                             }
                         }
                     }
@@ -466,16 +470,21 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
             <div
                 onClick={(e) => {
                     e.stopPropagation(); // Prevent bubbling 
+                    console.log("Clicked manual refresh card");
                     sendAction('REFRESH_HAND');
                     // Visual feedback
-                    e.target.style.transform = 'scale(0.95)';
-                    setTimeout(() => e.target.style.transform = 'scale(1)', 100);
+                    e.currentTarget.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        if (e.currentTarget) e.currentTarget.style.transform = 'scale(1)';
+                    }, 100);
                 }}
-                className={`w-10 h-14 rounded m-1 flex items-center justify-center shadow-md cursor-pointer hover:brightness-110 transition-all relative overflow-hidden border ${getCardBackClass()}`}
+                className={`w-12 h-16 rounded m-1 flex items-center justify-center shadow-2xl cursor-pointer hover:brightness-110 transition-all relative overflow-hidden border ${getCardBackClass()} z-[100] pointer-events-auto`}
                 title="Click to refresh info"
             >
                 {backPattern}
-                {/* Small indicator it's unknown/hidden if needed, or just opaque back */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100">
+                    <RefreshCw className="text-white w-6 h-6 animate-spin-slow" />
+                </div>
             </div>
         );
 
