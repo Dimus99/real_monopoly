@@ -62,6 +62,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const tableRef = useRef(null);
     const socketRef = useRef(null);
     const myHandRef = useRef(null); // Persistence for my cards
+    const lastHandUpdateTime = useRef(0);
 
     const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : window.location.origin);
     const wsBase = API_BASE.replace('http', 'ws');
@@ -205,7 +206,12 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
                     // Detect New Round (PREFLOP transition) to clear stale hand persistence
                     const isNewRound = data.state.state === 'PREFLOP' && prev?.state !== 'PREFLOP';
-                    if (isNewRound) {
+
+                    // RACE CONDITION FIX: If we just got a HAND_UPDATE (< 2s ago), don't clear it!
+                    const justGotHandUpdate = (Date.now() - lastHandUpdateTime.current) < 2000;
+
+                    if (isNewRound && !justGotHandUpdate) {
+                        // Only clear if we haven't received fresh cards recently
                         myHandRef.current = null;
                         // Force refresh immediately to ensure cards appear if HAND_UPDATE raced
                         if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
@@ -215,11 +221,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
                     if (prev && prev.me) {
                         newState.me = prev.me;
-                        // If new round, force clear 'me.hand' so we don't carry over old cards.
-                        // We set it to the incoming seat's hand (likely '?'s) to trigger auto-heal or wait for HAND_UPDATE
+
                         if (isNewRound) {
                             const myUserId = prev.me.user_id;
                             const mySeatKey = Object.keys(newState.seats || {}).find(k => newState.seats[k].user_id === myUserId);
+
                             if (mySeatKey && newState.seats[mySeatKey]) {
                                 const newSeatHand = newState.seats[mySeatKey].hand;
 
@@ -227,9 +233,14 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                 const seatHasRealCards = newSeatHand?.length > 0 && newSeatHand[0].rank !== '?';
                                 const meHasBadCards = !newState.me?.hand?.length || newState.me.hand[0].rank === '?';
 
-                                if (isNewRound || (meHasBadCards && seatHasRealCards)) {
+                                // If we just got a hand update, trust it over the seat's potential '?'
+                                if (justGotHandUpdate && myHandRef.current) {
+                                    newState.me.hand = myHandRef.current;
+                                }
+                                else if (isNewRound || (meHasBadCards && seatHasRealCards)) {
                                     newState.me = { ...newState.me, hand: newSeatHand };
-                                    myHandRef.current = newSeatHand;
+                                    // Only update ref if it's real cards
+                                    if (seatHasRealCards) myHandRef.current = newSeatHand;
                                 } else if (isNewRound) {
                                     // New round but seat also '?': Clear 'me'
                                     newState.me = { ...newState.me, hand: null };
@@ -243,16 +254,19 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                         const myUserId = newState.me.user_id;
                         const mySeatKey = Object.keys(newState.seats).find(k => newState.seats[k].user_id === myUserId);
 
-                        // Restore from ref IF not overridden by above sync
-                        if (mySeatKey && myHandRef.current && !isNewRound) {
-                            const incomingHand = newState.seats[mySeatKey].hand;
-                            const isHidden = !incomingHand || incomingHand.length === 0 || (incomingHand[0] && incomingHand[0].rank === '?');
+                        // Restore from ref IF available and valid
+                        if (mySeatKey && myHandRef.current) {
+                            // Race fix: If new round but we have fresh cards, KEEP THEM
+                            if (!isNewRound || justGotHandUpdate) {
+                                const incomingHand = newState.seats[mySeatKey].hand;
+                                const isHidden = !incomingHand || incomingHand.length === 0 || (incomingHand[0] && incomingHand[0].rank === '?');
 
-                            if (isHidden) {
-                                newState.seats[mySeatKey].hand = myHandRef.current;
-                                newState.me.hand = myHandRef.current;
-                            } else if (incomingHand && incomingHand.length > 0 && incomingHand[0].rank !== '?') {
-                                myHandRef.current = incomingHand;
+                                if (isHidden) {
+                                    newState.seats[mySeatKey].hand = myHandRef.current;
+                                    newState.me.hand = myHandRef.current;
+                                } else if (incomingHand && incomingHand.length > 0 && incomingHand[0].rank !== '?') {
+                                    myHandRef.current = incomingHand;
+                                }
                             }
                         }
                     }
@@ -269,6 +283,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                 // Update Ref immediately
                 if (data.hand && data.hand.length && data.hand[0].rank !== '?') {
                     myHandRef.current = data.hand;
+                    lastHandUpdateTime.current = Date.now();
                 }
 
                 setGameState(prev => {
@@ -664,20 +679,36 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     >
                         {highlightEnabled ? <Lightbulb size={16} /> : <LightbulbOff size={16} />}
                     </button>
+                    <div className="flex items-center gap-2 pointer-events-auto">
+                        <div className="bg-black/40 px-3 py-1 rounded-full flex items-center gap-2 border border-white/10">
+                            <span className="text-xs text-gray-400">Balance:</span>
+                            <span className="text-sm font-bold text-yellow-500">${balance}</span>
+                        </div>
 
-                    <div className="bg-black/50 border border-white/10 px-2 py-1 rounded flex items-center gap-2">
-                        <span className="text-[10px] text-gray-500 uppercase">Wallet</span>
-                        <span className="text-sm font-bold text-yellow-500">${balance}</span>
+                        <button onClick={() => sendAction('ADD_BOT')} className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/70 hover:text-white transition-colors" title="Add Bot">
+                            <Bot size={16} />
+                        </button>
+                        <button onClick={() => sendAction('REMOVE_BOT')} className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/70 hover:text-white transition-colors" title="Remove Bot">
+                            <Trash2 size={16} />
+                        </button>
+
+                        <div className="w-px h-6 bg-white/20 mx-1"></div>
+
+                        <button
+                            onClick={() => {
+                                console.log("Manual Refresh Clicked");
+                                sendAction('REFRESH_HAND');
+                            }}
+                            className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/70 hover:text-white transition-colors"
+                            title="Refresh My Cards"
+                        >
+                            <RefreshCw size={16} />
+                        </button>
+
+                        <button onClick={toggleFullscreen} className="p-2 rounded-full bg-black/40 hover:bg-black/60 text-white/70 hover:text-white transition-colors" title="Fullscreen">
+                            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                        </button>
                     </div>
-                    <button onClick={() => sendAction('ADD_BOT')} className="btn-xs border border-white/20 p-1 rounded hover:bg-white/10 ml-2" title="Add Bot">
-                        <Bot size={16} />
-                    </button>
-                    <button onClick={() => sendAction('REMOVE_BOT')} className="btn-xs border border-white/20 p-1 rounded hover:bg-white/10" title="Remove Bot">
-                        <Trash2 size={16} />
-                    </button>
-                    <button onClick={toggleFullscreen} className="btn-ghost p-1">
-                        {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-                    </button>
                 </div>
             </div>
 
