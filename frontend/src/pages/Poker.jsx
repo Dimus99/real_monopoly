@@ -31,7 +31,43 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const messagesEndRef = useRef(null);
     const [raiseAnims, setRaiseAnims] = useState({});
     const [clownAnims, setClownAnims] = useState({});
+    const [dealerMessage, setDealerMessage] = useState(null);
     const prevSeatsRef = useRef({});
+
+    // Dealer Messages Logic
+    useEffect(() => {
+        if (!gameState || !gameState.seats) return;
+
+        const currentPlayerSeat = gameState.current_player_seat;
+        const player = gameState.seats[currentPlayerSeat];
+
+        if (player && gameState.state !== 'WAITING' && gameState.state !== 'SHOWDOWN') {
+            const phrases = [
+                "{name}, ты такой пупсик!",
+                "Ну что, {name}, покажи класс!",
+                "{name}, только не фолди!",
+                "Ой, {name}, какие глазки...",
+                "Вперед, {name}, мы верим!",
+                "{name}, рискуй или не пей шампанского!",
+                "{name} сегодня в ударе?",
+                "Ну-ка удиви нас, {name}!",
+                "{name}, фишки жгут карман?",
+                "Дерзай, {name}, удача рядом!"
+            ];
+
+            // 20% chance to show message on turn change
+            // Actually user asked "in the beginning of each turn", so let's do 100% or high chance? 
+            // "в начале каждого хода" -> "at the start of each turn". Let's do it always or frequently.
+            // Let's do it always for now as requested.
+
+            const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+            const message = randomPhrase.replace("{name}", player.name);
+
+            setDealerMessage(message);
+            const timer = setTimeout(() => setDealerMessage(null), 3500);
+            return () => clearTimeout(timer);
+        }
+    }, [gameState?.current_player_seat]);
 
     // Detect Raises for Animation
     useEffect(() => {
@@ -170,15 +206,20 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
         }
     }, [gameError]);
 
+    const myEvaluationRef = useRef(null);
+
     useEffect(() => {
-        // Auto-heal: If I see '?' in my own hand during active play, ask for refresh
-        if (gameState?.me?.hand && gameState.me.hand.length > 0 && gameState.me.hand[0].rank === '?') {
-            if (gameState.state !== 'WAITING' && gameState.state !== 'SHOWDOWN') {
-                console.log("Detected '?' in hand, requesting refresh...");
-                sendAction('REFRESH_HAND');
-            }
+        // Auto-heal: If I see '?' or Empty Hand in my own hand during active play, ask for refresh
+        const hasBadHand = !gameState?.me?.hand || gameState.me.hand.length === 0 || gameState.me.hand[0].rank === '?';
+        const isActiveState = gameState?.state && gameState.state !== 'WAITING' && gameState.state !== 'SHOWDOWN';
+        // Ensure we are actually seated and not just observing
+        const amISeated = gameState?.seats && Object.values(gameState.seats).some(p => p.user_id === (myId || gameState?.me?.user_id));
+
+        if (hasBadHand && isActiveState && amISeated) {
+            console.log("Detected missing/hidden hand in active game, requesting refresh...");
+            sendAction('REFRESH_HAND');
         }
-    }, [gameState?.me?.hand, gameState?.state]);
+    }, [gameState?.me?.hand, gameState?.state, gameState?.seats, myId]);
 
     useEffect(() => {
         const token = localStorage.getItem('monopoly_token');
@@ -283,6 +324,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                 // Update Ref immediately
                 if (data.hand && data.hand.length && data.hand[0].rank !== '?') {
                     myHandRef.current = data.hand;
+                    if (data.evaluation) myEvaluationRef.current = data.evaluation;
                     lastHandUpdateTime.current = Date.now();
                 }
 
@@ -385,8 +427,14 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
         if (!highlightEnabled) return false;
 
         // Priority 2: My Current Best Hand Helper (Highlight my combo during play)
-        if (gameState.me?.current_hand?.best_cards?.length > 0) {
-            const currentHand = gameState.me.current_hand;
+        let currentHand = gameState.me?.current_hand;
+
+        // Fallback to Ref if missing in state
+        if (!currentHand && myEvaluationRef.current) {
+            currentHand = myEvaluationRef.current;
+        }
+
+        if (currentHand && currentHand.best_cards && currentHand.best_cards.length > 0) {
             const rank = currentHand.rank;
             const bestCards = currentHand.best_cards;
 
@@ -817,6 +865,13 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                             <div key={i} className="w-12 h-16 border-2 border-white/5 rounded m-1 bg-black/20"></div>
                         ))}
                     </div>
+
+                    {/* Dealer Message Bubble */}
+                    {dealerMessage && (
+                        <div className="absolute top-[28%] left-1/2 transform -translate-x-1/2 -translate-y-full bg-white text-black px-4 py-2 rounded-2xl rounded-bl-none shadow-lg z-[60] animate-bounce-in max-w-[200px] text-center border-2 border-gray-800 text-sm font-bold">
+                            {dealerMessage}
+                        </div>
+                    )}
 
                     {/* Pot Display */}
                     <div className="absolute top-[52%] left-1/2 transform -translate-x-1/2 z-10 flex flex-col items-center">
