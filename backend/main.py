@@ -370,9 +370,13 @@ async def websocket_poker(
                  # Actually if they are seated, their chips on table don't change, only wallet balance outside.
                  # But if they rebuy, it matters.
             elif action == "REFRESH_HAND":
+                 print(f"DEBUG: REFRESH_HAND received from {user.id}")
                  # Find player seat
+                 found_player = False
                  for seat_num, player in table.seats.items():
                       if player.user_id == user.id:
+                          found_player = True
+                          print(f"DEBUG: Player found at seat {seat_num}. Hand size: {len(player.hand)}")
                           if player.hand:
                               # Re-evaluate logic for refresh
                               rank_val, score_val, best_cards = table.evaluate_hand(player.hand, table.community_cards)
@@ -382,7 +386,7 @@ async def websocket_poker(
                               best_cards_strs = [c.to_dict()["rank"] + c.to_dict()["suit"] for c in best_cards] if best_cards else []
                               uses_my_cards = any(c in best_cards_strs for c in my_cards_strs)
 
-                              await manager.send_to_user(user.id, {
+                              payload = {
                                   "type": "HAND_UPDATE",
                                   "hand": [c.to_dict() for c in player.hand],
                                   "evaluation": {
@@ -391,8 +395,19 @@ async def websocket_poker(
                                       "best_cards": [c.to_dict() for c in best_cards],
                                       "uses_my_cards": uses_my_cards
                                   }
+                              }
+                              print(f"DEBUG: Sending HAND_UPDATE to {user.id}: {payload}")
+                              await manager.send_to_user(user.id, payload)
+                          else:
+                              print(f"DEBUG: Player has no hand (empty list)")
+                              # Inform user they have no hand (maybe they are waiting?)
+                              await manager.send_to_user(user.id, {
+                                  "type": "ERROR", 
+                                  "message": "Start next hand to play"
                               })
                           break
+                 if not found_player:
+                     print(f"DEBUG: Player not found in seats")
                  continue # No broadcast needed for this
 
             

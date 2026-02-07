@@ -30,6 +30,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const [highlightEnabled, setHighlightEnabled] = useState(true); // New Toggle State
     const messagesEndRef = useRef(null);
     const [raiseAnims, setRaiseAnims] = useState({});
+    const [clownAnims, setClownAnims] = useState({});
     const prevSeatsRef = useRef({});
 
     // Detect Raises for Animation
@@ -264,6 +265,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     return newState;
                 });
             } else if (data.type === 'HAND_UPDATE') {
+                console.log("Create: HAND_UPDATE received:", data);
                 // Update Ref immediately
                 if (data.hand && data.hand.length && data.hand[0].rank !== '?') {
                     myHandRef.current = data.hand;
@@ -482,9 +484,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                 title="Click to refresh info"
             >
                 {backPattern}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100">
-                    <RefreshCw className="text-white w-6 h-6 animate-spin-slow" />
-                </div>
+                {/* Refresh icon removed as per request, just pure card back visually */}
             </div>
         );
 
@@ -894,19 +894,36 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
                                         {/* 2. Cards Group (Order 2 for ME, Order 1 for Others) */}
                                         <div
-                                            className={`${isMe ? 'order-2 mb-0' : 'order-1 mb-[-15px]'} z-[60] flex flex-col items-center ${isMe ? 'cursor-pointer hover:scale-105 transition-transform origin-left' : 'pointer-events-none'}`}
-                                            onClick={() => {
+                                            className={`${isMe ? 'order-2 mb-0' : 'order-1 mb-[-15px]'} z-[60] flex flex-col items-center cursor-pointer transition-transform origin-center hover:scale-105 pointer-events-auto`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 if (isMe) {
+                                                    console.log("Clicked My Cards");
                                                     sendAction('REFRESH_HAND');
                                                     const el = document.getElementById('my-cards-container');
                                                     if (el) {
                                                         el.style.opacity = '0.5';
-                                                        setTimeout(() => el.style.opacity = '1', 200);
+                                                        setTimeout(() => { if (el) el.style.opacity = '1'; }, 200);
                                                     }
+                                                } else {
+                                                    // Clown Animation Trigger for Opponents
+                                                    console.log(`Clown triggered for seat ${seatIdx}`);
+                                                    setClownAnims(prev => ({ ...prev, [seatIdx]: true }));
+                                                    setTimeout(() => {
+                                                        setClownAnims(prev => ({ ...prev, [seatIdx]: false }));
+                                                    }, 3000);
                                                 }
                                             }}
                                             id={isMe ? 'my-cards-container' : undefined}
                                         >
+
+                                            {/* CLOWN EMOJI ANIMATION */}
+                                            {clownAnims[seatIdx] && (
+                                                <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 text-6xl animate-bounce z-[200] pointer-events-none drop-shadow-2xl">
+                                                    🤡
+                                                </div>
+                                            )}
+
                                             <div className={`flex justify-center filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)] scale-125 ${player.is_folded && isMe ? 'grayscale opacity-60' : ''}`}>
                                                 {/* Show cards if NOT folded OR if it's ME (even if folded) */}
                                                 {(!player.is_folded || isMe) &&
