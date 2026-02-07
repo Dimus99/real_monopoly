@@ -526,7 +526,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     <div className={`absolute top-0 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-lg`}></div>
                     <div className={`absolute -top-1 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-md`}></div>
                     <div className={`absolute -top-1.5 left-0 w-full h-full rounded-full ${bgColor} border-2 ${borderColor} shadow-inner flex items-center justify-center`}>
-                        <div className={`w-6 h-6 rounded-full border border-white/30 border-dashed ${textColor} text-[7px] font-black flex items-center justify-center font-mono overflow-hidden`}>
+                        <div className={`w-7 h-7 rounded-full border border-white/30 border-dashed ${textColor} text-[10px] font-black flex items-center justify-center font-mono overflow-hidden tracking-tighter`}>
                             {formatted}
                         </div>
                     </div>
@@ -871,7 +871,10 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                             <div className={`flex justify-center filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)] scale-125 ${player.is_folded && isMe ? 'grayscale opacity-60' : ''}`}>
                                                 {/* Show cards if NOT folded OR if it's ME (even if folded) */}
                                                 {(!player.is_folded || isMe) &&
-                                                    (isMe && gameState.me.hand[0]?.rank !== '?' ? gameState.me.hand : player.hand).map((c, i) => (
+                                                    ((isMe && (!gameState.me?.hand?.length && (!player.hand?.length || player.hand.length === 0)) && gameState.state !== 'WAITING' && !player.is_folded)
+                                                        ? [{ rank: '?', suit: '?' }, { rank: '?', suit: '?' }]
+                                                        : (isMe && gameState.me?.hand?.[0]?.rank !== '?' ? gameState.me?.hand : player.hand) || []
+                                                    ).map((c, i) => (
                                                         <div key={i} className={`transform ${i === 0 ? '-rotate-6 translate-x-2' : 'rotate-6 -translate-x-2'} origin-bottom transition-all ${player.is_folded && !isMe ? 'opacity-0 scale-0' : 'opacity-100 scale-100'}`}>
                                                             {renderCard(c, i)}
                                                         </div>
