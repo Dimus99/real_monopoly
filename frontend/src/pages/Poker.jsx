@@ -615,7 +615,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
             source = "ref";
         }
         // Priority 2: GameState 'me' (Snapshot)
-        else if (isMe && gameState?.me?.hand?.[0]?.rank !== '?') {
+        else if (isMe && gameState?.me?.hand && gameState.me.hand.length > 0 && gameState.me.hand[0].rank !== '?') {
             hand = gameState.me.hand;
             source = "state_me";
         }
