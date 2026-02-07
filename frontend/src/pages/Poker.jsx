@@ -607,16 +607,22 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
         if (!player) return [];
         let hand = [];
 
-        // Default Logic: If it's me and I have a real hand in 'me', use it. Otherwise use the seat's hand.
-        if (isMe && gameState.me?.hand?.[0]?.rank !== '?') {
+        // Priority 1: Ref (Most reliable for immediate updates)
+        if (isMe && myHandRef.current && myHandRef.current.length > 0 && myHandRef.current[0].rank !== '?') {
+            hand = myHandRef.current;
+        }
+        // Priority 2: GameState 'me' (Snapshot)
+        else if (isMe && gameState.me?.hand?.[0]?.rank !== '?') {
             hand = gameState.me.hand;
-        } else {
+        }
+        // Priority 3: Seat info (Public/Showdown)
+        else {
             hand = player.hand;
         }
 
         // Fallback Logic: If I have no cards (empty array) but I am in the game (not waiting, not folded), show placeholders.
         // This handles cases where backend sends empty hand or sync is delayed.
-        const showFallback = isMe && (!gameState.me?.hand?.length && (!player.hand?.length || player.hand.length === 0)) && gameState.state !== 'WAITING' && !player.is_folded;
+        const showFallback = isMe && (!hand || hand.length === 0) && gameState.state !== 'WAITING' && !player.is_folded;
 
         if (showFallback) {
             hand = [{ rank: '?', suit: '?' }, { rank: '?', suit: '?' }];
