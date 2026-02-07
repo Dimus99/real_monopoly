@@ -421,7 +421,14 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
             }
 
             // 2. Check if MY HAND holds any of these target ranks (or any card for straight/flush)
-            const myHoleCards = gameState.me.hand || [];
+            let myHoleCards = gameState.me?.hand;
+
+            // Fallback to Ref if state hand is missing/placeholder
+            if ((!myHoleCards || myHoleCards.length === 0 || myHoleCards[0].rank === '?') && myHandRef.current && myHandRef.current.length > 0 && myHandRef.current[0].rank !== '?') {
+                myHoleCards = myHandRef.current;
+            }
+
+            myHoleCards = myHoleCards || [];
 
             let shouldHighlight = false;
 
