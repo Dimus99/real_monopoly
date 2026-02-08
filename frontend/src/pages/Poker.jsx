@@ -862,11 +862,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
                 {/* Dealer Message Bubble (Moved to Parent Scope) */}
                 {dealerMessage && (
-                    <div className="absolute top-[8%] left-1/2 transform -translate-x-1/2 -translate-y-full bg-white text-black px-4 py-2 rounded-2xl rounded-bl-none shadow-[0_0_20px_rgba(0,0,0,0.5)] z-[1000] animate-bounce-in max-w-[250px] text-center border-2 border-gray-800 text-sm font-bold pointer-events-none drop-shadow-2xl">
+                    <div className="absolute top-[15%] left-[55%] bg-white text-black px-4 py-2 rounded-2xl rounded-tl-none shadow-[0_0_20px_rgba(0,0,0,0.5)] z-[1000] animate-bounce-in max-w-[250px] text-center border-2 border-gray-800 text-sm font-bold pointer-events-none drop-shadow-2xl">
                         {dealerMessage}
-                        {/* Little triangle for speech bubble tail */}
-                        <div className="absolute bottom-[-8px] left-4 w-0 h-0 border-l-[10px] border-l-transparent border-t-[10px] border-t-gray-800 border-r-[0px] border-r-transparent"></div>
-                        <div className="absolute bottom-[-5px] left-[18px] w-0 h-0 border-l-[8px] border-l-transparent border-t-[8px] border-t-white border-r-[0px] border-r-transparent"></div>
+                        {/* Little triangle for speech bubble tail pointing towards dealer */}
+                        <div className="absolute -top-[10px] left-[-2px] w-0 h-0 border-b-[12px] border-b-gray-800 border-r-[12px] border-r-transparent"></div>
+                        <div className="absolute -top-[7px] left-[1px] w-0 h-0 border-b-[10px] border-b-white border-r-[10px] border-r-transparent"></div>
                     </div>
                 )}
 
