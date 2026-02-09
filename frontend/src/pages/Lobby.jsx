@@ -1529,16 +1529,19 @@ const Lobby = () => {
                 {/* SHOP MODE */}
                 {mode === 'shop' && (
                     <div className="max-w-md w-full mx-auto relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center gap-4 mb-6">
-                            <button onClick={() => setMode('menu')} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white transition-colors">
-                                <Home size={20} />
-                            </button>
+                        <div className="flex items-center justify-between mb-6">
                             <h2 className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
                                 Магазин
                             </h2>
+                            <button
+                                onClick={() => setMode('menu')}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all hover:rotate-90"
+                            >
+                                <X size={20} />
+                            </button>
                         </div>
 
-                        <div className="space-y-6 overflow-y-auto max-h-[75vh] custom-scrollbar pr-2 pb-20">
+                        <div className="space-y-6 overflow-y-auto max-h-[75vh] custom-scrollbar pr-2 pb-24">
 
                             {/* Daily Bonus Section */}
                             <div className="bg-gradient-to-r from-green-900/40 to-emerald-900/40 border border-green-500/30 rounded-2xl p-5 relative overflow-hidden group">
@@ -1546,9 +1549,9 @@ const Lobby = () => {
                                 <div className="flex justify-between items-center relative z-10">
                                     <div>
                                         <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                            <span className="text-green-400">🎁</span> Ежедневный бонус
+                                            <span className="text-green-400">🎁</span> Бонус
                                         </h3>
-                                        <p className="text-xs text-gray-300">Забирай $5,000 каждые 24 часа!</p>
+                                        <p className="text-[10px] text-gray-300">Забирай $5,000 каждые 24 часа!</p>
                                     </div>
                                     <button
                                         onClick={() => {
@@ -1569,7 +1572,7 @@ const Lobby = () => {
                                                     }
                                                 });
                                         }}
-                                        className="btn-primary bg-green-600 hover:bg-green-500 shadow-lg shadow-green-600/20 py-2 px-6 font-bold"
+                                        className="btn-primary bg-green-600 hover:bg-green-500 shadow-lg shadow-green-600/20 py-2 px-6 font-bold text-xs"
                                     >
                                         ЗАБРАТЬ
                                     </button>
@@ -1582,7 +1585,7 @@ const Lobby = () => {
                                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
                                         <span className="text-yellow-400">$</span> Монеты
                                     </h3>
-                                    <div className="text-xs text-gray-400">Оплата Telegram Stars</div>
+                                    <div className="text-[10px] text-gray-400">Telegram Stars ⭐️</div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     {[
@@ -1604,14 +1607,11 @@ const Lobby = () => {
                                                         } else {
                                                             window.open(d.invoice_url, '_blank');
                                                         }
-                                                    } else {
-                                                        alert('Ошибка при создании счета');
                                                     }
                                                 });
                                             }}
                                             className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-yellow-500/50 transition-all text-center group relative overflow-hidden"
                                         >
-                                            {pack.id === 'large' && <div className="absolute inset-0 bg-yellow-500/5 blur-xl"></div>}
                                             <div className="text-yellow-400 font-bold text-lg mb-1 group-hover:scale-110 transition-transform relative z-10">{pack.amount}</div>
                                             <div className="text-xs text-gray-400 relative z-10">{pack.label}</div>
                                             {pack.badge && <div className="absolute top-0 right-0 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg animate-pulse">{pack.badge}</div>}
@@ -1622,39 +1622,48 @@ const Lobby = () => {
 
                             {/* VIP Section */}
                             <div className="bg-gradient-to-br from-purple-900/40 to-blue-900/40 border border-purple-500/30 rounded-2xl p-5 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><CreditCard size={100} className="text-purple-400" /></div>
+                                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><Shield size={100} className="text-purple-400" /></div>
                                 <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2 relative z-10">
-                                    <span className="text-purple-400">💎</span> VIP Статус (30 дней)
+                                    <span className="text-purple-400">💎</span> VIP Статус
                                 </h3>
-                                <div className="text-xs text-gray-300 mb-6 relative z-10">
-                                    <ul className="space-y-2">
-                                        <li className="flex items-center gap-2">✅ <span className="font-bold text-yellow-400">VIP</span> плашка в профиле</li>
-                                        <li className="flex items-center gap-2">✅ Уникальные фишки (Машинка, Магнат)</li>
-                                        <li className="flex items-center gap-2">✅ Удвоенные бонусы (в разработке)</li>
-                                        <li className="flex items-center gap-2">✅ Приоритетный вход в лобби</li>
-                                    </ul>
+
+                                <div className="grid grid-cols-3 gap-2 mb-4 relative z-10">
+                                    {[
+                                        { id: 'vip_1', days: '1 д', stars: 9 },
+                                        { id: 'vip_7', days: '7 д', stars: 49 },
+                                        { id: 'vip', days: '30 д', stars: 149 }
+                                    ].map(v => (
+                                        <button
+                                            key={v.id}
+                                            onClick={() => {
+                                                authFetch('/api/shop/create-stars-invoice', {
+                                                    method: 'POST',
+                                                    body: JSON.stringify({ item_id: v.id })
+                                                }).then(r => r.json()).then(d => {
+                                                    if (d.success) {
+                                                        if (window.Telegram?.WebApp?.openInvoice) {
+                                                            window.Telegram.WebApp.openInvoice(d.invoice_url, (status) => {
+                                                                if (status === 'paid') alert('VIP статус активирован!');
+                                                            });
+                                                        } else {
+                                                            window.open(d.invoice_url, '_blank');
+                                                        }
+                                                    }
+                                                });
+                                            }}
+                                            className="bg-purple-900/40 border border-purple-500/30 rounded-xl p-2 hover:bg-purple-600/30 transition-all text-center"
+                                        >
+                                            <div className="text-white font-bold text-sm">{v.days}</div>
+                                            <div className="text-[10px] text-purple-300">{v.stars} ⭐️</div>
+                                        </button>
+                                    ))}
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        authFetch('/api/shop/create-stars-invoice', {
-                                            method: 'POST',
-                                            body: JSON.stringify({ item_id: 'vip' })
-                                        }).then(r => r.json()).then(d => {
-                                            if (d.success) {
-                                                if (window.Telegram?.WebApp?.openInvoice) {
-                                                    window.Telegram.WebApp.openInvoice(d.invoice_url, (status) => {
-                                                        if (status === 'paid') alert('VIP статус активирован!');
-                                                    });
-                                                } else {
-                                                    window.open(d.invoice_url, '_blank');
-                                                }
-                                            }
-                                        });
-                                    }}
-                                    className="w-full btn-primary bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 shadow-xl shadow-purple-600/20 py-4 font-black uppercase tracking-widest relative z-10"
-                                >
-                                    КУПИТЬ ЗА 149 ⭐️
-                                </button>
+
+                                <div className="text-[10px] text-gray-300 space-y-1 relative z-10 mb-2">
+                                    <div className="flex items-center gap-2">✅ VIP плашка в профиле</div>
+                                    <div className="flex items-center gap-2">✅ Уникальные фишки (Машинка, Магнат)</div>
+                                    <div className="flex items-center gap-2">✅ Приоритетный вход в лобби</div>
+                                </div>
                             </div>
                         </div>
                     </div>

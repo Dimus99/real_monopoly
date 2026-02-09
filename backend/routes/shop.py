@@ -17,7 +17,9 @@ router = APIRouter(prefix="/api/shop", tags=["shop"])
 CURRENCY_PACKS = {
     "small": {"amount": 10000, "stars": 9, "title": "10,000 Монет", "description": "Стартовый капитал"},
     "large": {"amount": 100000, "stars": 39, "title": "100,000 Монет", "description": "Для серьезных игроков"},
-    "vip": {"amount": 0, "stars": 149, "title": "VIP Статус (30 дней)", "description": "Эксклюзивные аватары и бонусы"}
+    "vip_1": {"amount": 0, "stars": 9, "title": "VIP Статус (1 день)", "description": "Попробовать все фишки", "days": 1},
+    "vip_7": {"amount": 0, "stars": 49, "title": "VIP Статус (7 дней)", "description": "Для активной игры", "days": 7},
+    "vip": {"amount": 0, "stars": 149, "title": "VIP Статус (30 дней)", "description": "Эксклюзивные аватары и бонусы", "days": 30}
 }
 
 @router.post("/daily-bonus")

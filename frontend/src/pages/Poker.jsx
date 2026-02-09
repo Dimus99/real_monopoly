@@ -4,7 +4,6 @@ import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play, Maximize2, Mini
 
 const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, authFetch, friends = [] }) => {
     const [gameState, setGameState] = useState(null);
-    const [socket, setSocket] = useState(null);
     const [betAmount, setBetAmount] = useState(0);
     const [chatMessage, setChatMessage] = useState('');
     const [viewedUser, setViewedUser] = useState(null);
@@ -15,19 +14,23 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
     const [dealerMessage, setDealerMessage] = useState(null);
     const [connected, setConnected] = useState(false);
 
-    // Mobile Scale
+    // Responsive Scale (Fixed to prevent over-stretching)
     useEffect(() => {
         const handleResize = () => {
             const w = window.innerWidth;
             const h = window.innerHeight;
-            // Dynamic Full Scaling
-            // Base layout is roughly 1200x800. We want to FIT it, but also ALLOW zooming in if space permits.
-            // Wait, "stretch to max screen size" means fill the screen.
-            // We use a base width of 1100 to leave some side padding (panels).
-            // Calculate scale to fit width AND height, but max out at 1.5 to avoid pixilation if desired (or no limit).
-            const scaleX = w / 1100;
-            const scaleY = h / 700;
-            const newScale = Math.min(scaleX, scaleY) * 0.95; // 0.95 for padding
+
+            // Base layout is roughly 1200x800.
+            const baseW = 1200;
+            const baseH = 800;
+
+            // Calculate scale but don't overstretch
+            let newScale = Math.min(w / baseW, h / baseH);
+
+            // User: "don't stretch it, it's worse" - we limit max scale to 1.15
+            if (newScale > 1.15) newScale = 1.15;
+            if (newScale < 0.4) newScale = 0.4;
+
             setScale(newScale);
         };
         window.addEventListener('resize', handleResize);
@@ -1054,8 +1057,12 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
 
                 {/* Felt */}
                 <div
-                    className="w-[90%] aspect-[2/1] bg-[#1a472a] rounded-[200px] border-[16px] border-[#2d2a26] shadow-[inset_0_0_100px_rgba(0,0,0,0.6)] relative flex items-center justify-center z-0 transition-transform duration-300 origin-center"
-                    style={{ transform: `scale(${scale})` }}
+                    className="aspect-[2.2/1] bg-[#1a472a] rounded-[240px] border-[16px] border-[#2d2a26] shadow-[inset_0_0_100px_rgba(0,0,0,0.6)] relative flex items-center justify-center z-0 transition-transform duration-500 origin-center"
+                    style={{
+                        width: '1100px',
+                        transform: `scale(${scale})`,
+                        flexShrink: 0
+                    }}
                 >
 
                     {/* Dealer Tip Button - Dynamic Position based on scale? No, inside relative container */}
@@ -1392,7 +1399,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                     <div
                         onMouseEnter={() => setIsActionPanelHovered(true)}
                         onMouseLeave={() => setIsActionPanelHovered(false)}
-                        className="flex flex-col gap-3 p-4 bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl pointer-events-auto items-end transition-all duration-300"
+                        className="flex flex-col gap-2 p-3 bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl pointer-events-auto items-end transition-all duration-300"
                     >
 
                         {/* Status Message */}
@@ -1422,11 +1429,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                                 disabled={isDealing}
                                 className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'FOLD' ? 'scale-105' : ''} ${isDealing ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                <div className={`h-12 w-20 rounded-xl flex items-center justify-center transition-all border-b-4 shadow-lg active:border-b-0 active:translate-y-1 ${preAction === 'FOLD'
+                                <div className={`h-10 w-16 rounded-xl flex items-center justify-center transition-all border-b-4 shadow-lg active:border-b-0 active:translate-y-1 ${preAction === 'FOLD'
                                     ? 'bg-red-500 border-red-800 ring-2 ring-red-400'
                                     : (gameState.current_player_seat === mySeatIdx ? 'bg-red-600 hover:bg-red-500 border-red-900' : 'bg-gray-700/40 border-gray-900 opacity-60 hover:opacity-100')
                                     }`}>
-                                    <span className="text-base font-bold uppercase text-white">FOLD</span>
+                                    <span className="text-sm font-bold uppercase text-white">FOLD</span>
                                 </div>
                                 <span className="text-[9px] uppercase font-bold text-gray-500">{preAction === 'FOLD' ? 'Selected' : 'Fold'}</span>
                             </button>
@@ -1441,11 +1448,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                                 disabled={isDealing || (gameState.current_bet - (myPlayer.current_bet || 0)) > 0}
                                 className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'CHECK' ? 'scale-105' : ''} ${(isDealing || (gameState.current_bet - (myPlayer.current_bet || 0)) > 0) ? 'opacity-20 grayscale cursor-not-allowed' : ''}`}
                             >
-                                <div className={`h-12 w-24 rounded-xl flex flex-col items-center justify-center transition-all border-b-4 shadow-xl active:border-b-0 active:translate-y-1 ${preAction === 'CHECK'
+                                <div className={`h-10 w-20 rounded-xl flex flex-col items-center justify-center transition-all border-b-4 shadow-xl active:border-b-0 active:translate-y-1 ${preAction === 'CHECK'
                                     ? 'bg-green-500 border-green-800 ring-2 ring-green-400'
                                     : (gameState.current_player_seat === mySeatIdx && (gameState.current_bet - (myPlayer.current_bet || 0)) === 0 ? 'bg-green-600 hover:bg-green-500 border-green-900' : 'bg-gray-700/40 border-gray-900 opacity-60 hover:opacity-100')
                                     }`}>
-                                    <span className="text-base font-black uppercase text-white tracking-tight leading-none text-center">CHECK</span>
+                                    <span className="text-sm font-black uppercase text-white tracking-tight leading-none text-center">CHECK</span>
                                 </div>
                                 <span className="text-[9px] uppercase font-bold text-gray-400">{preAction === 'CHECK' ? 'Selected' : 'Check'}</span>
                             </button>
@@ -1464,16 +1471,16 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                                 disabled={isDealing || (gameState.current_bet - (myPlayer.current_bet || 0)) === 0}
                                 className={`group flex flex-col items-center gap-1 transition-all ${preAction === 'CALL' ? 'scale-105' : ''} ${(isDealing || (gameState.current_bet - (myPlayer.current_bet || 0)) === 0) ? 'opacity-20 grayscale cursor-not-allowed' : ''}`}
                             >
-                                <div className={`h-12 w-24 rounded-xl flex flex-col items-center justify-center transition-all border-b-4 shadow-xl active:border-b-0 active:translate-y-1 ${preAction === 'CALL'
+                                <div className={`h-10 w-20 rounded-xl flex flex-col items-center justify-center transition-all border-b-4 shadow-xl active:border-b-0 active:translate-y-1 ${preAction === 'CALL'
                                     ? 'bg-blue-500 border-blue-800 ring-2 ring-blue-400'
                                     : (gameState.current_player_seat === mySeatIdx && (gameState.current_bet - (myPlayer.current_bet || 0)) > 0 ? 'bg-blue-600 hover:bg-blue-500 border-blue-900' : 'bg-gray-700/40 border-gray-900 opacity-60 hover:opacity-100')
                                     }`}>
-                                    <span className="text-xl font-black uppercase text-white tracking-tighter">
+                                    <span className="text-sm font-black uppercase text-white tracking-tighter">
                                         CALL
                                     </span>
                                     {(gameState.current_bet > (myPlayer.current_bet || 0)) && (
                                         <div className="flex flex-col items-center -mt-1">
-                                            <span className="text-sm font-mono font-bold text-blue-200">
+                                            <span className="text-[10px] font-mono font-bold text-blue-200">
                                                 ${gameState.current_bet - (myPlayer.current_bet || 0)}
                                             </span>
                                         </div>
@@ -1547,10 +1554,10 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                                         }
                                     }}
                                     disabled={isDealing}
-                                    className={`bg-yellow-600 hover:bg-yellow-500 border-b-4 border-yellow-900 text-white h-14 w-28 rounded-2xl flex flex-col items-center justify-center transition-all active:border-b-0 active:translate-y-1 shadow-xl ${gameState.current_player_seat !== mySeatIdx && preAction !== 'RAISE' ? 'opacity-60 grayscale' : 'hover:scale-105'} ${isDealing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`bg-yellow-600 hover:bg-yellow-500 border-b-4 border-yellow-900 text-white h-12 w-24 rounded-2xl flex flex-col items-center justify-center transition-all active:border-b-0 active:translate-y-1 shadow-xl ${gameState.current_player_seat !== mySeatIdx && preAction !== 'RAISE' ? 'opacity-60 grayscale' : 'hover:scale-105'} ${isDealing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
-                                    <span className="text-lg font-black uppercase tracking-tight">RAISE</span>
-                                    <span className="text-[11px] font-mono font-bold leading-none text-yellow-200">
+                                    <span className="text-base font-black uppercase tracking-tight">RAISE</span>
+                                    <span className="text-[10px] font-mono font-bold leading-none text-yellow-200">
                                         ${(gameState.current_player_seat === mySeatIdx ? (betAmount || minRaiseAmount) : (preActionAmount || minRaiseAmount))}
                                     </span>
                                 </button>

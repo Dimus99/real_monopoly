@@ -573,23 +573,24 @@ async def telegram_webhook(update: dict):
                         from routes.shop import CURRENCY_PACKS
                         item = CURRENCY_PACKS.get(item_id)
                         if item:
-                            if item_id == "vip":
-                                # Award VIP 30 days
+                            if item_id.startswith("vip"):
+                                # Award VIP status based on configured days
+                                days = item.get("days", 30)
                                 from datetime import timedelta, datetime
                                 user_db = await db_service.get_user(session, user_id)
                                 if user_db:
                                     now = datetime.utcnow()
                                     current_expiry = user_db.vip_expires_at
                                     if user_db.is_vip and current_expiry and current_expiry > now:
-                                        new_expiry = current_expiry + timedelta(days=30)
+                                        new_expiry = current_expiry + timedelta(days=days)
                                     else:
-                                        new_expiry = now + timedelta(days=30)
+                                        new_expiry = now + timedelta(days=days)
                                     
                                     await db_service.update_user(session, user_id, {
                                         "is_vip": True,
                                         "vip_expires_at": new_expiry
                                     })
-                                    print(f"💰 SHOP: User {user_id} purchased VIP until {new_expiry}")
+                                    print(f"💰 SHOP: User {user_id} purchased VIP for {days} days until {new_expiry}")
                             else:
                                 # Award Currency
                                 amount = item.get("amount", 0)
