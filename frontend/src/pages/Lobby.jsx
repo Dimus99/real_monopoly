@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
     Plus, LogIn, Users, Play, Settings, CreditCard,
     MessageSquare, Music, Volume2, Shield, Search,
-    UserPlus, UserCheck, X, RefreshCw, Camera, Smile, Check
+    UserPlus, UserCheck, X, RefreshCw, Camera, Smile, Check,
+    Home, Globe
 } from 'lucide-react';
 import CharacterSelection from '../components/CharacterSelection';
 import TelegramLoginButton from '../components/TelegramLoginButton';
@@ -85,6 +86,10 @@ const Lobby = () => {
     const [friendCodeInput, setFriendCodeInput] = useState('');
 
     const [isInitializing, setIsInitializing] = useState(true);
+
+    // Mobile Tabs
+    const [mobileTab, setMobileTab] = useState('menu'); // 'menu', 'friends'
+    const [viewedUser, setViewedUser] = useState(null); // Profile Viewer State
 
     // Unified Login Handler
     const handleTelegramLogin = useCallback(async (data) => {
@@ -336,22 +341,30 @@ const Lobby = () => {
     // Resume active games
     const [myGames, setMyGames] = useState([]);
     const fetchMyGames = async () => {
+        // Fetch specific active games for the user
+        // If the endpoint doesn't exist yet, we can filter activeGames if they contain player info
+        // But assuming the user requested this, a specific endpoint or logic is better.
+        // For now, let's try to filter from a broader list if needed, or stick to this if it works.
         try {
-            // Assuming backend supports filtering or returns my games
-            // I will use a dedicated endpoint or parameter
-            const res = await authFetch('/api/games/my-active');
+            const res = await authFetch('/api/games/my'); // Adjusted endpoint to likely valid one
             if (res.ok) {
                 const data = await res.json();
-                setMyGames(data.games || []);
+                setMyGames(data || []);
             }
-        } catch (e) { }
+        } catch (e) {
+            // Fallback or silence
+        }
     };
 
     useEffect(() => {
         let interval;
         if (mode === 'menu' || mode === 'join') {
             fetchActiveGames();
-            interval = setInterval(fetchActiveGames, 5000);
+            fetchMyGames(); // Added fetch
+            interval = setInterval(() => {
+                fetchActiveGames();
+                fetchMyGames();
+            }, 5000);
         }
         return () => {
             if (interval) clearInterval(interval);
@@ -363,6 +376,34 @@ const Lobby = () => {
             fetchFriendsData();
         }
     }, [mode]);
+
+    useEffect(() => {
+        // Mobile Tab logic to scroll top on change
+        window.scrollTo(0, 0);
+    }, [mobileTab]);
+
+    const handleAvatarClick = async (target) => {
+        if (!target) return;
+        const uid = target.user_id || target.id;
+        if (!uid) return;
+
+        if (user && (uid === user.id || uid === user.user_id)) {
+            setMode('profile');
+            return;
+        }
+
+        // Fetch fresh profile or set standard
+        try {
+            const res = await authFetch(`/api/users/${uid}`);
+            if (res.ok) {
+                setViewedUser(await res.json());
+            } else {
+                setViewedUser(target);
+            }
+        } catch (e) {
+            setViewedUser(target);
+        }
+    };
 
     const createGame = async () => {
         setIsLoading(true);
@@ -700,7 +741,10 @@ const Lobby = () => {
                             )}
 
                             {/* 4. Friends List */}
-                            <div className="glass-card flex-1 p-4 min-h-[250px] flex flex-col border border-white/5">
+                            {/* LEFT SIDEBAR: Friends & Activity */}
+                            <div className={`${mobileTab === 'friends' ? 'flex' : 'hidden'} lg:flex flex-col gap-4 w-full lg:w-72 shrink-0 h-full lg:h-[calc(100vh-140px)] lg:sticky lg:top-6 overflow-y-auto scrollbar-hide pb-20 lg:pb-6 pl-1`}>
+
+                                {/* 1. Requests */}
                                 <h3 className="text-xs font-bold text-gray-500 uppercase mb-3 tracking-widest flex justify-between items-center">
                                     Онлайн
                                     <span className={`text-[10px] px-2 py-0.5 rounded-full ${friends.filter(f => f.is_online).length > 0 ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-gray-500'}`}>{friends.filter(f => f.is_online).length}</span>
@@ -736,7 +780,7 @@ const Lobby = () => {
                         </div>
 
                         {/* RIGHT: Main Content */}
-                        <div className="flex-1 min-w-0 w-full">
+                        <div className={`${mobileTab === 'menu' ? 'flex' : 'hidden'} lg:flex flex-1 min-w-0 w-full flex-col mb-24 lg:mb-0`}>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                                 <button onClick={() => setMode('create')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-purple-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
                                     <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -774,6 +818,7 @@ const Lobby = () => {
                             </div>
 
                             {/* Open Lobbies Panel (New Feature) */}
+                            {/* Open Lobbies Panel */}
                             <div className="glass-card p-6 mt-4">
                                 {/* My Active Games Section */}
                                 {myGames.length > 0 && (
@@ -783,14 +828,14 @@ const Lobby = () => {
                                         </h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             {myGames.map(game => (
-                                                <div key={game.game_id} className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/50 p-4 rounded-xl flex justify-between items-center">
+                                                <div key={game.game_id} className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/50 p-4 rounded-xl flex justify-between items-center shadow-lg">
                                                     <div>
                                                         <div className="font-mono font-bold text-lg text-white">#{game.game_id.substring(0, 6)}</div>
-                                                        <div className="text-xs text-purple-200 mt-1">Ход: {game.turn} • {game.status}</div>
+                                                        <div className="text-xs text-purple-200 mt-1">Ход: {game.turn} • {game.status === 'playing' ? 'В игре' : game.status}</div>
                                                     </div>
                                                     <button
                                                         onClick={() => navigate(`/game/${game.game_id}/${game.player_id}`)}
-                                                        className="btn-sm btn-primary"
+                                                        className="btn-sm btn-primary py-2 px-4"
                                                     >
                                                         Продолжить
                                                     </button>
@@ -800,60 +845,121 @@ const Lobby = () => {
                                     </div>
                                 )}
 
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-xl font-bold flex items-center gap-2"><Globe size={20} className="text-blue-400" /> Открытые лобби</h3>
-                                    <button onClick={fetchActiveGames} className="p-2 hover:bg-white/10 rounded-full"><RefreshCw size={16} /></button>
-                                </div>
-
-                                {activeGames.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-500">Нет активных публичных игр. Создайте свою!</div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {activeGames.map(game => (
-                                            <div key={game.game_id} className="bg-white/5 border border-white/10 p-4 rounded-xl hover:bg-white/10 transition-all flex justify-between items-center group relative overflow-hidden">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex-shrink-0 flex items-center justify-center relative">
-                                                        {game.host_avatar && (game.host_avatar.startsWith('http') || game.host_avatar.startsWith('/')) ? (
-                                                            <img src={game.host_avatar} className="w-full h-full object-cover" alt="Avatar" />
-                                                        ) : game.host_avatar ? (
-                                                            <span className="text-xl select-none">{game.host_avatar}</span>
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-white/20 text-xl select-none">👤</div>
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-mono font-bold text-lg text-purple-400 leading-tight">#{game.game_id.substring(0, 6)}</div>
-                                                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mb-1 truncate max-w-[120px]">
-                                                            Создатель: {game.host_name}
+                                <div className="glass-card p-6 mt-4">
+                                    {/* My Active Games Section */}
+                                    {myGames.length > 0 && (
+                                        <div className="mb-8 p-4 bg-purple-500/10 rounded-xl border border-purple-500/30">
+                                            <h3 className="text-xl font-bold flex items-center gap-2 mb-4 text-purple-300">
+                                                <Play size={20} /> Ваши активные игры
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                {myGames.map(game => (
+                                                    <div key={game.game_id} className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/50 p-4 rounded-xl flex justify-between items-center">
+                                                        <div>
+                                                            <div className="font-mono font-bold text-lg text-white">#{game.game_id.substring(0, 6)}</div>
+                                                            <div className="text-xs text-purple-200 mt-1">Ход: {game.turn} • {game.status}</div>
                                                         </div>
-                                                        <div className="text-[10px] text-gray-500">{game.map_type} • {game.player_count}/{game.max_players}</div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    {myGames.some(mg => mg.game_id === game.game_id) ? (
                                                         <button
-                                                            onClick={() => {
-                                                                const mg = myGames.find(m => m.game_id === game.game_id);
-                                                                navigate(`/game/${mg.game_id}/${mg.player_id}`);
-                                                            }}
-                                                            className="btn-sm btn-purple opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            onClick={() => navigate(`/game/${game.game_id}/${game.player_id}`)}
+                                                            className="btn-sm btn-primary"
                                                         >
                                                             Продолжить
                                                         </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => { setMode('join'); setGameIdInput(game.game_id); }}
-                                                            className="btn-sm btn-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        >
-                                                            Войти
-                                                        </button>
-                                                    )}
-                                                </div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))}
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-xl font-bold flex items-center gap-2"><Globe size={20} className="text-blue-400" /> Открытые лобби</h3>
+                                        <button onClick={fetchActiveGames} className="p-2 hover:bg-white/10 rounded-full"><RefreshCw size={16} /></button>
                                     </div>
-                                )}
+
+                                    {activeGames.length === 0 ? (
+                                        <div className="text-center py-8 text-gray-500">Нет активных публичных игр. Создайте свою!</div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {activeGames.map(game => (
+                                                <div key={game.game_id} className="bg-white/5 border border-white/10 p-4 rounded-xl hover:bg-white/10 transition-all flex justify-between items-center group relative overflow-hidden">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex-shrink-0 flex items-center justify-center relative cursor-pointer hover:border-purple-500 transition-colors"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleAvatarClick({ name: game.host_name, avatar_url: game.host_avatar, id: game.host_id });
+                                                            }}>
+                                                            {game.host_avatar && (game.host_avatar.startsWith('http') || game.host_avatar.startsWith('/')) ? (
+                                                                <img src={game.host_avatar} className="w-full h-full object-cover" alt="Avatar" />
+                                                            ) : game.host_avatar ? (
+                                                                <span className="text-xl select-none">{game.host_avatar}</span>
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center text-white/20 text-xl select-none">👤</div>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-mono font-bold text-lg text-purple-400 leading-tight">#{game.game_id.substring(0, 6)}</div>
+                                                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mb-1 truncate max-w-[120px]">
+                                                                Создатель: {game.host_name}
+                                                            </div>
+                                                            <div className="text-[10px] text-gray-500">{game.map_type} • {game.player_count}/{game.max_players}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        {myGames.some(mg => mg.game_id === game.game_id) ? (
+                                                            <button
+                                                                onClick={() => {
+                                                                    const mg = myGames.find(m => m.game_id === game.game_id);
+                                                                    navigate(`/game/${mg.game_id}/${mg.player_id}`);
+                                                                }}
+                                                                className="btn-sm btn-purple opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                Продолжить
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => { setMode('join'); setGameIdInput(game.game_id); }}
+                                                                className="btn-sm btn-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                Войти
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
+                        </div>
+
+                        {/* Mobile Bottom Navigation */}
+                        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0c0c14]/90 backdrop-blur-lg border-t border-white/10 flex justify-around p-2 z-[60] pb-6">
+                            <button
+                                onClick={() => setMobileTab('menu')}
+                                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${mobileTab === 'menu' ? 'text-yellow-400 bg-white/5' : 'text-gray-500'}`}
+                            >
+                                <Home size={20} />
+                                <span className="text-[10px] font-bold uppercase">Меню</span>
+                            </button>
+                            <button
+                                onClick={() => setMobileTab('friends')}
+                                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${mobileTab === 'friends' ? 'text-blue-400 bg-white/5' : 'text-gray-500'}`}
+                            >
+                                <div className="relative">
+                                    <Users size={20} />
+                                    {(friendRequests.length > 0 || gameInvites.length > 0) && (
+                                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+                                    )}
+                                </div>
+                                <span className="text-[10px] font-bold uppercase">Друзья</span>
+                            </button>
+                            <button
+                                onClick={() => setMode('profile')}
+                                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${mode === 'profile' ? 'text-purple-400 bg-white/5' : 'text-gray-500'}`}
+                            >
+                                <Settings size={20} />
+                                <span className="text-[10px] font-bold uppercase">Профиль</span>
+                            </button>
                         </div>
                     </div>
                 )}
@@ -1316,6 +1422,65 @@ const Lobby = () => {
                                     <X size={20} /> Выйти из аккаунта
                                 </button>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Viewed User Modal */}
+                {viewedUser && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setViewedUser(null)}>
+                        <div className="glass-card max-w-md w-full p-6 animate-in fade-in zoom-in duration-300 relative" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => setViewedUser(null)} className="absolute top-4 right-4 btn-ghost p-1 rounded-full"><X size={20} /></button>
+
+                            <div className="flex flex-col items-center gap-4 mb-6">
+                                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-500/50 bg-[#1a1a2e] shadow-2xl">
+                                    {viewedUser.avatar_url && (viewedUser.avatar_url.startsWith('http') || viewedUser.avatar_url.startsWith('/')) ? (
+                                        <img src={viewedUser.avatar_url} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-4xl">{viewedUser.avatar_url || '👤'}</div>
+                                    )}
+                                </div>
+                                <div className="text-center">
+                                    <h3 className="text-2xl font-bold font-display text-white">{viewedUser.name}</h3>
+                                    {viewedUser.friend_code && <div className="text-xs font-mono text-gray-500 tracking-widest uppercase">#{viewedUser.friend_code}</div>}
+                                </div>
+                            </div>
+
+                            {user && viewedUser.id !== user.id && !friends.some(f => f.id === viewedUser.id || f.user_id === viewedUser.id || f.user_id === viewedUser.user_id) && (
+                                <button
+                                    onClick={() => {
+                                        const uid = viewedUser.id || viewedUser.user_id;
+                                        if (uid) {
+                                            authFetch('/api/friends/request', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ to_user_id: uid })
+                                            }).then(res => {
+                                                if (res.ok) alert('Заявка отправлена!');
+                                                else alert('Ошибка');
+                                            });
+                                        }
+                                    }}
+                                    className="btn-primary w-full py-3 flex items-center justify-center gap-2 font-bold mb-6"
+                                >
+                                    <UserPlus size={18} /> Добавить в друзья
+                                </button>
+                            )}
+
+                            {/* Stats */}
+                            {viewedUser.stats && (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Победы</div>
+                                        <div className="text-2xl font-mono font-bold text-yellow-500">{viewedUser.stats.wins || 0}</div>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Игры</div>
+                                        <div className="text-2xl font-mono font-bold text-blue-500">{viewedUser.stats.games_played || 0}</div>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
                     </div>
                 )}

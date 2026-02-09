@@ -1,12 +1,84 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play, Maximize2, Minimize2, Bot, Trash2, Coins, Lightbulb, LightbulbOff } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play, Maximize2, Minimize2, Bot, Trash2, Coins, Lightbulb, LightbulbOff, UserPlus, UserCheck, X } from 'lucide-react';
 
-const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) => {
+const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, authFetch }) => {
     const [gameState, setGameState] = useState(null);
     const [socket, setSocket] = useState(null);
     const [betAmount, setBetAmount] = useState(0);
-    const [connected, setConnected] = useState(false);
+    const [chatMessage, setChatMessage] = useState('');
+    const [dealerMessage, setDealerMessage] = useState(null);
+    const [viewedUser, setViewedUser] = useState(null);
+    const [flyingChips, setFlyingChips] = useState([]);
+    const [scale, setScale] = useState(1);
+
+    // Mobile Scale
+    useEffect(() => {
+        const handleResize = () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            // Base width ~1200px for table
+            if (w < 1000) {
+                const newScale = Math.min(w / 1000, h / 600);
+                setScale(newScale);
+            } else {
+                setScale(1);
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        handleResize();
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const handleSendChat = (e) => {
+        e.preventDefault();
+        if (!chatMessage.trim()) return;
+        sendAction('CHAT', { message: chatMessage });
+        setChatMessage('');
+    };
+
+    const handleTip = () => {
+        try {
+            const audio = new Audio('/sounds/chips_stack.mp3'); // Or any available sound
+            audio.volume = 0.5;
+            audio.play().catch(e => { });
+        } catch (e) { }
+
+        // Add Flying Chip visual
+        const chipId = Date.now();
+        setFlyingChips(prev => [...prev, chipId]);
+        setTimeout(() => {
+            setFlyingChips(prev => prev.filter(id => id !== chipId));
+        }, 800);
+
+        sendAction('TIP_DEALER');
+        setDealerMessage("Thank you! Good luck!");
+        setTimeout(() => setDealerMessage(null), 3000);
+    };
+
+    // Profile Viewing Logic
+    const handleAvatarClick = async (player) => {
+        if (!player || player.is_bot) return; // Ignore bots
+
+        try {
+            // If checking self, just set straight away (or implement full fetch if needed)
+            // Ideally backend returns enough info in gameState, but let's fetch full profile
+            const res = await authFetch(`/api/users/${player.user_id}`);
+            if (res.ok) {
+                setViewedUser(await res.json());
+            } else {
+                // Fallback if fetch fails or user not found
+                setViewedUser({
+                    name: player.name,
+                    avatar_url: player.avatar_url,
+                    id: player.user_id,
+                    stats: { wins: 0, games_played: 0 } // Placeholder
+                });
+            }
+        } catch (e) {
+            console.error('Failed to fetch profile', e);
+        }
+    };
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showBuyIn, setShowBuyIn] = useState(false);
     const [buyInAmount, setBuyInAmount] = useState(1000);
@@ -31,7 +103,6 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
     const messagesEndRef = useRef(null);
     const [raiseAnims, setRaiseAnims] = useState({});
     const [clownAnims, setClownAnims] = useState({});
-    const [dealerMessage, setDealerMessage] = useState(null);
     const prevSeatsRef = useRef({});
 
     // Detect Raises for Animation
@@ -738,11 +809,28 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                     80% { opacity: 1; transform: scale(1.1) translateY(-30px); }
                     100% { opacity: 0; transform: scale(1) translateY(-50px); }
                 }
+                @keyframes flyToDealer {
+                    0% { bottom: 5%; opacity: 1; transform: scale(1) translateX(-50%); }
+                    100% { bottom: 85%; opacity: 0; transform: scale(0.5) translateX(-50%); }
+                }
                 .winning-chips {
                     animation: chipWin 1.5s ease-out forwards;
                 }
                 .raise-anim {
                     animation: raisePop 2s ease-out forwards;
+                }
+                .flying-chip {
+                    position: absolute;
+                    left: 50%;
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle at 30% 30%, #fbbf24, #d97706);
+                    border: 2px dashed #fff;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                    z-index: 100;
+                    animation: flyToDealer 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    pointer-events: none;
                 }
             `}</style>
             {/* Top Bar */}
@@ -808,14 +896,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                 <div className={`w-80 ${isChatExpanded ? 'max-h-[60vh]' : 'max-h-24'} overflow-y-auto font-mono text-[10px] text-gray-400 bg-black/80 p-3 rounded-xl border border-white/10 shadow-2xl flex flex-col-reverse backdrop-blur-md transition-all duration-300`}>
                     <div className="flex justify-between items-center mb-1 border-b border-white/5 pb-1">
                         <span className="text-[9px] uppercase font-bold text-yellow-500/80">
-                            {isChatExpanded ? 'Full Game Log' : 'Game Log (Click to expand)'}
+                            {isChatExpanded ? 'Live Chat' : 'Chat'}
                         </span>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); setIsChatPinned(!isChatPinned); }}
-                            className={`text-[9px] px-2 py-0.5 rounded transition-colors ${isChatPinned ? 'bg-yellow-500 text-black font-bold' : 'bg-white/10 text-gray-400'}`}
-                        >
-                            {isChatPinned ? 'Pinned' : 'Pin'}
-                        </button>
                     </div>
                     {gameState.logs && gameState.logs.slice().reverse().map((log, i) => (
                         <div key={i} className="mb-0.5 break-words transition-opacity duration-1000" style={{ opacity: isChatExpanded ? 1 : Math.max(0.3, 1 - (i * 0.15)) }}>
@@ -825,6 +907,17 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                             </span>
                         </div>
                     ))}
+
+                    {/* Chat Input */}
+                    <form onSubmit={handleSendChat} className="mt-2 flex gap-1 pointer-events-auto" onClick={e => e.stopPropagation()}>
+                        <input
+                            value={chatMessage}
+                            onChange={e => setChatMessage(e.target.value)}
+                            placeholder="Type a message..."
+                            className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1 text-[10px] text-white focus:border-yellow-500 outline-none"
+                        />
+                        <button type="submit" className="bg-yellow-500 text-black text-[10px] font-bold px-2 rounded hover:bg-yellow-400">→</button>
+                    </form>
                 </div>
             </div>
 
@@ -840,6 +933,13 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
 
             {/* Table Area */}
             <div className="flex-1 relative my-4 flex items-center justify-center perspective-1000">
+
+                {/* Flying Chips Layer */}
+                {flyingChips.map(id => (
+                    <div key={id} className="flying-chip flex items-center justify-center text-[8px] font-black text-white/50 border-white/50 border-dashed border-2">
+                        $
+                    </div>
+                ))}
 
                 {/* Dealer Avatar - Close Up */}
                 <div
@@ -871,7 +971,32 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                 )}
 
                 {/* Felt */}
-                <div className="w-[90%] aspect-[2/1] bg-[#1a472a] rounded-[200px] border-[16px] border-[#2d2a26] shadow-[inset_0_0_100px_rgba(0,0,0,0.6)] relative flex items-center justify-center z-0">
+                <div
+                    className="w-[90%] aspect-[2/1] bg-[#1a472a] rounded-[200px] border-[16px] border-[#2d2a26] shadow-[inset_0_0_100px_rgba(0,0,0,0.6)] relative flex items-center justify-center z-0 transition-transform duration-300 origin-center"
+                    style={{ transform: `scale(${scale})` }}
+                >
+
+                    {/* Dealer Tip Button - Dynamic Position based on scale? No, inside relative container */}
+                    {/* Dealer Tip Button */}
+                    <button
+                        onClick={handleTip}
+                        className="absolute top-[-5%] left-[58%] z-[50] w-8 h-8 rounded-full bg-black/60 border border-yellow-500/50 flex items-center justify-center group hover:scale-110 transition-transform"
+                        title="Tip Dealer ($10)"
+                    >
+                        <div className="w-6 h-6 rounded-full border-2 border-dashed border-yellow-500 flex items-center justify-center text-[8px] font-black text-yellow-500 bg-black group-hover:bg-yellow-500 group-hover:text-black transition-colors">
+                            $
+                        </div>
+                    </button>
+
+                    {/* Dealer Message Bubble */}
+                    {dealerMessage && (
+                        <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 z-[60] animate-in zoom-in fade-in slide-in-from-bottom-2 duration-300 pointer-events-none">
+                            <div className="bg-white text-black text-xs font-bold px-3 py-1.5 rounded-xl rounded-bl-none shadow-lg border-2 border-yellow-500 relative max-w-[150px] text-center leading-tight">
+                                {dealerMessage}
+                                <div className="absolute bottom-0 left-0 translate-y-full w-0 h-0 border-t-[8px] border-t-white border-r-[8px] border-r-transparent shadow-sm" />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Center Start Button */}
                     {gameState.state === 'WAITING' && (
@@ -985,8 +1110,12 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                                             {/* Avatar at bottom */}
                                             <div className={`relative transition-all duration-500 ${isActive ? 'scale-110' : 'scale-90 opacity-80'}`}>
                                                 <div
-                                                    onClick={() => { if (isMe) setShowStandUpConfirm(true); }}
-                                                    className={`w-16 h-16 rounded-full border-4 overflow-hidden z-20 bg-[#1a1a2e] ${isActive ? 'border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.6)]' : 'border-gray-600'} ${player.is_folded ? 'opacity-50 grayscale' : ''} relative ${isMe ? 'cursor-pointer hover:brightness-125 transition-all' : ''}`}>
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (isMe) setShowStandUpConfirm(true);
+                                                        else handleAvatarClick(player);
+                                                    }}
+                                                    className={`w-16 h-16 rounded-full border-4 overflow-hidden z-20 bg-[#1a1a2e] ${isActive ? 'border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.6)]' : 'border-gray-600'} ${player.is_folded ? 'opacity-50 grayscale' : ''} relative cursor-pointer hover:brightness-125 transition-all`}>
                                                     {player.avatar_url && player.avatar_url.length > 2 ? (
                                                         <img src={player.avatar_url} className="w-full h-full object-cover" alt={player.name} onError={(e) => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}` }} />
                                                     ) : (
@@ -1351,6 +1480,61 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance }) =>
                 )}
             </div>
 
+            {/* Profile Modal */}
+            {viewedUser && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setViewedUser(null)}>
+                    <div className="glass-card max-w-sm w-full p-6 animate-in fade-in zoom-in duration-300 relative bg-[#1a1a2e] border border-white/10 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setViewedUser(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
+
+                        <div className="flex flex-col items-center gap-4 mb-6">
+                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-500/50 bg-[#0c0c14] shadow-2xl">
+                                <img
+                                    src={viewedUser.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewedUser.name}`}
+                                    className="w-full h-full object-cover"
+                                    alt={viewedUser.name}
+                                    onError={(e) => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewedUser.name}` }}
+                                />
+                            </div>
+                            <div className="text-center">
+                                <h3 className="text-2xl font-bold font-display text-white">{viewedUser.name}</h3>
+                                {viewedUser.friend_code && <div className="text-xs font-mono text-gray-500 tracking-widest uppercase">#{viewedUser.friend_code}</div>}
+                            </div>
+                        </div>
+
+                        {/* Add Friend Button */}
+                        {gameState.me?.user_id !== viewedUser.id && (
+                            <button
+                                onClick={() => {
+                                    authFetch('/api/friends/request', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ to_user_id: viewedUser.id })
+                                    }).then(res => {
+                                        if (res.ok) alert('Заявка отправлена!');
+                                        else alert('Ошибка');
+                                    });
+                                }}
+                                className="btn-primary w-full py-3 flex items-center justify-center gap-2 font-bold mb-6"
+                            >
+                                <UserPlus size={18} /> Добавить в друзья
+                            </button>
+                        )}
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
+                                <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Победы</div>
+                                <div className="text-2xl font-mono font-bold text-yellow-500">{viewedUser.stats?.wins || 0}</div>
+                            </div>
+                            <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
+                                <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Игры</div>
+                                <div className="text-2xl font-mono font-bold text-blue-500">{viewedUser.stats?.games_played || 0}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Error Toast */}
             {gameError && (
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top duration-300 pointer-events-none">
@@ -1435,6 +1619,7 @@ const Poker = () => {
                     balance={userBalance}
                     refreshBalance={fetchInfo}
                     onLeave={handleLeave}
+                    authFetch={authFetch}
                 />
             </div>
         );
