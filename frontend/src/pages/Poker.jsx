@@ -1301,7 +1301,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                                         Sit Here
                                     </div>
                                 )}
-                                {player.chips_annex && <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[8px] bg-red-500 text-white px-1 rounded">-{player.chips_annex}</div>}
+                                {player?.chips_annex && <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[8px] bg-red-500 text-white px-1 rounded">-{player.chips_annex}</div>}
                             </div>
                         );
                     })}
