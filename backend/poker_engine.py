@@ -444,16 +444,17 @@ class PokerTable:
             self.add_log(f"{player.name} tipped the dealer $10.")
             return {"success": True, "game_state": self.to_dict()}
             
-        elif action == "SEND_CLOWN":
-            target_seat = amount # data.get('amount') used for target_seat payload
+        elif action == "SEND_REACTION":
+            target_seat = amount
+            emoji = kwargs.get('emoji', '🤡')
             if target_seat not in self.seats:
                  return {"error": "Invalid target"}
             
-            # Broadcast the clown event
             return {
                 "success": True, 
-                "game_state": self.to_dict(), # Update state to be safe
-                "type": "CLOWN_ANIMATION",
+                "game_state": self.to_dict(),
+                "type": "REACTION_ANIMATION",
+                "emoji": emoji,
                 "from_seat": player.seat,
                 "to_seat": target_seat
             }

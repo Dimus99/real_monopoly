@@ -387,16 +387,17 @@ async def websocket_poker(
                 resp = table.handle_action(user.id, action)
                 should_broadcast = True
 
-            elif action == "SEND_CLOWN":
-                # We use amount for seat here
-                target_seat = data.get("amount") # Or data.get("target_seat") but using amount to be consistent with engine signature
-                resp = table.handle_action(user.id, action, amount=int(target_seat))
+            elif action == "SEND_REACTION":
+                target_seat = data.get("amount")
+                emoji = data.get("emoji", "🤡")
+                # We need to pass emoji as kwarg
+                resp = table.handle_action(user.id, action, amount=int(target_seat), emoji=emoji)
                 if resp.get("success"):
-                    # Broadcast the specific event
                     await manager.broadcast(poker_scope, {
-                        "type": "CLOWN_ANIMATION",
+                        "type": "REACTION_ANIMATION",
                         "from_seat": resp["from_seat"],
-                        "to_seat": resp["to_seat"] 
+                        "to_seat": resp["to_seat"],
+                        "emoji": emoji
                     })
                     should_broadcast = True
 

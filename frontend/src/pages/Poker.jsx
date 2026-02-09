@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play, Maximize2, Minimize2, Bot, Trash2, Coins, Lightbulb, LightbulbOff, UserPlus, UserCheck, X } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play, Maximize2, Minimize2, Bot, Trash2, Coins, Lightbulb, LightbulbOff, UserPlus, UserCheck, X, User } from 'lucide-react';
 
 const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, authFetch, friends = [] }) => {
     const [gameState, setGameState] = useState(null);
@@ -8,8 +8,9 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
     const [chatMessage, setChatMessage] = useState('');
     const [viewedUser, setViewedUser] = useState(null);
     const [flyingChips, setFlyingChips] = useState([]);
-    const [flyingClowns, setFlyingClowns] = useState([]);
-    const [activeClowns, setActiveClowns] = useState({}); // { seatId: timestamp }
+    const [flyingReactions, setFlyingReactions] = useState([]);
+    const [activeReactions, setActiveReactions] = useState({}); // { seatId: {emoji, timestamp} }
+    const [interactionMenuSeat, setInteractionMenuSeat] = useState(null);
     const [scale, setScale] = useState(1);
     const [dealerMessage, setDealerMessage] = useState(null);
     const [connected, setConnected] = useState(false);
@@ -63,18 +64,38 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
     };
 
     // Profile Viewing Logic
-    const handleAvatarClick = (player) => {
+    const handleAvatarClick = (seatIdx, player) => {
         if (!player) return;
-
-        // Find seat index for the player
-        let targetSeat = -1;
-        Object.entries(gameState.seats).forEach(([idx, p]) => {
-            if (p.user_id === player.user_id) targetSeat = idx;
-        });
-
-        if (targetSeat !== -1) {
-            sendAction('SEND_CLOWN', { amount: parseInt(targetSeat) });
+        if (interactionMenuSeat === seatIdx) {
+            setInteractionMenuSeat(null);
+        } else {
+            setInteractionMenuSeat(seatIdx);
         }
+    };
+
+    const handleOpenProfile = async (player) => {
+        if (!player || player.is_bot) return;
+        setInteractionMenuSeat(null);
+        try {
+            const res = await authFetch(`/api/users/${player.user_id}`);
+            if (res.ok) {
+                setViewedUser(await res.json());
+            } else {
+                setViewedUser({
+                    name: player.name,
+                    avatar_url: player.avatar_url,
+                    id: player.user_id,
+                    stats: { wins: 0, games_played: 0 }
+                });
+            }
+        } catch (e) {
+            console.error('Failed to fetch profile', e);
+        }
+    };
+
+    const sendReaction = (seatIdx, emoji) => {
+        sendAction('SEND_REACTION', { amount: parseInt(seatIdx), emoji });
+        setInteractionMenuSeat(null);
     };
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showBuyIn, setShowBuyIn] = useState(false);
@@ -99,7 +120,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
     const [highlightEnabled, setHighlightEnabled] = useState(true); // New Toggle State
     const messagesEndRef = useRef(null);
     const [raiseAnims, setRaiseAnims] = useState({});
-    const [clownAnims, setClownAnims] = useState({});
+
     const prevSeatsRef = useRef({});
 
     // Detect Raises for Animation
@@ -428,28 +449,29 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                 });
                 setGameError(data.message);
                 setPreAction(null);
-            } else if (data.type === 'CLOWN_ANIMATION') {
+            } else if (data.type === 'REACTION_ANIMATION') {
                 const fromSeatIdx = data.from_seat;
                 const toSeatIdx = data.to_seat;
+                const emoji = data.emoji || '🤡';
 
-                // Add flying clown
-                const clownId = Date.now() + Math.random();
-                setFlyingClowns(prev => [...prev, { id: clownId, from: fromSeatIdx, to: toSeatIdx }]);
+                // Add flying reaction
+                const reactionId = Date.now() + Math.random();
+                setFlyingReactions(prev => [...prev, { id: reactionId, from: fromSeatIdx, to: toSeatIdx, emoji }]);
 
-                // Remove flying clown and add mask after animation
+                // Remove flying and add to avatar after animation
                 setTimeout(() => {
-                    setFlyingClowns(prev => prev.filter(c => c.id !== clownId));
-                    setActiveClowns(prev => ({ ...prev, [toSeatIdx]: Date.now() }));
+                    setFlyingReactions(prev => prev.filter(r => r.id !== reactionId));
+                    setActiveReactions(prev => ({ ...prev, [toSeatIdx]: { emoji, timestamp: Date.now() } }));
 
-                    // Remove mask after 3s
+                    // Remove from avatar after 3s
                     setTimeout(() => {
-                        setActiveClowns(prev => {
+                        setActiveReactions(prev => {
                             const next = { ...prev };
                             delete next[toSeatIdx];
                             return next;
                         });
                     }, 3000);
-                }, 1000); // 1s flight time
+                }, 1000);
             }
         };
 
@@ -962,8 +984,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                     </div>
                 ))}
 
-                {/* Flying Clowns Layer */}
-                {flyingClowns.map(clown => {
+                {/* Flying Reactions Layer */}
+                {flyingReactions.map(reaction => {
                     const getPos = (seatIdx) => {
                         const style = getSeatPosition(seatIdx);
                         let x = 50, y = 50;
@@ -974,20 +996,20 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                         return { x, y };
                     };
 
-                    const start = getPos(clown.from);
-                    const end = getPos(clown.to);
+                    const start = getPos(reaction.from);
+                    const end = getPos(reaction.to);
 
                     return (
                         <div
-                            key={clown.id}
-                            className="absolute z-[200] text-6xl pointer-events-none"
+                            key={reaction.id}
+                            className="absolute z-[200] text-5xl pointer-events-none"
                             style={{
                                 left: `${start.x}%`,
                                 top: `${start.y}%`,
                             }}
                         >
                             <style>{`
-                                @keyframes flyClown-${clown.id} {
+                                @keyframes flyEmoji-${reaction.id} {
                                     0% { left: ${start.x}%; top: ${start.y}%; transform: scale(0.5) rotate(0deg); opacity: 0; }
                                     10% { opacity: 1; }
                                     50% { transform: scale(2) rotate(180deg); }
@@ -996,9 +1018,9 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                             `}</style>
                             <div style={{
                                 position: 'absolute',
-                                animation: `flyClown-${clown.id} 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`
+                                animation: `flyEmoji-${reaction.id} 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`
                             }}>
-                                🤡
+                                {reaction.emoji}
                             </div>
                         </div>
                     );
@@ -1025,15 +1047,15 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                         <span className="text-sm font-black text-yellow-500 uppercase tracking-[0.4em] drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">The Dealer</span>
                     </div>
 
-                    {/* Dealer Message - Premium Speech Bubble (Raised Higher) */}
+                    {/* Dealer Message - Speech Bubble BELOW Avatar */}
                     {(gameState.dealer_message || dealerMessage) && (
-                        <div className="absolute bottom-[125%] left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-6 fade-in duration-500 w-max max-w-[300px] pointer-events-none">
-                            <div className="relative bg-white text-black px-8 py-5 rounded-[3rem] rounded-bl-none shadow-[0_25px_60px_rgba(0,0,0,0.7)] border-4 border-yellow-500">
+                        <div className="absolute top-[105%] left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-6 fade-in duration-500 w-max max-w-[300px] pointer-events-none">
+                            <div className="relative bg-white text-black px-8 py-5 rounded-[3rem] rounded-tl-none shadow-[0_25px_60px_rgba(0,0,0,0.7)] border-4 border-yellow-500">
                                 <div className="text-lg font-black uppercase tracking-tight leading-tight text-center italic">
                                     "{gameState.dealer_message || dealerMessage}"
                                 </div>
-                                {/* Speech Bubble Tail */}
-                                <div className="absolute -bottom-6 left-0 w-10 h-10 bg-white border-l-4 border-b-4 border-yellow-500 rounded-bl-[2rem] transform -rotate-12 translate-x-3"></div>
+                                {/* Speech Bubble Tail (Pointing Up) */}
+                                <div className="absolute -top-6 left-0 w-10 h-10 bg-white border-l-4 border-t-4 border-yellow-500 rounded-tl-[2rem] transform rotate-12 translate-x-3"></div>
                             </div>
                         </div>
                     )}
@@ -1179,18 +1201,57 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         if (isMe) setShowStandUpConfirm(true);
-                                                        else handleAvatarClick(player);
+                                                        else handleAvatarClick(seatIdx, player);
                                                     }}
                                                     className={`w-16 h-16 rounded-full border-4 overflow-hidden z-20 bg-[#1a1a2e] ${isActive ? 'border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.6)]' : 'border-gray-600'} ${player.is_folded ? 'opacity-50 grayscale' : ''} relative cursor-pointer hover:brightness-125 transition-all`}>
-                                                    {activeClowns[seatIdx] ? (
-                                                        <div className="w-full h-full flex items-center justify-center text-4xl bg-yellow-500/20 animate-bounce">🤡</div>
+                                                    {activeReactions[seatIdx] ? (
+                                                        <div className="w-full h-full flex items-center justify-center text-4xl bg-yellow-500/20 animate-bounce">
+                                                            {activeReactions[seatIdx].emoji}
+                                                        </div>
                                                     ) : player.avatar_url && player.avatar_url.length > 2 ? (
                                                         <img src={player.avatar_url} className="w-full h-full object-cover" alt={player.name} onError={(e) => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}` }} />
                                                     ) : (
                                                         <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`} className="w-full h-full object-cover" alt="avatar" />
                                                     )}
-                                                    {player.is_folded && !activeClowns[seatIdx] && <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-white text-[10px] font-bold">FOLDED</div>}
+                                                    {player.is_folded && !activeReactions[seatIdx] && <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-white text-[10px] font-bold">FOLDED</div>}
                                                 </div>
+
+                                                {/* INTERACTION MENU */}
+                                                {interactionMenuSeat === seatIdx && (
+                                                    <div
+                                                        className="absolute bottom-[110%] left-1/2 -translate-x-1/2 z-[100] bg-black/90 backdrop-blur-md rounded-2xl border border-yellow-500/50 shadow-[0_0_40px_rgba(0,0,0,0.8)] p-3 flex flex-col gap-3 min-w-[180px] animate-in zoom-in slide-in-from-bottom duration-200"
+                                                        onClick={e => e.stopPropagation()}
+                                                    >
+                                                        <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                                                            <span className="text-[10px] font-black text-yellow-500 uppercase">Взаимодействие</span>
+                                                            <button onClick={() => setInteractionMenuSeat(null)} className="text-gray-500 hover:text-white"><X size={14} /></button>
+                                                        </div>
+
+                                                        {!player.is_bot && (
+                                                            <button
+                                                                onClick={() => handleOpenProfile(player)}
+                                                                className="flex items-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 rounded-lg text-xs font-bold text-blue-100 transition-colors"
+                                                            >
+                                                                <User size={14} /> Профиль
+                                                            </button>
+                                                        )}
+
+                                                        <div className="flex flex-col gap-2">
+                                                            <span className="text-[10px] text-gray-500 font-bold uppercase pl-1">Эмоции</span>
+                                                            <div className="grid grid-cols-4 gap-1 bg-white/5 p-1 rounded-lg">
+                                                                {['🤡', '😂', '🔥', '💩', '❤️', '💀', '🚀', '🤬'].map(emoji => (
+                                                                    <button
+                                                                        key={emoji}
+                                                                        onClick={() => sendReaction(seatIdx, emoji)}
+                                                                        className="w-8 h-8 flex items-center justify-center text-lg hover:bg-white/10 rounded transition-colors hover:scale-125"
+                                                                    >
+                                                                        {emoji}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 {/* Dealer / Blind Buttons */}
                                                 <div className="absolute top-0 right-0 flex flex-col gap-1 transform translate-x-3 -translate-y-2">
@@ -1237,24 +1298,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                                                         el.style.opacity = '0.5';
                                                         setTimeout(() => { if (el) el.style.opacity = '1'; }, 200);
                                                     }
-                                                } else {
-                                                    // Clown Animation Trigger for Opponents
-                                                    console.log(`Clown triggered for seat ${seatIdx}`);
-                                                    setClownAnims(prev => ({ ...prev, [seatIdx]: true }));
-                                                    setTimeout(() => {
-                                                        setClownAnims(prev => ({ ...prev, [seatIdx]: false }));
-                                                    }, 3000);
                                                 }
                                             }}
                                             id={isMe ? 'my-cards-container' : undefined}
                                         >
 
-                                            {/* CLOWN EMOJI ANIMATION */}
-                                            {clownAnims[seatIdx] && (
-                                                <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 text-6xl animate-bounce z-[200] pointer-events-none drop-shadow-2xl">
-                                                    🤡
-                                                </div>
-                                            )}
 
                                             <div className={`flex justify-center filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.8)] scale-125 ${player.is_folded && isMe ? 'grayscale opacity-60' : ''}`}>
                                                 {/* Show cards if NOT folded OR if it's ME (even if folded) */}
