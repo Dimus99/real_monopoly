@@ -63,26 +63,17 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
     };
 
     // Profile Viewing Logic
-    const handleAvatarClick = async (player) => {
-        if (!player || player.is_bot) return; // Ignore bots
+    const handleAvatarClick = (player) => {
+        if (!player) return;
 
-        try {
-            // If checking self, just set straight away (or implement full fetch if needed)
-            // Ideally backend returns enough info in gameState, but let's fetch full profile
-            const res = await authFetch(`/api/users/${player.user_id}`);
-            if (res.ok) {
-                setViewedUser(await res.json());
-            } else {
-                // Fallback if fetch fails or user not found
-                setViewedUser({
-                    name: player.name,
-                    avatar_url: player.avatar_url,
-                    id: player.user_id,
-                    stats: { wins: 0, games_played: 0 } // Placeholder
-                });
-            }
-        } catch (e) {
-            console.error('Failed to fetch profile', e);
+        // Find seat index for the player
+        let targetSeat = -1;
+        Object.entries(gameState.seats).forEach(([idx, p]) => {
+            if (p.user_id === player.user_id) targetSeat = idx;
+        });
+
+        if (targetSeat !== -1) {
+            sendAction('SEND_CLOWN', { amount: parseInt(targetSeat) });
         }
     };
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -1019,7 +1010,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                 {/* Dealer Avatar - Close Up */}
                 <div
                     onClick={() => setDealerImageIdx(prev => (prev + 1) % dealerImages.length)}
-                    className="absolute top-[-2%] left-1/2 transform -translate-x-1/2 z-[5] flex flex-col items-center opacity-95 transition-all duration-1000 hover:scale-105 cursor-pointer active:scale-95"
+                    className="absolute top-[5%] left-1/2 transform -translate-x-1/2 z-[5] flex flex-col items-center opacity-95 transition-all duration-1000 hover:scale-105 cursor-pointer active:scale-95"
                 >
                     <div className="relative w-48 h-48 rounded-full border-4 border-yellow-500/40 bg-black overflow-hidden shadow-[0_0_80px_rgba(234,179,8,0.3)] group">
                         <img
@@ -1034,11 +1025,11 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                         <span className="text-sm font-black text-yellow-500 uppercase tracking-[0.4em] drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">The Dealer</span>
                     </div>
 
-                    {/* Dealer Message - Premium Speech Bubble */}
+                    {/* Dealer Message - Premium Speech Bubble (Raised Higher) */}
                     {(gameState.dealer_message || dealerMessage) && (
-                        <div className="absolute bottom-[110%] left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-4 fade-in zoom-in duration-500 w-max max-w-[280px] pointer-events-none">
-                            <div className="relative bg-white text-black px-8 py-4 rounded-[3rem] rounded-bl-none shadow-[0_20px_50px_rgba(0,0,0,0.6)] border-4 border-yellow-500 ripple-bg">
-                                <div className="text-base font-black uppercase tracking-tight leading-tight text-center italic drop-shadow-sm">
+                        <div className="absolute bottom-[125%] left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-6 fade-in duration-500 w-max max-w-[300px] pointer-events-none">
+                            <div className="relative bg-white text-black px-8 py-5 rounded-[3rem] rounded-bl-none shadow-[0_25px_60px_rgba(0,0,0,0.7)] border-4 border-yellow-500">
+                                <div className="text-lg font-black uppercase tracking-tight leading-tight text-center italic">
                                     "{gameState.dealer_message || dealerMessage}"
                                 </div>
                                 {/* Speech Bubble Tail */}
