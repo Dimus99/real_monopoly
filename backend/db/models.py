@@ -48,6 +48,7 @@ class CharacterType(str, enum.Enum):
     BIDEN = "Biden"
     XI = "Xi"
     NETANYAHU = "Netanyahu"
+    BINLADEN = "BinLaden"
 
 
 # ============== User Model ==============
@@ -72,7 +73,13 @@ class UserDB(Base):
     
     # Currency
     balance: Mapped[int] = mapped_column(BigInteger, default=1000)
+    last_bonus_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     
+    # VIP & Customization
+    is_vip: Mapped[bool] = mapped_column(Boolean, default=False)
+    vip_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    selected_token: Mapped[str] = mapped_column(String(50), default="avatar")
+
     # Relationships
     sent_friend_requests: Mapped[List["FriendRequestDB"]] = relationship(
         "FriendRequestDB",
@@ -101,10 +108,13 @@ class UserDB(Base):
                 "wins": self.wins,
                 "losses": self.losses,
                 "total_earnings": self.total_earnings,
-                "total_earnings": self.total_earnings,
                 "highest_net_worth": self.highest_net_worth,
             },
-            "balance": self.balance
+            "balance": self.balance,
+            "is_vip": self.is_vip,
+            "vip_expires_at": self.vip_expires_at.isoformat() if self.vip_expires_at else None,
+            "selected_token": self.selected_token,
+            "last_bonus_at": self.last_bonus_at.isoformat() if self.last_bonus_at else None
         }
 
 

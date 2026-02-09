@@ -1,15 +1,73 @@
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Body
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Literal
+from typing import Literal, Optional
+import httpx
+import os
 
 from database import db
 from db.base import get_db
 from db import service as db_service
 from models import User
-from auth import get_current_user
+from auth import get_current_user, BOT_TOKEN
 
 router = APIRouter(prefix="/api/shop", tags=["shop"])
+
+# Shop items configuration
+CURRENCY_PACKS = {
+    "small": {"amount": 10000, "stars": 9, "title": "10,000 Монет", "description": "Стартовый капитал"},
+    "large": {"amount": 100000, "stars": 39, "title": "100,000 Монет", "description": "Для серьезных игроков"},
+    "vip": {"amount": 0, "stars": 149, "title": "VIP Статус (30 дней)", "description": "Эксклюзивные аватары и бонусы"}
+}
+
+@router.post("/daily-bonus")
+async def get_daily_bonus(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    """Claim daily bonus of 5,000."""
+    result = await db_service.claim_daily_bonus(session, current_user.id, 5000)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error"))
+    return result
+
+@router.post("/create-stars-invoice")
+async def create_stars_invoice(
+    item_id: str = Body(..., embed=True),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a Telegram Stars invoice link for shop items."""
+    if not BOT_TOKEN:
+        # Dev mode mock
+        return {"success": True, "invoice_url": f"https://t.me/invoice_mock_{item_id}", "is_mock": True}
+    
+    item = CURRENCY_PACKS.get(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    # In Telegram Mini Apps, for digital goods we use createInvoiceLink
+    # https://core.telegram.org/bots/api#createinvoicelink
+    
+    payload = {
+        "title": item["title"],
+        "description": item["description"],
+        "payload": f"shop_{item_id}_{current_user.id}",
+        "provider_token": "", # Empty for XTR (Telegram Stars)
+        "currency": "XTR",
+        "prices": [{"label": item["title"], "amount": item["stars"]}]
+    }
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/createInvoiceLink",
+            json=payload
+        )
+        data = resp.json()
+        if not data.get("ok"):
+            print(f"DEBUG SHOP: Invoice error: {data}")
+            raise HTTPException(status_code=500, detail="Failed to create invoice")
+        
+        return {"success": True, "invoice_url": data["result"]}
 
 @router.post("/buy-currency")
 async def buy_currency(
@@ -19,49 +77,38 @@ async def buy_currency(
     session: AsyncSession = Depends(get_db)
 ):
     """
-    Buy in-game currency.
-    For now, this is a mock endpoint that trusts the client's 'cost_stars'.
-    In production, this should verify a Telegram Payment provider payload.
+    Deprecated/Dev: Manual buy. 
+    In production, this is handled via telegram webhook.
     """
-    # Simulate payment verification
-    # if not verify_telegram_payment(payment_id): raise ...
-    
-    # Add balance
-    new_balance = current_user.balance + amount
-    await db_service.update_user(session, current_user.id, {"balance": new_balance})
-    
-    return {"success": True, "new_balance": new_balance, "message": f"Added ${amount} to balance"}
+    if BOT_TOKEN:
+        raise HTTPException(status_code=400, detail="Use /create-stars-invoice in production")
+        
+    new_user = await db_service.add_user_balance(session, current_user.id, amount)
+    return {"success": True, "new_balance": new_user.balance, "message": f"Added ${amount} to balance (Dev Mode)"}
 
 @router.post("/buy-vip")
 async def buy_vip(
     days: int = Body(..., embed=True),
-    cost_stars: int = Body(..., embed=True),
+    cost_stars: Optional[int] = Body(None, embed=True),
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db)
 ):
-    """
-    Buy VIP status.
-    """
-    # Calculate expiration
+    """Deprecated/Dev: Manual VIP buy."""
+    if BOT_TOKEN:
+         raise HTTPException(status_code=400, detail="Use /create-stars-invoice in production")
+    
     now = datetime.utcnow()
-    # If already VIP and not expired, extend it
     current_expiry = current_user.vip_expires_at
     if current_user.is_vip and current_expiry and current_expiry > now:
         new_expiry = current_expiry + timedelta(days=days)
     else:
         new_expiry = now + timedelta(days=days)
-    
+
     await db_service.update_user(session, current_user.id, {
-        "is_vip": True, 
+        "is_vip": True,
         "vip_expires_at": new_expiry
     })
-    
-    return {
-        "success": True, 
-        "is_vip": True, 
-        "vip_expires_at": new_expiry.isoformat(),
-        "message": f"VIP activated for {days} days"
-    }
+    return {"success": True, "is_vip": True, "vip_expires_at": new_expiry.isoformat(), "message": "VIP status activated (Dev Mode)"}
 
 @router.post("/select-token")
 async def select_token(
@@ -74,10 +121,9 @@ async def select_token(
     VIP only for 'car' and 'billionaire'.
     """
     if token in ["car", "billionaire"] and not current_user.is_vip:
-        # Check if VIP is expired
+         # Check if VIP is expired
         if not current_user.vip_expires_at or current_user.vip_expires_at < datetime.utcnow():
-             raise HTTPException(status_code=403, detail="VIP status required for this token")
+            raise HTTPException(status_code=403, detail="VIP status required for this token")
 
     await db_service.update_user(session, current_user.id, {"selected_token": token})
-    
     return {"success": True, "selected_token": token}

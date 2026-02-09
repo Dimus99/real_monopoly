@@ -89,6 +89,47 @@ async def increment_user_stats(session: AsyncSession, user_id: str, is_winner: b
     return user
 
 
+async def add_user_balance(session: AsyncSession, user_id: str, amount: int) -> Optional[UserDB]:
+    """Add funds to user balance."""
+    user = await get_user(session, user_id)
+    if user:
+        user.balance = (user.balance or 0) + amount
+        await session.commit()
+        await session.refresh(user)
+    return user
+
+
+async def claim_daily_bonus(session: AsyncSession, user_id: str, bonus_amount: int = 5000) -> dict:
+    """Claim daily bonus if available."""
+    user = await get_user(session, user_id)
+    if not user:
+        return {"success": False, "error": "User not found"}
+    
+    now = datetime.utcnow()
+    if user.last_bonus_at:
+        # Check if 24 hours passed
+        delta = now - user.last_bonus_at
+        if delta.total_seconds() < 24 * 3600:
+            remaining_seconds = int(24 * 3600 - delta.total_seconds())
+            return {
+                "success": False, 
+                "error": "Bonus already claimed", 
+                "remaining_seconds": remaining_seconds
+            }
+    
+    # Award bonus
+    user.balance = (user.balance or 0) + bonus_amount
+    user.last_bonus_at = now
+    await session.commit()
+    await session.refresh(user)
+    
+    return {
+        "success": True, 
+        "new_balance": user.balance, 
+        "message": f"Получено ${bonus_amount}!"
+    }
+
+
 # ============== Friend Request Operations ==============
 
 async def create_friend_request(session: AsyncSession, request_data: dict) -> FriendRequestDB:

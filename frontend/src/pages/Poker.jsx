@@ -12,6 +12,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
     const [flyingClowns, setFlyingClowns] = useState([]);
     const [activeClowns, setActiveClowns] = useState({}); // { seatId: timestamp }
     const [scale, setScale] = useState(1);
+    const [dealerMessage, setDealerMessage] = useState(null);
+    const [connected, setConnected] = useState(false);
 
     // Mobile Scale
     useEffect(() => {

@@ -849,90 +849,63 @@ const Lobby = () => {
                                     </div>
                                 )}
 
-                                <div className="glass-card p-6 mt-4">
-                                    {/* My Active Games Section */}
-                                    {myGames.length > 0 && (
-                                        <div className="mb-8 p-4 bg-purple-500/10 rounded-xl border border-purple-500/30">
-                                            <h3 className="text-xl font-bold flex items-center gap-2 mb-4 text-purple-300">
-                                                <Play size={20} /> Ваши активные игры
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                {myGames.map(game => (
-                                                    <div key={game.game_id} className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/50 p-4 rounded-xl flex justify-between items-center">
-                                                        <div>
-                                                            <div className="font-mono font-bold text-lg text-white">#{game.game_id.substring(0, 6)}</div>
-                                                            <div className="text-xs text-purple-200 mt-1">Ход: {game.turn} • {game.status}</div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-xl font-bold flex items-center gap-2"><Globe size={20} className="text-blue-400" /> Открытые лобби</h3>
+                                    <button onClick={fetchActiveGames} className="p-2 hover:bg-white/10 rounded-full"><RefreshCw size={16} /></button>
+                                </div>
+
+                                {activeGames.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-500">Нет активных публичных игр. Создайте свою!</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {activeGames.map(game => (
+                                            <div key={game.game_id} className="bg-white/5 border border-white/10 p-4 rounded-xl hover:bg-white/10 transition-all flex justify-between items-center group relative overflow-hidden">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex-shrink-0 flex items-center justify-center relative cursor-pointer hover:border-purple-500 transition-colors"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleAvatarClick({ name: game.host_name, avatar_url: game.host_avatar, id: game.host_id });
+                                                        }}>
+                                                        {game.host_avatar && (game.host_avatar.startsWith('http') || game.host_avatar.startsWith('/')) ? (
+                                                            <img src={game.host_avatar} className="w-full h-full object-cover" alt="Avatar" />
+                                                        ) : game.host_avatar ? (
+                                                            <span className="text-xl select-none">{game.host_avatar}</span>
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-white/20 text-xl select-none">👤</div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-mono font-bold text-lg text-purple-400 leading-tight">#{game.game_id.substring(0, 6)}</div>
+                                                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mb-1 truncate max-w-[120px]">
+                                                            Создатель: {game.host_name}
                                                         </div>
+                                                        <div className="text-[10px] text-gray-500">{game.map_type} • {game.player_count}/{game.max_players}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    {myGames.some(mg => mg.game_id === game.game_id) ? (
                                                         <button
-                                                            onClick={() => navigate(`/game/${game.game_id}/${game.player_id}`)}
-                                                            className="btn-sm btn-primary"
+                                                            onClick={() => {
+                                                                const mg = myGames.find(m => m.game_id === game.game_id);
+                                                                navigate(`/game/${mg.game_id}/${mg.player_id}`);
+                                                            }}
+                                                            className="btn-sm btn-purple opacity-0 group-hover:opacity-100 transition-opacity"
                                                         >
                                                             Продолжить
                                                         </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-xl font-bold flex items-center gap-2"><Globe size={20} className="text-blue-400" /> Открытые лобби</h3>
-                                        <button onClick={fetchActiveGames} className="p-2 hover:bg-white/10 rounded-full"><RefreshCw size={16} /></button>
-                                    </div>
-
-                                    {activeGames.length === 0 ? (
-                                        <div className="text-center py-8 text-gray-500">Нет активных публичных игр. Создайте свою!</div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {activeGames.map(game => (
-                                                <div key={game.game_id} className="bg-white/5 border border-white/10 p-4 rounded-xl hover:bg-white/10 transition-all flex justify-between items-center group relative overflow-hidden">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-black/40 flex-shrink-0 flex items-center justify-center relative cursor-pointer hover:border-purple-500 transition-colors"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleAvatarClick({ name: game.host_name, avatar_url: game.host_avatar, id: game.host_id });
-                                                            }}>
-                                                            {game.host_avatar && (game.host_avatar.startsWith('http') || game.host_avatar.startsWith('/')) ? (
-                                                                <img src={game.host_avatar} className="w-full h-full object-cover" alt="Avatar" />
-                                                            ) : game.host_avatar ? (
-                                                                <span className="text-xl select-none">{game.host_avatar}</span>
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center text-white/20 text-xl select-none">👤</div>
-                                                            )}
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-mono font-bold text-lg text-purple-400 leading-tight">#{game.game_id.substring(0, 6)}</div>
-                                                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mb-1 truncate max-w-[120px]">
-                                                                Создатель: {game.host_name}
-                                                            </div>
-                                                            <div className="text-[10px] text-gray-500">{game.map_type} • {game.player_count}/{game.max_players}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        {myGames.some(mg => mg.game_id === game.game_id) ? (
-                                                            <button
-                                                                onClick={() => {
-                                                                    const mg = myGames.find(m => m.game_id === game.game_id);
-                                                                    navigate(`/game/${mg.game_id}/${mg.player_id}`);
-                                                                }}
-                                                                className="btn-sm btn-purple opacity-0 group-hover:opacity-100 transition-opacity"
-                                                            >
-                                                                Продолжить
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => { setMode('join'); setGameIdInput(game.game_id); }}
-                                                                className="btn-sm btn-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                                                            >
-                                                                Войти
-                                                            </button>
-                                                        )}
-                                                    </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => { setMode('join'); setGameIdInput(game.game_id); }}
+                                                            className="btn-sm btn-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            Войти
+                                                        </button>
+                                                    )}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -1555,224 +1528,167 @@ const Lobby = () => {
 
                 {/* SHOP MODE */}
                 {mode === 'shop' && (
-                    <div className="max-w-md w-full mx-auto relative z-10">
+                    <div className="max-w-md w-full mx-auto relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="flex items-center gap-4 mb-6">
                             <button onClick={() => setMode('menu')} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white transition-colors">
-                                <Users size={20} className="transform rotate-180" /> {/* Back Icon placeholder */}
+                                <Home size={20} />
                             </button>
                             <h2 className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
                                 Магазин
                             </h2>
                         </div>
 
-                        <div className="space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar pr-2 pb-20">
+                        <div className="space-y-6 overflow-y-auto max-h-[75vh] custom-scrollbar pr-2 pb-20">
+
+                            {/* Daily Bonus Section */}
+                            <div className="bg-gradient-to-r from-green-900/40 to-emerald-900/40 border border-green-500/30 rounded-2xl p-5 relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-green-500/5 group-hover:bg-green-500/10 transition-colors" />
+                                <div className="flex justify-between items-center relative z-10">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                            <span className="text-green-400">🎁</span> Ежедневный бонус
+                                        </h3>
+                                        <p className="text-xs text-gray-300">Забирай $5,000 каждые 24 часа!</p>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            authFetch('/api/shop/daily-bonus', { method: 'POST' })
+                                                .then(r => r.json())
+                                                .then(data => {
+                                                    if (data.success) {
+                                                        alert(data.message);
+                                                        setUser({ ...user, balance: data.new_balance });
+                                                    } else {
+                                                        if (data.remaining_seconds) {
+                                                            const hours = Math.floor(data.remaining_seconds / 3600);
+                                                            const minutes = Math.floor((data.remaining_seconds % 3600) / 60);
+                                                            alert(`Бонус еще не готов! Попробуйте через ${hours}ч ${minutes}м`);
+                                                        } else {
+                                                            alert(data.detail || data.error);
+                                                        }
+                                                    }
+                                                });
+                                        }}
+                                        className="btn-primary bg-green-600 hover:bg-green-500 shadow-lg shadow-green-600/20 py-2 px-6 font-bold"
+                                    >
+                                        ЗАБРАТЬ
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Currency Section */}
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                                    <span className="text-yellow-400">$</span> Валюта
-                                </h3>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                        <span className="text-yellow-400">$</span> Монеты
+                                    </h3>
+                                    <div className="text-xs text-gray-400">Оплата Telegram Stars</div>
+                                </div>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={() => {
-                                            if (window.confirm('Купить 10,000 за 9 Stars?')) {
-                                                authFetch('/api/shop/buy-currency', { method: 'POST', body: JSON.stringify({ amount: 10000, cost_stars: 9 }) })
-                                                    .then(r => r.json()).then(d => {
-                                                        if (d.success) { alert(d.message); if (user) setUser({ ...user, balance: d.new_balance }); }
-                                                    });
-                                            }
-                                        }}
-                                        className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-yellow-500/50 transition-all text-center group"
-                                    >
-                                        <div className="text-yellow-400 font-bold text-lg mb-1 group-hover:scale-110 transition-transform">$10,000</div>
-                                        <div className="text-xs text-gray-400">9 ⭐️</div>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (window.confirm('Купить 100,000 за 39 Stars?')) {
-                                                authFetch('/api/shop/buy-currency', { method: 'POST', body: JSON.stringify({ amount: 100000, cost_stars: 39 }) })
-                                                    .then(r => r.json()).then(d => {
-                                                        if (d.success) { alert(d.message); if (user) setUser({ ...user, balance: d.new_balance }); }
-                                                    });
-                                            }
-                                        }}
-                                        className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-yellow-500/50 transition-all text-center group relative overflow-hidden"
-                                    >
-                                        <div className="absolute inset-0 bg-yellow-500/10 blur-xl"></div>
-                                        <div className="text-yellow-400 font-bold text-lg mb-1 group-hover:scale-110 transition-transform relative z-10">$100,000</div>
-                                        <div className="text-xs text-gray-400 relative z-10">39 ⭐️</div>
-                                        <div className="absolute top-0 right-0 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg">HIT</div>
-                                    </button>
+                                    {[
+                                        { id: 'small', amount: '$10,000', stars: 9, label: '9 ⭐️' },
+                                        { id: 'large', amount: '$100,000', stars: 39, label: '39 ⭐️', badge: 'HIT' }
+                                    ].map(pack => (
+                                        <button
+                                            key={pack.id}
+                                            onClick={() => {
+                                                authFetch('/api/shop/create-stars-invoice', {
+                                                    method: 'POST',
+                                                    body: JSON.stringify({ item_id: pack.id })
+                                                }).then(r => r.json()).then(d => {
+                                                    if (d.success) {
+                                                        if (window.Telegram?.WebApp?.openInvoice) {
+                                                            window.Telegram.WebApp.openInvoice(d.invoice_url, (status) => {
+                                                                if (status === 'paid') alert('Покупка завершена!');
+                                                            });
+                                                        } else {
+                                                            window.open(d.invoice_url, '_blank');
+                                                        }
+                                                    } else {
+                                                        alert('Ошибка при создании счета');
+                                                    }
+                                                });
+                                            }}
+                                            className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-yellow-500/50 transition-all text-center group relative overflow-hidden"
+                                        >
+                                            {pack.id === 'large' && <div className="absolute inset-0 bg-yellow-500/5 blur-xl"></div>}
+                                            <div className="text-yellow-400 font-bold text-lg mb-1 group-hover:scale-110 transition-transform relative z-10">{pack.amount}</div>
+                                            <div className="text-xs text-gray-400 relative z-10">{pack.label}</div>
+                                            {pack.badge && <div className="absolute top-0 right-0 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg animate-pulse">{pack.badge}</div>}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 
                             {/* VIP Section */}
-                            <div className="bg-gradient-to-br from-purple-900/40 to-blue-900/40 border border-purple-500/30 rounded-2xl p-5 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-3 opacity-20"><CreditCard size={80} className="text-purple-400" /></div>
+                            <div className="bg-gradient-to-br from-purple-900/40 to-blue-900/40 border border-purple-500/30 rounded-2xl p-5 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><CreditCard size={100} className="text-purple-400" /></div>
                                 <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2 relative z-10">
-                                    <span className="text-purple-400">💎</span> VIP Статус
+                                    <span className="text-purple-400">💎</span> VIP Статус (30 дней)
                                 </h3>
-                                <div className="text-xs text-gray-300 mb-4 relative z-10">
-                                    <ul className="list-disc list-inside space-y-1">
-                                        <li>Золотой статус "VIP" около ника</li>
-                                        <li>Уникальные фишки (Машинка, Миллиардер)</li>
-                                        <li>Доступ к VIP столам (в разработке)</li>
+                                <div className="text-xs text-gray-300 mb-6 relative z-10">
+                                    <ul className="space-y-2">
+                                        <li className="flex items-center gap-2">✅ <span className="font-bold text-yellow-400">VIP</span> плашка в профиле</li>
+                                        <li className="flex items-center gap-2">✅ Уникальные фишки (Машинка, Магнат)</li>
+                                        <li className="flex items-center gap-2">✅ Удвоенные бонусы (в разработке)</li>
+                                        <li className="flex items-center gap-2">✅ Приоритетный вход в лобби</li>
                                     </ul>
                                 </div>
-                                <div className="space-y-2 relative z-10">
-                                    <button
-                                        onClick={() => {
-                                            if (window.confirm('VIP на 1 день за 9 Stars?')) {
-                                                authFetch('/api/shop/buy-vip', { method: 'POST', body: JSON.stringify({ days: 1, cost_stars: 9 }) })
-                                                    .then(r => r.json()).then(d => { if (d.success) alert(d.message); });
-                                            }
-                                        }}
-                                        className="w-full flex items-center justify-between p-3 bg-black/40 rounded-xl border border-white/10 hover:border-purple-500/50 transition-all"
-                                    >
-                                        <span className="font-bold text-white">1 День</span>
-                                        <span className="text-sm text-purple-300 font-mono">9 ⭐️</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (window.confirm('VIP на 7 дней за 30 Stars?')) {
-                                                authFetch('/api/shop/buy-vip', { method: 'POST', body: JSON.stringify({ days: 7, cost_stars: 30 }) })
-                                                    .then(r => r.json()).then(d => { if (d.success) alert(d.message); });
-                                            }
-                                        }}
-                                        className="w-full flex items-center justify-between p-3 bg-black/40 rounded-xl border border-purple-500/30 hover:border-purple-500 hover:bg-purple-900/20 transition-all"
-                                    >
-                                        <span className="font-bold text-white">7 Дней</span>
-                                        <span className="text-sm text-purple-300 font-mono">30 ⭐️</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (window.confirm('VIP на 30 дней за 89 Stars?')) {
-                                                authFetch('/api/shop/buy-vip', { method: 'POST', body: JSON.stringify({ days: 30, cost_stars: 89 }) })
-                                                    .then(r => r.json()).then(d => { if (d.success) alert(d.message); });
-                                            }
-                                        }}
-                                        className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-yellow-600/20 to-purple-600/20 rounded-xl border border-yellow-500/30 hover:border-yellow-400 transition-all"
-                                    >
-                                        <span className="font-bold text-white">30 Дней</span>
-                                        <span className="text-sm text-yellow-400 font-mono">89 ⭐️</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* SHOP MODE */}
-                {mode === 'shop' && (
-                    <div className="glass-card max-w-md w-full mx-auto relative z-10 p-6 animate-in fade-in zoom-in duration-300">
-                        <div className="flex items-center gap-4 mb-6">
-                            <button onClick={() => setMode('menu')} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white transition-colors">
-                                <Users size={20} className="transform rotate-180" /> {/* Back Icon placeholder */}
-                            </button>
-                            <h2 className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
-                                Магазин
-                            </h2>
-                        </div>
-
-                        <div className="space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar pr-2 pb-20">
-                            {/* Currency Section */}
-                            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                                    <span className="text-yellow-400">$</span> Валюта
-                                </h3>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={() => {
-                                            if (window.confirm('Купить 10,000 за 9 Stars?')) {
-                                                authFetch('/api/shop/buy-currency', { method: 'POST', body: JSON.stringify({ amount: 10000, cost_stars: 9 }) })
-                                                    .then(r => r.json()).then(d => {
-                                                        if (d.success) { alert(d.message); if (user) setUser({ ...user, balance: d.new_balance }); }
+                                <button
+                                    onClick={() => {
+                                        authFetch('/api/shop/create-stars-invoice', {
+                                            method: 'POST',
+                                            body: JSON.stringify({ item_id: 'vip' })
+                                        }).then(r => r.json()).then(d => {
+                                            if (d.success) {
+                                                if (window.Telegram?.WebApp?.openInvoice) {
+                                                    window.Telegram.WebApp.openInvoice(d.invoice_url, (status) => {
+                                                        if (status === 'paid') alert('VIP статус активирован!');
                                                     });
+                                                } else {
+                                                    window.open(d.invoice_url, '_blank');
+                                                }
                                             }
-                                        }}
-                                        className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-yellow-500/50 transition-all text-center group"
-                                    >
-                                        <div className="text-yellow-400 font-bold text-lg mb-1 group-hover:scale-110 transition-transform">$10,000</div>
-                                        <div className="text-xs text-gray-400">9 ⭐️</div>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (window.confirm('Купить 100,000 за 39 Stars?')) {
-                                                authFetch('/api/shop/buy-currency', { method: 'POST', body: JSON.stringify({ amount: 100000, cost_stars: 39 }) })
-                                                    .then(r => r.json()).then(d => {
-                                                        if (d.success) { alert(d.message); if (user) setUser({ ...user, balance: d.new_balance }); }
-                                                    });
-                                            }
-                                        }}
-                                        className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-yellow-500/50 transition-all text-center group relative overflow-hidden"
-                                    >
-                                        <div className="absolute inset-0 bg-yellow-500/10 blur-xl"></div>
-                                        <div className="text-yellow-400 font-bold text-lg mb-1 group-hover:scale-110 transition-transform relative z-10">$100,000</div>
-                                        <div className="text-xs text-gray-400 relative z-10">39 ⭐️</div>
-                                        <div className="absolute top-0 right-0 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg">HIT</div>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* VIP Section */}
-                            <div className="bg-gradient-to-br from-purple-900/40 to-blue-900/40 border border-purple-500/30 rounded-2xl p-5 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-3 opacity-20"><CreditCard size={80} className="text-purple-400" /></div>
-                                <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2 relative z-10">
-                                    <span className="text-purple-400">💎</span> VIP Статус
-                                </h3>
-                                <div className="text-xs text-gray-300 mb-4 relative z-10">
-                                    <ul className="list-disc list-inside space-y-1">
-                                        <li>Золотой статус "VIP" около ника</li>
-                                        <li>Уникальные фишки (Машинка, Миллиардер)</li>
-                                        <li>Доступ к VIP столам (в разработке)</li>
-                                    </ul>
-                                </div>
-                                <div className="space-y-2 relative z-10">
-                                    <button
-                                        onClick={() => {
-                                            if (window.confirm('VIP на 1 день за 9 Stars?')) {
-                                                authFetch('/api/shop/buy-vip', { method: 'POST', body: JSON.stringify({ days: 1, cost_stars: 9 }) })
-                                                    .then(r => r.json()).then(d => { if (d.success) alert(d.message); });
-                                            }
-                                        }}
-                                        className="w-full flex items-center justify-between p-3 bg-black/40 rounded-xl border border-white/10 hover:border-purple-500/50 transition-all"
-                                    >
-                                        <span className="font-bold text-white">1 День</span>
-                                        <span className="text-sm text-purple-300 font-mono">9 ⭐️</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (window.confirm('VIP на 7 дней за 30 Stars?')) {
-                                                authFetch('/api/shop/buy-vip', { method: 'POST', body: JSON.stringify({ days: 7, cost_stars: 30 }) })
-                                                    .then(r => r.json()).then(d => { if (d.success) alert(d.message); });
-                                            }
-                                        }}
-                                        className="w-full flex items-center justify-between p-3 bg-black/40 rounded-xl border border-purple-500/30 hover:border-purple-500 hover:bg-purple-900/20 transition-all"
-                                    >
-                                        <span className="font-bold text-white">7 Дней</span>
-                                        <span className="text-sm text-purple-300 font-mono">30 ⭐️</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (window.confirm('VIP на 30 дней за 89 Stars?')) {
-                                                authFetch('/api/shop/buy-vip', { method: 'POST', body: JSON.stringify({ days: 30, cost_stars: 89 }) })
-                                                    .then(r => r.json()).then(d => { if (d.success) alert(d.message); });
-                                            }
-                                        }}
-                                        className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-yellow-600/20 to-purple-600/20 rounded-xl border border-yellow-500/30 hover:border-yellow-400 transition-all"
-                                    >
-                                        <span className="font-bold text-white">30 Дней</span>
-                                        <span className="text-sm text-yellow-400 font-mono">89 ⭐️</span>
-                                    </button>
-                                </div>
+                                        });
+                                    }}
+                                    className="w-full btn-primary bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 shadow-xl shadow-purple-600/20 py-4 font-black uppercase tracking-widest relative z-10"
+                                >
+                                    КУПИТЬ ЗА 149 ⭐️
+                                </button>
                             </div>
                         </div>
                     </div>
                 )}
             </div>
-        </div >
+
+            {/* Mobile Bottom Navigation */}
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0c0c14]/90 backdrop-blur-lg border-t border-white/10 flex justify-around p-2 z-[60] pb-6">
+                <button
+                    onClick={() => { setMode('menu'); setMobileTab('menu'); }}
+                    className={`flex flex-col items-center p-2 rounded-xl transition-all ${mode === 'menu' && mobileTab === 'menu' ? 'text-purple-400 bg-purple-500/10' : 'text-gray-500'}`}
+                >
+                    <Home size={20} />
+                    <span className="text-[10px] mt-1 font-bold">Главная</span>
+                </button>
+                <button
+                    onClick={() => { setMode('menu'); setMobileTab('friends'); }}
+                    className={`flex flex-col items-center p-2 rounded-xl transition-all ${mode === 'menu' && mobileTab === 'friends' ? 'text-purple-400 bg-purple-500/10' : 'text-gray-500'}`}
+                >
+                    <Users size={20} />
+                    <span className="text-[10px] mt-1 font-bold">Друзья</span>
+                </button>
+                <button
+                    onClick={() => setMode('profile')}
+                    className={`flex flex-col items-center p-2 rounded-xl transition-all ${mode === 'profile' ? 'text-purple-400 bg-purple-500/10' : 'text-gray-500'}`}
+                >
+                    <div className="w-5 h-5 rounded-full bg-gray-700 overflow-hidden flex items-center justify-center border border-white/10">
+                        {user.avatar_url && user.avatar_url.length < 5 ? <span>{user.avatar_url}</span> : <img src={user.avatar_url} className="w-full h-full object-cover" />}
+                    </div>
+                    <span className="text-[10px] mt-1 font-bold">Профиль</span>
+                </button>
+            </div>
+        </div>
     );
 };
-
-
 
 export default Lobby;

@@ -537,12 +537,65 @@ if os.path.exists(static_path):
 async def telegram_webhook(update: dict):
     """Handle incoming Telegram updates."""
     try:
+        # 1. Handle Pre-Checkout Query (Must answer within 10s)
+        if "pre_checkout_query" in update:
+            pq = update["pre_checkout_query"]
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    f"https://api.telegram.org/bot{os.getenv('BOT_TOKEN')}/answerPreCheckoutQuery",
+                    json={"pre_checkout_query_id": pq["id"], "ok": True}
+                )
+            return {"status": "ok"}
+
+        # 2. Handle Successful Payment
+        if "message" in update and "successful_payment" in update["message"]:
+            payment = update["message"]["successful_payment"]
+            payload = payment.get("invoice_payload", "")
+            
+            # Payload format: shop_{item_id}_{user_id}
+            if payload.startswith("shop_"):
+                parts = payload.split("_")
+                if len(parts) >= 3:
+                    item_id = parts[1]
+                    user_id = parts[2]
+                    
+                    async with async_session() as session:
+                        from routes.shop import CURRENCY_PACKS
+                        item = CURRENCY_PACKS.get(item_id)
+                        if item:
+                            if item_id == "vip":
+                                # Award VIP 30 days
+                                from datetime import timedelta, datetime
+                                user_db = await db_service.get_user(session, user_id)
+                                if user_db:
+                                    now = datetime.utcnow()
+                                    current_expiry = user_db.vip_expires_at
+                                    if user_db.is_vip and current_expiry and current_expiry > now:
+                                        new_expiry = current_expiry + timedelta(days=30)
+                                    else:
+                                        new_expiry = now + timedelta(days=30)
+                                    
+                                    await db_service.update_user(session, user_id, {
+                                        "is_vip": True,
+                                        "vip_expires_at": new_expiry
+                                    })
+                                    print(f"💰 SHOP: User {user_id} purchased VIP until {new_expiry}")
+                            else:
+                                # Award Currency
+                                amount = item.get("amount", 0)
+                                if amount > 0:
+                                    await db_service.add_user_balance(session, user_id, amount)
+                                    print(f"💰 SHOP: User {user_id} purchased {amount} coins")
+
+            return {"status": "ok"}
+
+        # 3. Handle Regular Messages (/start)
         if "message" in update:
             message = update["message"]
             text = message.get("text", "")
             chat_id = message.get("chat", {}).get("id")
             
-            if text.startswith("/start") and chat_id:
+            if text and text.startswith("/start") and chat_id:
                 # Send welcome message
                 import httpx
                 
@@ -554,7 +607,7 @@ async def telegram_webhook(update: dict):
                 if app_name:
                     web_app_url = f"https://t.me/{bot_username}/{app_name}"
                 else:
-                    web_app_url = f"https://t.me/{bot_username}"
+                    web_app_url = f"https://realmonopoly-production.up.railway.app" # Default
 
                 welcome_text = (
                     "👋 *Добро пожаловать в Монополию!*\n\n"
@@ -582,6 +635,8 @@ async def telegram_webhook(update: dict):
         return {"status": "ok"}
     except Exception as e:
         print(f"Webhook error: {e}")
+        import traceback
+        traceback.print_exc()
         return {"status": "error"}
 
 @app.get("/")
