@@ -432,6 +432,9 @@ class PokerTable:
             self.add_log(f"{player.name} raised to {total_bet}.")
             
         elif action == "TIP_DEALER":
+            if player.chips < 10:
+                return {"error": "Not enough chips to tip ($10)"}
+            player.chips -= 10
             phrases = [
                 "Thank you! Good luck!", "Much appreciated!", "Creating a connection...", 
                 "You're too kind!", "May the flop be with you!", "Karma points added!"
@@ -776,7 +779,6 @@ class PokerTable:
             "logs": self.logs,
             "turn_deadline": (self.turn_deadline.isoformat() + "Z") if self.turn_deadline else None,
             "limits": {"min": self.min_buy_in, "max": self.max_buy_in, "sb": self.small_blind, "bb": self.big_blind},
-            "winning_cards": [c.to_dict() for c in self.winning_cards],
             "winning_cards": [c.to_dict() for c in self.winning_cards],
             "winners_ids": self.winners_ids,
             "dealer_message": self.dealer_message

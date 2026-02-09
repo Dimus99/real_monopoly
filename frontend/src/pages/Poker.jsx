@@ -761,14 +761,14 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
         }
 
         const styles = {
-            0: { bottom: '0px', left: '50%', transform: 'translateX(-50%)' }, // ME (Bottom Edge)
-            1: { bottom: '5%', left: '12%' }, // Bottom Left
-            2: { top: '55%', left: '-35px', transform: 'translateY(-50%)' }, // Left
-            3: { top: '15%', left: '10%' }, // Top Left
-            4: { top: '-20px', left: '50%', transform: 'translateX(-50%)' }, // Dealer Spot
-            5: { top: '15%', right: '10%' }, // Top Right
-            6: { top: '55%', right: '-35px', transform: 'translateY(-50%)' }, // Right
-            7: { bottom: '5%', right: '12%' } // Bottom Right
+            0: { bottom: '-30px', left: '50%', transform: 'translateX(-50%)' }, // ME
+            1: { bottom: '3%', left: '4%' }, // Bottom Left
+            2: { top: '50%', left: '-60px', transform: 'translateY(-50%)' }, // Left
+            3: { top: '5%', left: '6%' }, // Top Left (Lifted)
+            4: { top: '-20px', left: '50%', transform: 'translateX(-50%)' }, // empty spot
+            5: { top: '5%', right: '6%' }, // Top Right (Lifted)
+            6: { top: '50%', right: '-60px', transform: 'translateY(-50%)' }, // Right
+            7: { bottom: '3%', right: '4%' } // Bottom Right
         };
 
         return styles[relativePos] || { display: 'none' };
@@ -921,21 +921,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                 onClick={() => setIsChatExpanded(!isChatExpanded)}
             >
                 <div className={`w-80 ${isChatExpanded ? 'max-h-[60vh]' : 'max-h-24'} overflow-y-auto font-mono text-[10px] text-gray-400 bg-black/80 p-3 rounded-xl border border-white/10 shadow-2xl flex flex-col-reverse backdrop-blur-md transition-all duration-300`}>
-                    <div className="flex justify-between items-center mb-1 border-b border-white/5 pb-1">
-                        <span className="text-[9px] uppercase font-bold text-yellow-500/80">
-                            {isChatExpanded ? 'Live Chat' : 'Chat'}
-                        </span>
-                    </div>
-                    {gameState.logs && gameState.logs.slice().reverse().map((log, i) => (
-                        <div key={i} className="mb-0.5 break-words transition-opacity duration-1000" style={{ opacity: isChatExpanded ? 1 : Math.max(0.3, 1 - (i * 0.15)) }}>
-                            <span className="text-gray-600">[{new Date(log.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]</span>
-                            <span className={log.msg.toLowerCase().includes('wins') ? "font-black text-yellow-500 drop-shadow-md text-sm" : "text-gray-300"}>
-                                {log.msg}
-                            </span>
-                        </div>
-                    ))}
-
-                    {/* Chat Input */}
+                    {/* Chat Input (Bottom visually) */}
                     <form onSubmit={handleSendChat} className="mt-2 flex gap-1 pointer-events-auto" onClick={e => e.stopPropagation()}>
                         <input
                             value={chatMessage}
@@ -945,6 +931,23 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                         />
                         <button type="submit" className="bg-yellow-500 text-black text-[10px] font-bold px-2 rounded hover:bg-yellow-400">→</button>
                     </form>
+
+                    {/* Logs (Middle visually) */}
+                    {gameState.logs && gameState.logs.slice().reverse().map((log, i) => (
+                        <div key={i} className="mb-0.5 break-words transition-opacity duration-1000" style={{ opacity: isChatExpanded ? 1 : Math.max(0.3, 1 - (i * 0.15)) }}>
+                            <span className="text-gray-600">[{new Date(log.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]</span>
+                            <span className={log.msg.toLowerCase().includes('wins') ? "font-black text-yellow-500 drop-shadow-md text-sm" : "text-gray-300"}>
+                                {log.msg}
+                            </span>
+                        </div>
+                    ))}
+
+                    {/* Header (Top visually) */}
+                    <div className="flex justify-between items-center mb-1 border-b border-white/5 pb-1">
+                        <span className="text-[9px] uppercase font-bold text-yellow-500/80">
+                            {isChatExpanded ? 'Live Chat' : 'Chat'}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -970,30 +973,13 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
 
                 {/* Flying Clowns Layer */}
                 {flyingClowns.map(clown => {
-                    // Logic to find coordinates would be complex without fixed positions or refs.
-                    // Easier approach: Use the known layout logic. 
-                    // Seat positions are relative to the center or defined by CSS classes.
-                    // However, connecting two DOM elements is hard in React without refs.
-                    // Alternative: Use the same getSeatPosition logic if available, or just static classes.
-                    // For now, let's assume we can use a simpler center-to-seat animation or just generic.
-                    // BETTER: We know the standard positions (index 0-8) 
-                    // We can employ a trick: render the clown at 'from' position and animate translate to 'to'.
-                    // But positions are calculated in `renderSeat`.
-                    // Let's use CSS variables or classes if possible.
-
-                    // Actually, let's just render them in a full-screen overlay and use calculated % positions used in renderSeat.
-                    // Seats 0-8 have specific styles.
-
                     const getPos = (seatIdx) => {
-                        // These match the renderSeat styles roughly. 
-                        // Note: This duplicates logic, ideally refactor, but for speed:
-                        const totalSeats = 9;
-                        const angle = (seatIdx * (360 / totalSeats)) + 90; // +90 to start bottom
-                        const rad = angle * (Math.PI / 180);
-                        const rx = 42; // 42% radius x
-                        const ry = 42; // 42% radius y
-                        const x = 50 + rx * Math.cos(rad);
-                        const y = 50 + ry * Math.sin(rad);
+                        const style = getSeatPosition(seatIdx);
+                        let x = 50, y = 50;
+                        if (style.left) x = parseFloat(style.left);
+                        if (style.right) x = 100 - parseFloat(style.right);
+                        if (style.top) y = parseFloat(style.top);
+                        if (style.bottom) y = 100 - parseFloat(style.bottom);
                         return { x, y };
                     };
 
@@ -1003,27 +989,23 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                     return (
                         <div
                             key={clown.id}
-                            className="absolute z-[100] text-3xl pointer-events-none transition-all duration-1000 ease-in-out"
+                            className="absolute z-[200] text-6xl pointer-events-none"
                             style={{
                                 left: `${start.x}%`,
                                 top: `${start.y}%`,
-                                '--dest-x': `${end.x - start.x}vw`, // Approximation? No, percentage based parent.
-                                // We need pixel or percentage delta. 
-                                // Best to use Animate Presence or just fixed transition.
-                                // Since we are in a scale-container, % works well.
-                                transform: `translate(0, 0)`,
                             }}
                         >
                             <style>{`
                                 @keyframes flyClown-${clown.id} {
-                                    0% { left: ${start.x}%; top: ${start.y}%; transform: scale(0.5); }
-                                    50% { transform: scale(1.5); }
-                                    100% { left: ${end.x}%; top: ${end.y}%; transform: scale(1); }
+                                    0% { left: ${start.x}%; top: ${start.y}%; transform: scale(0.5) rotate(0deg); opacity: 0; }
+                                    10% { opacity: 1; }
+                                    50% { transform: scale(2) rotate(180deg); }
+                                    100% { left: ${end.x}%; top: ${end.y}%; transform: scale(1.5) rotate(360deg); }
                                 }
                             `}</style>
                             <div style={{
                                 position: 'absolute',
-                                animation: `flyClown-${clown.id} 1s forwards`
+                                animation: `flyClown-${clown.id} 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`
                             }}>
                                 🤡
                             </div>
@@ -1042,7 +1024,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                     <div className="relative w-48 h-48 rounded-full border-4 border-yellow-500/40 bg-black overflow-hidden shadow-[0_0_80px_rgba(234,179,8,0.3)] group">
                         <img
                             src={dealerImages[dealerImageIdx]}
-                            className={`w-full h-full object-cover object-top transition-all duration-700 group-hover:scale-110 ${dealerImages[dealerImageIdx].includes('zhirinovsky') ? 'animate-aggressive-breathing' : ''}`}
+                            className={`w-full h-full object-cover object-top transition-all duration-700 group-hover:scale-110 ${dealerImages[dealerImageIdx] && dealerImages[dealerImageIdx].length > 0 && dealerImages[dealerImageIdx].includes('zhirinovsky') ? 'animate-aggressive-breathing' : ''}`}
                             alt="Dealer"
                             onError={(e) => { e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'; }}
                         />
@@ -1051,6 +1033,19 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                     <div className="bg-black/80 backdrop-blur-xl px-6 py-1.5 rounded-full border-2 border-yellow-500/50 shadow-2xl -mt-8 z-10 scale-110">
                         <span className="text-sm font-black text-yellow-500 uppercase tracking-[0.4em] drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">The Dealer</span>
                     </div>
+
+                    {/* Dealer Message - Premium Speech Bubble */}
+                    {(gameState.dealer_message || dealerMessage) && (
+                        <div className="absolute bottom-[110%] left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-4 fade-in zoom-in duration-500 w-max max-w-[280px] pointer-events-none">
+                            <div className="relative bg-white text-black px-8 py-4 rounded-[3rem] rounded-bl-none shadow-[0_20px_50px_rgba(0,0,0,0.6)] border-4 border-yellow-500 ripple-bg">
+                                <div className="text-base font-black uppercase tracking-tight leading-tight text-center italic drop-shadow-sm">
+                                    "{gameState.dealer_message || dealerMessage}"
+                                </div>
+                                {/* Speech Bubble Tail */}
+                                <div className="absolute -bottom-6 left-0 w-10 h-10 bg-white border-l-4 border-b-4 border-yellow-500 rounded-bl-[2rem] transform -rotate-12 translate-x-3"></div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
 
@@ -1077,15 +1072,6 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                         </div>
                     </button>
 
-                    {/* Dealer Message Bubble */}
-                    {gameState.dealer_message && (
-                        <div className="absolute top-[-25%] left-1/2 -translate-x-1/2 z-[60] animate-in zoom-in fade-in slide-in-from-bottom-2 duration-300 pointer-events-none w-max">
-                            <div className="bg-white text-black text-xs font-bold px-3 py-1.5 rounded-xl rounded-bl-none shadow-lg border-2 border-yellow-500 relative max-w-[150px] text-center leading-tight">
-                                {gameState.dealer_message}
-                                <div className="absolute bottom-0 left-0 translate-y-full w-0 h-0 border-t-[8px] border-t-white border-r-[8px] border-r-transparent shadow-sm" />
-                            </div>
-                        </div>
-                    )}
 
                     {/* Center Start Button */}
                     {gameState.state === 'WAITING' && (
@@ -1205,12 +1191,14 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                                                         else handleAvatarClick(player);
                                                     }}
                                                     className={`w-16 h-16 rounded-full border-4 overflow-hidden z-20 bg-[#1a1a2e] ${isActive ? 'border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.6)]' : 'border-gray-600'} ${player.is_folded ? 'opacity-50 grayscale' : ''} relative cursor-pointer hover:brightness-125 transition-all`}>
-                                                    {player.avatar_url && player.avatar_url.length > 2 ? (
+                                                    {activeClowns[seatIdx] ? (
+                                                        <div className="w-full h-full flex items-center justify-center text-4xl bg-yellow-500/20 animate-bounce">🤡</div>
+                                                    ) : player.avatar_url && player.avatar_url.length > 2 ? (
                                                         <img src={player.avatar_url} className="w-full h-full object-cover" alt={player.name} onError={(e) => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}` }} />
                                                     ) : (
                                                         <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${player.name}`} className="w-full h-full object-cover" alt="avatar" />
                                                     )}
-                                                    {player.is_folded && <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-white text-[10px] font-bold">FOLDED</div>}
+                                                    {player.is_folded && !activeClowns[seatIdx] && <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-white text-[10px] font-bold">FOLDED</div>}
                                                 </div>
 
                                                 {/* Dealer / Blind Buttons */}
@@ -1322,7 +1310,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                                         Sit Here
                                     </div>
                                 )}
-
+                                {player.chips_annex && <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[8px] bg-red-500 text-white px-1 rounded">-{player.chips_annex}</div>}
                             </div>
                         );
                     })}
@@ -1332,65 +1320,69 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
             {/* Modals and HUD */}
 
             {/* Stand Up Confirmation Modal */}
-            {showStandUpConfirm && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-                    <div className="glass-card max-w-sm w-full p-6 bg-[#1a1a2e] border border-red-500/30 text-center">
-                        <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500">
-                            <ArrowLeft className="text-red-500 transform rotate-90" size={32} />
-                        </div>
-                        <h3 className="text-xl font-bold mb-2 text-white">Stand Up?</h3>
-                        <p className="text-gray-400 text-sm mb-6">You will leave your seat and your chips will be returned to your wallet. You can continue watching as a spectator.</p>
+            {
+                showStandUpConfirm && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                        <div className="glass-card max-w-sm w-full p-6 bg-[#1a1a2e] border border-red-500/30 text-center">
+                            <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500">
+                                <ArrowLeft className="text-red-500 transform rotate-90" size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold mb-2 text-white">Stand Up?</h3>
+                            <p className="text-gray-400 text-sm mb-6">You will leave your seat and your chips will be returned to your wallet. You can continue watching as a spectator.</p>
 
-                        <div className="flex gap-4">
-                            <button onClick={() => setShowStandUpConfirm(false)} className="btn-ghost flex-1 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white">Cancel</button>
-                            <button
-                                onClick={() => {
-                                    sendAction('LEAVE');
-                                    setShowStandUpConfirm(false);
-                                }}
-                                className="btn-primary flex-1 py-2 rounded bg-red-600 hover:bg-red-500 text-white font-bold"
-                            >
-                                Stand Up
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Buy In Modal */}
-            {showBuyIn && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in zoom-in duration-300">
-                    <div className="glass-card max-w-sm w-full p-6 bg-[#1a1a2e] border border-white/10">
-                        <h3 className="text-2xl font-bold mb-4 text-white">Sit at Seat {selectedSeat}</h3>
-                        <p className="text-gray-400 text-sm mb-6">Choose how much to bring to the table.</p>
-
-                        <div className="mb-6">
-                            <label className="text-xs text-gray-500 uppercase font-bold block mb-2">Buy-In Amount</label>
-                            <input
-                                type="number"
-                                className="w-full bg-black/50 border border-white/10 rounded p-4 text-center text-3xl font-mono text-yellow-400 focus:outline-none focus:border-yellow-500 mb-2"
-                                value={buyInAmount}
-                                onChange={e => setBuyInAmount(parseInt(e.target.value) || 0)}
-                            />
-                            <div className="flex justify-between text-[10px] text-gray-500 uppercase font-bold">
-                                <span>Min: ${gameState.big_blind * 20}</span>
-                                <span>Balance: ${balance}</span>
+                            <div className="flex gap-4">
+                                <button onClick={() => setShowStandUpConfirm(false)} className="btn-ghost flex-1 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white">Cancel</button>
+                                <button
+                                    onClick={() => {
+                                        sendAction('LEAVE');
+                                        setShowStandUpConfirm(false);
+                                    }}
+                                    className="btn-primary flex-1 py-2 rounded bg-red-600 hover:bg-red-500 text-white font-bold"
+                                >
+                                    Stand Up
+                                </button>
                             </div>
                         </div>
+                    </div>
+                )
+            }
 
-                        <div className="flex gap-4">
-                            <button onClick={() => setShowBuyIn(false)} className="btn-ghost flex-1 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white">Cancel</button>
-                            <button
-                                onClick={handleBuyInConfirm}
-                                className="btn-primary flex-1 py-2 rounded bg-yellow-600 hover:bg-yellow-500 text-black font-bold disabled:opacity-50"
-                                disabled={buyInAmount < (gameState.big_blind * 20)}
-                            >
-                                Join Game
-                            </button>
+            {/* Buy In Modal */}
+            {
+                showBuyIn && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in zoom-in duration-300">
+                        <div className="glass-card max-w-sm w-full p-6 bg-[#1a1a2e] border border-white/10">
+                            <h3 className="text-2xl font-bold mb-4 text-white">Sit at Seat {selectedSeat}</h3>
+                            <p className="text-gray-400 text-sm mb-6">Choose how much to bring to the table.</p>
+
+                            <div className="mb-6">
+                                <label className="text-xs text-gray-500 uppercase font-bold block mb-2">Buy-In Amount</label>
+                                <input
+                                    type="number"
+                                    className="w-full bg-black/50 border border-white/10 rounded p-4 text-center text-3xl font-mono text-yellow-400 focus:outline-none focus:border-yellow-500 mb-2"
+                                    value={buyInAmount}
+                                    onChange={e => setBuyInAmount(parseInt(e.target.value) || 0)}
+                                />
+                                <div className="flex justify-between text-[10px] text-gray-500 uppercase font-bold">
+                                    <span>Min: ${gameState.big_blind * 20}</span>
+                                    <span>Balance: ${balance}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button onClick={() => setShowBuyIn(false)} className="btn-ghost flex-1 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white">Cancel</button>
+                                <button
+                                    onClick={handleBuyInConfirm}
+                                    className="btn-primary flex-1 py-2 rounded bg-yellow-600 hover:bg-yellow-500 text-black font-bold disabled:opacity-50"
+                                    disabled={buyInAmount < (gameState.big_blind * 20)}
+                                >
+                                    Join Game
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Action Controls (Fixed HUD - Bottom Right) */}
             <div className={`fixed bottom-4 right-4 z-[70] flex flex-col items-end gap-3 pointer-events-none transition-all duration-500 ${(['SHOWDOWN', 'WAITING'].includes(gameState.state)) ? 'opacity-0 translate-y-10 scale-95 pointer-events-none' : 'opacity-100 translate-y-0 scale-100'
@@ -1570,102 +1562,106 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
             </div>
 
             {/* Profile Modal */}
-            {viewedUser && (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setViewedUser(null)}>
-                    <div className="glass-card max-w-sm w-full p-6 animate-in fade-in zoom-in duration-300 relative bg-[#1a1a2e] border border-white/10 shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setViewedUser(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
+            {
+                viewedUser && (
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setViewedUser(null)}>
+                        <div className="glass-card max-w-sm w-full p-6 animate-in fade-in zoom-in duration-300 relative bg-[#1a1a2e] border border-white/10 shadow-2xl" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => setViewedUser(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
 
-                        <div className="flex flex-col items-center gap-4 mb-6">
-                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-500/50 bg-[#0c0c14] shadow-2xl">
-                                <img
-                                    src={viewedUser.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewedUser.name}`}
-                                    className="w-full h-full object-cover"
-                                    alt={viewedUser.name}
-                                    onError={(e) => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewedUser.name}` }}
-                                />
+                            <div className="flex flex-col items-center gap-4 mb-6">
+                                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-500/50 bg-[#0c0c14] shadow-2xl">
+                                    <img
+                                        src={viewedUser.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewedUser.name}`}
+                                        className="w-full h-full object-cover"
+                                        alt={viewedUser.name}
+                                        onError={(e) => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewedUser.name}` }}
+                                    />
+                                </div>
+                                <div className="text-center">
+                                    <h3 className="text-2xl font-bold font-display text-white">{viewedUser.name}</h3>
+                                    {viewedUser.friend_code && <div className="text-xs font-mono text-gray-500 tracking-widest uppercase">#{viewedUser.friend_code}</div>}
+                                </div>
                             </div>
-                            <div className="text-center">
-                                <h3 className="text-2xl font-bold font-display text-white">{viewedUser.name}</h3>
-                                {viewedUser.friend_code && <div className="text-xs font-mono text-gray-500 tracking-widest uppercase">#{viewedUser.friend_code}</div>}
-                            </div>
-                        </div>
 
-                        {/* Balance Display */}
-                        <div className="mb-6 flex justify-center">
-                            <div className="bg-black/40 px-4 py-2 rounded-lg border border-yellow-500/30 flex items-center gap-2">
-                                <span className="text-xs text-gray-400 uppercase">Баланс</span>
-                                <span className="font-mono font-bold text-xl text-yellow-400">${viewedUser.balance || 0}</span>
+                            {/* Balance Display */}
+                            <div className="mb-6 flex justify-center">
+                                <div className="bg-black/40 px-4 py-2 rounded-lg border border-yellow-500/30 flex items-center gap-2">
+                                    <span className="text-xs text-gray-400 uppercase">Баланс</span>
+                                    <span className="font-mono font-bold text-xl text-yellow-400">${viewedUser.balance || 0}</span>
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Clown Button - Only if seated and opponent is seated */}
-                        {gameState && gameState.seats &&
-                            gameState.seats[gameState.current_player_seat]?.user_id !== viewedUser.id && // not self
-                            Object.values(gameState.seats).some(s => s.user_id === viewedUser.id || s.user_id === viewedUser.user_id) && // target is seated
-                            Object.values(gameState.seats).some(s => s.user_id === gameState.me?.user_id) && // I am seated
-                            (
+                            {/* Clown Button - Only if seated and opponent is seated */}
+                            {gameState && gameState.seats &&
+                                gameState.seats[gameState.current_player_seat]?.user_id !== viewedUser.id && // not self
+                                Object.values(gameState.seats).some(s => s.user_id === viewedUser.id || s.user_id === viewedUser.user_id) && // target is seated
+                                Object.values(gameState.seats).some(s => s.user_id === gameState.me?.user_id) && // I am seated
+                                (
+                                    <button
+                                        onClick={() => {
+                                            // Find target seat
+                                            let targetSeat = -1;
+                                            Object.entries(gameState.seats).forEach(([s, p]) => {
+                                                if (p.user_id === viewedUser.id || p.user_id === viewedUser.user_id) targetSeat = s;
+                                            });
+                                            if (targetSeat !== -1) {
+                                                sendAction('SEND_CLOWN', { amount: parseInt(targetSeat) }); // Use amount for seat
+                                                setViewedUser(null);
+                                            }
+                                        }}
+                                        className="w-full py-3 bg-red-900/50 hover:bg-red-800 border border-red-500/30 rounded-xl flex items-center justify-center gap-2 font-bold mb-4 text-red-200"
+                                    >
+                                        <span className="text-2xl">🤡</span> Отправить клоуна
+                                    </button>
+                                )
+                            }
+
+                            {/* Add Friend Button */}
+                            {gameState.me?.user_id !== viewedUser.id && !friends.some(f => f.id === viewedUser.id || f.user_id === viewedUser.id) && (
                                 <button
                                     onClick={() => {
-                                        // Find target seat
-                                        let targetSeat = -1;
-                                        Object.entries(gameState.seats).forEach(([s, p]) => {
-                                            if (p.user_id === viewedUser.id || p.user_id === viewedUser.user_id) targetSeat = s;
+                                        authFetch('/api/friends/request', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ to_user_id: viewedUser.id })
+                                        }).then(res => {
+                                            if (res.ok) alert('Заявка отправлена!');
+                                            else alert('Ошибка');
                                         });
-                                        if (targetSeat !== -1) {
-                                            sendAction('SEND_CLOWN', { amount: parseInt(targetSeat) }); // Use amount for seat
-                                            setViewedUser(null);
-                                        }
                                     }}
-                                    className="w-full py-3 bg-red-900/50 hover:bg-red-800 border border-red-500/30 rounded-xl flex items-center justify-center gap-2 font-bold mb-4 text-red-200"
+                                    className="btn-primary w-full py-3 flex items-center justify-center gap-2 font-bold mb-6"
                                 >
-                                    <span className="text-2xl">🤡</span> Отправить клоуна
+                                    <UserPlus size={18} /> Добавить в друзья
                                 </button>
-                            )
-                        }
+                            )}
 
-                        {/* Add Friend Button */}
-                        {gameState.me?.user_id !== viewedUser.id && !friends.some(f => f.id === viewedUser.id || f.user_id === viewedUser.id) && (
-                            <button
-                                onClick={() => {
-                                    authFetch('/api/friends/request', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ to_user_id: viewedUser.id })
-                                    }).then(res => {
-                                        if (res.ok) alert('Заявка отправлена!');
-                                        else alert('Ошибка');
-                                    });
-                                }}
-                                className="btn-primary w-full py-3 flex items-center justify-center gap-2 font-bold mb-6"
-                            >
-                                <UserPlus size={18} /> Добавить в друзья
-                            </button>
-                        )}
-
-                        {/* Stats */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Победы</div>
-                                <div className="text-2xl font-mono font-bold text-yellow-500">{viewedUser.stats?.wins || 0}</div>
-                            </div>
-                            <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Игры</div>
-                                <div className="text-2xl font-mono font-bold text-blue-500">{viewedUser.stats?.games_played || 0}</div>
+                            {/* Stats */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
+                                    <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Победы</div>
+                                    <div className="text-2xl font-mono font-bold text-yellow-500">{viewedUser.stats?.wins || 0}</div>
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
+                                    <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Игры</div>
+                                    <div className="text-2xl font-mono font-bold text-blue-500">{viewedUser.stats?.games_played || 0}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Error Toast */}
-            {gameError && (
-                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top duration-300 pointer-events-none">
-                    <div className="bg-red-600/90 text-white px-6 py-3 rounded-full border-2 border-red-400 shadow-[0_0_30px_rgba(220,38,38,0.5)] backdrop-blur-md flex items-center gap-2">
-                        <AlertCircle size={20} />
-                        <span className="font-bold tracking-tight">{gameError}</span>
+            {
+                gameError && (
+                    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top duration-300 pointer-events-none">
+                        <div className="bg-red-600/90 text-white px-6 py-3 rounded-full border-2 border-red-400 shadow-[0_0_30px_rgba(220,38,38,0.5)] backdrop-blur-md flex items-center gap-2">
+                            <AlertCircle size={20} />
+                            <span className="font-bold tracking-tight">{gameError}</span>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
         </div>
     );

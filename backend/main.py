@@ -384,16 +384,8 @@ async def websocket_poker(
                  # But if they rebuy, it matters.
             
             elif action == "TIP_DEALER":
-                 # Deduct $10 from balance
-                 async with async_session() as session:
-                     result = await session.execute(text("UPDATE users SET balance = balance - 10 WHERE id = :uid AND balance >= 10"), {"uid": user.id})
-                     if result.rowcount == 0:
-                         await websocket.send_json({"type": "ERROR", "message": "Not enough funds to tip ($10)"})
-                         continue
-                     await session.commit()
-                 
-                 resp = table.handle_action(user.id, action)
-                 should_broadcast = True
+                resp = table.handle_action(user.id, action)
+                should_broadcast = True
 
             elif action == "SEND_CLOWN":
                 # We use amount for seat here
@@ -406,6 +398,12 @@ async def websocket_poker(
                         "from_seat": resp["from_seat"],
                         "to_seat": resp["to_seat"] 
                     })
+                    should_broadcast = True
+
+            elif action == "CHAT":
+                message = data.get("message", "").strip()
+                if message:
+                    table.add_log(f"{user.name}: {message}")
                     should_broadcast = True
                     
             elif action == "REFRESH_HAND":
