@@ -210,6 +210,9 @@ async def update_me(
             avatar_url=updated.avatar_url,
             friend_code=updated.friend_code,
             created_at=updated.created_at,
+            balance=updated.balance,
+            is_vip=updated.is_vip,
+            selected_token=updated.selected_token,
             stats=UserStats(
                 games_played=updated.games_played,
                 wins=updated.wins,

@@ -159,15 +159,25 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠ Cleanup failed: {e}")
 
-    # Database Migration: Add balance column if missing
+    # Database Migration: Add missing columns if they don't exist
     try:
         async with async_session() as session:
             async with session.begin():
-                # Check directly via SQL as this is safer for partial migrations
-                # This is PostgreSQL specific syntax
                 try:
-                    await session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS balance BIGINT DEFAULT 10000"))
-                    print("✓ Database: Verified 'balance' column exists")
+                    # Basic balance column
+                    await session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS balance BIGINT DEFAULT 1000"))
+                    
+                    # Daily bonus timestamp
+                    await session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_bonus_at TIMESTAMP WITHOUT TIME ZONE"))
+                    
+                    # VIP status & expires
+                    await session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_vip BOOLEAN DEFAULT FALSE"))
+                    await session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_expires_at TIMESTAMP WITHOUT TIME ZONE"))
+                    
+                    # Selected token (skin)
+                    await session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_token VARCHAR(50) DEFAULT 'avatar'"))
+                    
+                    print("✓ Database: Verified all user columns exist")
                 except Exception as e:
                     print(f"⚠ Database migration warning: {e}")
     except Exception as e:

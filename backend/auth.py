@@ -268,6 +268,9 @@ async def authenticate_telegram_user(
             friend_code=existing.friend_code,
             created_at=existing.created_at,
             balance=existing.balance,
+            is_vip=existing.is_vip,
+            vip_expires_at=existing.vip_expires_at,
+            selected_token=existing.selected_token,
             stats=UserStats(
                 games_played=existing.games_played,
                 wins=existing.wins,
@@ -313,6 +316,9 @@ async def authenticate_telegram_user(
         friend_code=user_db.friend_code,
         created_at=user_db.created_at,
         balance=user_db.balance,
+        is_vip=user_db.is_vip,
+        vip_expires_at=user_db.vip_expires_at,
+        selected_token=user_db.selected_token,
         stats=UserStats(
             games_played=user_db.games_played,
             wins=user_db.wins,
@@ -355,6 +361,9 @@ async def get_current_user(
         friend_code=user_db.friend_code,
         created_at=user_db.created_at,
         balance=user_db.balance,
+        is_vip=user_db.is_vip,
+        vip_expires_at=user_db.vip_expires_at,
+        selected_token=user_db.selected_token,
         stats=UserStats(
             games_played=user_db.games_played,
             wins=user_db.wins,
