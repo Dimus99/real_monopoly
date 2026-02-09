@@ -1132,7 +1132,7 @@ const GameRoom = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        {!p.is_bot && p.user_id !== myUser?.id && !friends.some(f => f.id === p.user_id) && (
+                                        {!p.is_bot && p.user_id !== myUser?.id && !friends.some(f => f.id === p.user_id || f.user_id === p.user_id) && (
                                             <button onClick={() => handleSendFriendRequest(p.user_id)} className="p-2 text-blue-400 hover:bg-white/10 rounded-full transition-colors" title="Добавить в друзья">
                                                 <UserPlus size={16} />
                                             </button>
@@ -1437,7 +1437,7 @@ const GameRoom = () => {
                                                     <Flag size={14} />
                                                 </button>
                                             )}
-                                            {!p.is_bot && p.user_id !== myUser?.id && (
+                                            {!p.is_bot && p.user_id !== myUser?.id && !friends.some(f => f.id === p.user_id || f.user_id === p.user_id) && (
                                                 <button onClick={(e) => { e.stopPropagation(); handleSendFriendRequest(p.user_id); }} className="p-1 hover:bg-white/10 rounded" title="Добавить в друзья">
                                                     <UserPlus size={14} className="text-gray-400" />
                                                 </button>
@@ -1491,20 +1491,36 @@ const GameRoom = () => {
 
             {/* MAIN BOARD AREA */}
             {/* MAIN BOARD AREA */}
-            < div className={`flex-1 relative bg-[#0c0c14] flex items-start justify-start overflow-hidden p-0 pb-20`}>
+            < div className={`flex-1 relative bg-[#0c0c14] flex items-center justify-center overflow-auto p-4`}>
                 {/* Background */}
-                < div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full" />
+                < div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a2e_0%,_#0c0c14_80%)] z-0 min-h-full pointer-events-none" />
 
-                <div className={`relative z-10 shadow-2xl flex-shrink-0`}
+                <div className={`main-board-container relative z-10 shadow-2xl flex-shrink-0 transition-transform duration-300 origin-center`}
                     style={{
-                        width: isMobile
-                            ? '96vw'
-                            : `min(92vh, calc(100vw - ${sidebarCollapsed ? '100px' : '360px'}), 850px)`,
+                        width: isMobile ? '800px' : `min(92vh, calc(100vw - ${sidebarCollapsed ? '100px' : '360px'}), 850px)`,
                         aspectRatio: '1/1',
-                        transform: !isMobile ? `scale(${boardScale})` : 'none',
-                        transformOrigin: 'left top'
+                        transform: !isMobile ? `scale(${boardScale})` : 'scale(var(--mobile-scale, 1))',
                     }}
                 >
+                    {/* Mobile Zoom Controls */}
+                    {isMobile && (
+                        <div className="fixed bottom-24 right-4 flex flex-col gap-2 z-[100]">
+                            <button onClick={() => {
+                                const el = document.querySelector('.main-board-container');
+                                if (el) {
+                                    const current = parseFloat(getComputedStyle(el).getPropertyValue('--mobile-scale') || 1);
+                                    el.style.setProperty('--mobile-scale', Math.min(current + 0.1, 1.5));
+                                }
+                            }} className="w-10 h-10 bg-black/60 rounded-full text-white border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg"><Plus size={20} /></button>
+                            <button onClick={() => {
+                                const el = document.querySelector('.main-board-container');
+                                if (el) {
+                                    const current = parseFloat(getComputedStyle(el).getPropertyValue('--mobile-scale') || 1);
+                                    el.style.setProperty('--mobile-scale', Math.max(current - 0.1, 0.5));
+                                }
+                            }} className="w-10 h-10 bg-black/60 rounded-full text-white border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg"><Minus size={20} /></button>
+                        </div>
+                    )}
                     <Board
                         tiles={gameState.board}
                         players={delayedPlayers || gameState.players}
@@ -1683,11 +1699,11 @@ const GameRoom = () => {
 
                             <div className="flex flex-col items-center text-center">
                                 <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white/20 mb-4 bg-black/40">
-                                    {selectedUserProfile.avatar_url ? (
-                                        <img src={selectedUserProfile.avatar_url} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-4xl text-white/20">👤</div>
-                                    )}
+                                    <img
+                                        src={selectedUserProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedUserProfile.name}`}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedUserProfile.name}` }}
+                                    />
                                 </div>
                                 <h2 className="text-2xl font-display font-bold text-white mb-1">{selectedUserProfile.name}</h2>
                                 <div className="bg-white/10 px-3 py-1 rounded-full text-[10px] text-gray-300 font-mono mb-6">
@@ -1706,12 +1722,14 @@ const GameRoom = () => {
                                 </div>
 
                                 <div className="flex flex-col gap-2 w-full">
-                                    <button
-                                        onClick={() => { handleSendFriendRequest(selectedUserProfile.id); setSelectedUserProfile(null); }}
-                                        className="btn-primary py-3 w-full flex items-center justify-center gap-2"
-                                    >
-                                        <UserPlus size={20} /> Добавить в друзья
-                                    </button>
+                                    {!friends.some(f => f.id === selectedUserProfile.id || f.user_id === selectedUserProfile.id) && selectedUserProfile.id !== myUser?.id && (
+                                        <button
+                                            onClick={() => { handleSendFriendRequest(selectedUserProfile.id); setSelectedUserProfile(null); }}
+                                            className="btn-primary py-3 w-full flex items-center justify-center gap-2"
+                                        >
+                                            <UserPlus size={20} /> Добавить в друзья
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => { initiateTrade(Object.values(gameState.players).find(p => p.user_id === selectedUserProfile.id)); setSelectedUserProfile(null); }}
                                         className="btn-ghost py-3 w-full border border-white/10 hover:bg-white/5"

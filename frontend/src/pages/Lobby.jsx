@@ -338,15 +338,11 @@ const Lobby = () => {
     // Resume active games
     const [myGames, setMyGames] = useState([]);
     const fetchMyGames = async () => {
-        // Fetch specific active games for the user
-        // If the endpoint doesn't exist yet, we can filter activeGames if they contain player info
-        // But assuming the user requested this, a specific endpoint or logic is better.
-        // For now, let's try to filter from a broader list if needed, or stick to this if it works.
         try {
-            const res = await authFetch('/api/games/my'); // Adjusted endpoint to likely valid one
+            const res = await authFetch('/api/games/my-active');
             if (res.ok) {
                 const data = await res.json();
-                setMyGames(data || []);
+                setMyGames(data.games || []);
             }
         } catch (e) {
             // Fallback or silence
@@ -798,6 +794,17 @@ const Lobby = () => {
                                     <div>
                                         <h3 className="text-2xl font-bold mb-2">Дополнительно</h3>
                                         <p className="text-sm text-gray-400">Друзья, Мини-игры, Вход</p>
+                                    </div>
+                                </button>
+
+                                <button onClick={() => setMode('shop')} className="group relative h-64 glass-card hover:bg-white/5 transition-all duration-300 rounded-2xl border border-white/10 hover:border-yellow-500/50 overflow-hidden flex flex-col items-center justify-center gap-4 text-center p-6">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 to-orange-600/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="w-20 h-20 bg-yellow-500/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(234,179,8,0.3)]">
+                                        <CreditCard size={40} className="text-yellow-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-bold mb-2">Магазин</h3>
+                                        <p className="text-sm text-gray-400">Валюта и VIP</p>
                                     </div>
                                 </button>
 
@@ -1439,7 +1446,12 @@ const Lobby = () => {
                                     />
                                 </div>
                                 <div className="text-center">
-                                    <h3 className="text-2xl font-bold font-display text-white">{viewedUser.name}</h3>
+                                    <h3 className="text-2xl font-bold font-display text-white flex items-center justify-center gap-2">
+                                        {viewedUser.name}
+                                        {viewedUser.is_vip && (
+                                            <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-[10px] font-black px-2 py-0.5 rounded shadow shadow-yellow-500/20 uppercase tracking-wider">VIP</span>
+                                        )}
+                                    </h3>
                                     {viewedUser.friend_code && <div className="text-xs font-mono text-gray-500 tracking-widest uppercase">#{viewedUser.friend_code}</div>}
                                 </div>
                             </div>
@@ -1452,7 +1464,7 @@ const Lobby = () => {
                                 </div>
                             </div>
 
-                            {user && viewedUser.id !== user.id && !friends.some(f => f.id === viewedUser.id || f.user_id === viewedUser.id || f.user_id === viewedUser.user_id) && (
+                            {user && viewedUser.id !== user.id && !friends.some(f => f.id === viewedUser.id || f.user_id === viewedUser.id || f.user_id === viewedUser.user_id || f.friend_id === viewedUser.id) && (
                                 <button
                                     onClick={() => {
                                         const uid = viewedUser.id || viewedUser.user_id;
@@ -1485,11 +1497,279 @@ const Lobby = () => {
                                 </div>
                             </div>
 
+                            {/* Token Selection for VIP (Only for Self) */}
+                            {user && (viewedUser.id === user.id || viewedUser.user_id === user.id) && (
+                                <div className="mt-6 pt-6 border-t border-white/10">
+                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Выбор Фишки</h3>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {[
+                                            { id: 'avatar', label: 'Аватар', icon: '👤', restricted: false },
+                                            { id: 'car', label: 'Машинка', icon: '🏎️', restricted: true },
+                                            { id: 'billionaire', label: 'Магнат', icon: '🎩', restricted: true }
+                                        ].map(token => {
+                                            const isLocked = token.restricted && !user.is_vip;
+                                            const isSelected = (user.selected_token || 'avatar') === token.id;
+
+                                            return (
+                                                <button
+                                                    key={token.id}
+                                                    onClick={() => {
+                                                        if (isLocked) {
+                                                            alert('Требуется VIP статус! Купите в магазине.');
+                                                            return;
+                                                        }
+                                                        authFetch('/api/shop/select-token', {
+                                                            method: 'POST',
+                                                            body: JSON.stringify({ token: token.id })
+                                                        }).then(r => r.json()).then(d => {
+                                                            if (d.success) {
+                                                                // Update local user state
+                                                                const newUser = { ...user, selected_token: token.id };
+                                                                setUser(newUser);
+                                                                // Also update viewedUser if it's the same object reference or copied
+                                                                if (viewedUser === user || viewedUser.id === user.id) {
+                                                                    setViewedUser({ ...viewedUser, selected_token: token.id });
+                                                                }
+                                                            }
+                                                        });
+                                                    }}
+                                                    className={`relative p-3 rounded-xl border transition-all flex flex-col items-center gap-2 ${isSelected
+                                                        ? 'bg-purple-500/20 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]'
+                                                        : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                                        } ${isLocked ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer'}`}
+                                                >
+                                                    <div className="text-2xl">{token.icon}</div>
+                                                    <div className="text-[10px] font-bold uppercase">{token.label}</div>
+                                                    {isLocked && (
+                                                        <div className="absolute top-1 right-1 text-[10px]">🔒</div>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* SHOP MODE */}
+                {mode === 'shop' && (
+                    <div className="max-w-md w-full mx-auto relative z-10">
+                        <div className="flex items-center gap-4 mb-6">
+                            <button onClick={() => setMode('menu')} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white transition-colors">
+                                <Users size={20} className="transform rotate-180" /> {/* Back Icon placeholder */}
+                            </button>
+                            <h2 className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
+                                Магазин
+                            </h2>
+                        </div>
+
+                        <div className="space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar pr-2 pb-20">
+                            {/* Currency Section */}
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                    <span className="text-yellow-400">$</span> Валюта
+                                </h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('Купить 10,000 за 9 Stars?')) {
+                                                authFetch('/api/shop/buy-currency', { method: 'POST', body: JSON.stringify({ amount: 10000, cost_stars: 9 }) })
+                                                    .then(r => r.json()).then(d => {
+                                                        if (d.success) { alert(d.message); if (user) setUser({ ...user, balance: d.new_balance }); }
+                                                    });
+                                            }
+                                        }}
+                                        className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-yellow-500/50 transition-all text-center group"
+                                    >
+                                        <div className="text-yellow-400 font-bold text-lg mb-1 group-hover:scale-110 transition-transform">$10,000</div>
+                                        <div className="text-xs text-gray-400">9 ⭐️</div>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('Купить 100,000 за 39 Stars?')) {
+                                                authFetch('/api/shop/buy-currency', { method: 'POST', body: JSON.stringify({ amount: 100000, cost_stars: 39 }) })
+                                                    .then(r => r.json()).then(d => {
+                                                        if (d.success) { alert(d.message); if (user) setUser({ ...user, balance: d.new_balance }); }
+                                                    });
+                                            }
+                                        }}
+                                        className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-yellow-500/50 transition-all text-center group relative overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-yellow-500/10 blur-xl"></div>
+                                        <div className="text-yellow-400 font-bold text-lg mb-1 group-hover:scale-110 transition-transform relative z-10">$100,000</div>
+                                        <div className="text-xs text-gray-400 relative z-10">39 ⭐️</div>
+                                        <div className="absolute top-0 right-0 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg">HIT</div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* VIP Section */}
+                            <div className="bg-gradient-to-br from-purple-900/40 to-blue-900/40 border border-purple-500/30 rounded-2xl p-5 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-3 opacity-20"><CreditCard size={80} className="text-purple-400" /></div>
+                                <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2 relative z-10">
+                                    <span className="text-purple-400">💎</span> VIP Статус
+                                </h3>
+                                <div className="text-xs text-gray-300 mb-4 relative z-10">
+                                    <ul className="list-disc list-inside space-y-1">
+                                        <li>Золотой статус "VIP" около ника</li>
+                                        <li>Уникальные фишки (Машинка, Миллиардер)</li>
+                                        <li>Доступ к VIP столам (в разработке)</li>
+                                    </ul>
+                                </div>
+                                <div className="space-y-2 relative z-10">
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('VIP на 1 день за 9 Stars?')) {
+                                                authFetch('/api/shop/buy-vip', { method: 'POST', body: JSON.stringify({ days: 1, cost_stars: 9 }) })
+                                                    .then(r => r.json()).then(d => { if (d.success) alert(d.message); });
+                                            }
+                                        }}
+                                        className="w-full flex items-center justify-between p-3 bg-black/40 rounded-xl border border-white/10 hover:border-purple-500/50 transition-all"
+                                    >
+                                        <span className="font-bold text-white">1 День</span>
+                                        <span className="text-sm text-purple-300 font-mono">9 ⭐️</span>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('VIP на 7 дней за 30 Stars?')) {
+                                                authFetch('/api/shop/buy-vip', { method: 'POST', body: JSON.stringify({ days: 7, cost_stars: 30 }) })
+                                                    .then(r => r.json()).then(d => { if (d.success) alert(d.message); });
+                                            }
+                                        }}
+                                        className="w-full flex items-center justify-between p-3 bg-black/40 rounded-xl border border-purple-500/30 hover:border-purple-500 hover:bg-purple-900/20 transition-all"
+                                    >
+                                        <span className="font-bold text-white">7 Дней</span>
+                                        <span className="text-sm text-purple-300 font-mono">30 ⭐️</span>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('VIP на 30 дней за 89 Stars?')) {
+                                                authFetch('/api/shop/buy-vip', { method: 'POST', body: JSON.stringify({ days: 30, cost_stars: 89 }) })
+                                                    .then(r => r.json()).then(d => { if (d.success) alert(d.message); });
+                                            }
+                                        }}
+                                        className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-yellow-600/20 to-purple-600/20 rounded-xl border border-yellow-500/30 hover:border-yellow-400 transition-all"
+                                    >
+                                        <span className="font-bold text-white">30 Дней</span>
+                                        <span className="text-sm text-yellow-400 font-mono">89 ⭐️</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* SHOP MODE */}
+                {mode === 'shop' && (
+                    <div className="glass-card max-w-md w-full mx-auto relative z-10 p-6 animate-in fade-in zoom-in duration-300">
+                        <div className="flex items-center gap-4 mb-6">
+                            <button onClick={() => setMode('menu')} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white transition-colors">
+                                <Users size={20} className="transform rotate-180" /> {/* Back Icon placeholder */}
+                            </button>
+                            <h2 className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
+                                Магазин
+                            </h2>
+                        </div>
+
+                        <div className="space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar pr-2 pb-20">
+                            {/* Currency Section */}
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                    <span className="text-yellow-400">$</span> Валюта
+                                </h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('Купить 10,000 за 9 Stars?')) {
+                                                authFetch('/api/shop/buy-currency', { method: 'POST', body: JSON.stringify({ amount: 10000, cost_stars: 9 }) })
+                                                    .then(r => r.json()).then(d => {
+                                                        if (d.success) { alert(d.message); if (user) setUser({ ...user, balance: d.new_balance }); }
+                                                    });
+                                            }
+                                        }}
+                                        className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-yellow-500/50 transition-all text-center group"
+                                    >
+                                        <div className="text-yellow-400 font-bold text-lg mb-1 group-hover:scale-110 transition-transform">$10,000</div>
+                                        <div className="text-xs text-gray-400">9 ⭐️</div>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('Купить 100,000 за 39 Stars?')) {
+                                                authFetch('/api/shop/buy-currency', { method: 'POST', body: JSON.stringify({ amount: 100000, cost_stars: 39 }) })
+                                                    .then(r => r.json()).then(d => {
+                                                        if (d.success) { alert(d.message); if (user) setUser({ ...user, balance: d.new_balance }); }
+                                                    });
+                                            }
+                                        }}
+                                        className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-yellow-500/50 transition-all text-center group relative overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-yellow-500/10 blur-xl"></div>
+                                        <div className="text-yellow-400 font-bold text-lg mb-1 group-hover:scale-110 transition-transform relative z-10">$100,000</div>
+                                        <div className="text-xs text-gray-400 relative z-10">39 ⭐️</div>
+                                        <div className="absolute top-0 right-0 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg">HIT</div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* VIP Section */}
+                            <div className="bg-gradient-to-br from-purple-900/40 to-blue-900/40 border border-purple-500/30 rounded-2xl p-5 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-3 opacity-20"><CreditCard size={80} className="text-purple-400" /></div>
+                                <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2 relative z-10">
+                                    <span className="text-purple-400">💎</span> VIP Статус
+                                </h3>
+                                <div className="text-xs text-gray-300 mb-4 relative z-10">
+                                    <ul className="list-disc list-inside space-y-1">
+                                        <li>Золотой статус "VIP" около ника</li>
+                                        <li>Уникальные фишки (Машинка, Миллиардер)</li>
+                                        <li>Доступ к VIP столам (в разработке)</li>
+                                    </ul>
+                                </div>
+                                <div className="space-y-2 relative z-10">
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('VIP на 1 день за 9 Stars?')) {
+                                                authFetch('/api/shop/buy-vip', { method: 'POST', body: JSON.stringify({ days: 1, cost_stars: 9 }) })
+                                                    .then(r => r.json()).then(d => { if (d.success) alert(d.message); });
+                                            }
+                                        }}
+                                        className="w-full flex items-center justify-between p-3 bg-black/40 rounded-xl border border-white/10 hover:border-purple-500/50 transition-all"
+                                    >
+                                        <span className="font-bold text-white">1 День</span>
+                                        <span className="text-sm text-purple-300 font-mono">9 ⭐️</span>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('VIP на 7 дней за 30 Stars?')) {
+                                                authFetch('/api/shop/buy-vip', { method: 'POST', body: JSON.stringify({ days: 7, cost_stars: 30 }) })
+                                                    .then(r => r.json()).then(d => { if (d.success) alert(d.message); });
+                                            }
+                                        }}
+                                        className="w-full flex items-center justify-between p-3 bg-black/40 rounded-xl border border-purple-500/30 hover:border-purple-500 hover:bg-purple-900/20 transition-all"
+                                    >
+                                        <span className="font-bold text-white">7 Дней</span>
+                                        <span className="text-sm text-purple-300 font-mono">30 ⭐️</span>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('VIP на 30 дней за 89 Stars?')) {
+                                                authFetch('/api/shop/buy-vip', { method: 'POST', body: JSON.stringify({ days: 30, cost_stars: 89 }) })
+                                                    .then(r => r.json()).then(d => { if (d.success) alert(d.message); });
+                                            }
+                                        }}
+                                        className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-yellow-600/20 to-purple-600/20 rounded-xl border border-yellow-500/30 hover:border-yellow-400 transition-all"
+                                    >
+                                        <span className="font-bold text-white">30 Дней</span>
+                                        <span className="text-sm text-yellow-400 font-mono">89 ⭐️</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

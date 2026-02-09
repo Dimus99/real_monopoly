@@ -29,6 +29,11 @@ class User(BaseModel):
     
     # For searching users
     friend_code: Optional[str] = None  # 6-char unique code for adding friends
+    
+    # VIP & Customization
+    is_vip: bool = False
+    vip_expires_at: Optional[datetime] = None
+    selected_token: str = "avatar"  # 'avatar', 'car', 'billionaire'
 
 
 class UserPublic(BaseModel):
@@ -40,6 +45,8 @@ class UserPublic(BaseModel):
     friend_code: Optional[str] = None
     balance: int = 0
     is_online: bool = False
+    is_vip: bool = False
+    selected_token: str = "avatar"
 
 
 # ============== Friend Models ==============
@@ -177,6 +184,17 @@ class GameState(BaseModel):
     
     # Per-turn dynamic state (reset on turn change)
     turn_state: Dict[str, Any] = Field(default_factory=dict)
+
+
+class GameSummary(BaseModel):
+    """Summary of a game for lists."""
+    id: str
+    map_type: str
+    game_mode: str
+    players_count: int
+    max_players: int
+    status: str
+    created_at: datetime
 
 
 # ============== Request/Response Models ==============

@@ -65,6 +65,11 @@ async def get_my_active_games(current_user: User = Depends(get_current_user)):
     games = engine.get_user_active_games(current_user.id)
     return {"games": games}
 
+@router.get("/my")
+async def get_my_active_games_alias(current_user: User = Depends(get_current_user)):
+    """Alias for legacy clients."""
+    return await get_my_active_games(current_user)
+
 @router.post("", response_model=dict)
 async def create_game(
     request: CreateGameRequest,

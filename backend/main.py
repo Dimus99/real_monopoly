@@ -25,7 +25,9 @@ from sqlalchemy import text
 # Routes
 from routes.users import router as users_router
 from routes.friends import router as friends_router
+from routes.friends import router as friends_router
 from routes.games import router as games_router
+from routes.shop import router as shop_router
 
 
 async def game_loop():
@@ -210,6 +212,7 @@ app.add_middleware(
 app.include_router(users_router)
 app.include_router(friends_router)
 app.include_router(games_router)
+app.include_router(shop_router)
 
 @app.get("/health")
 async def health():
