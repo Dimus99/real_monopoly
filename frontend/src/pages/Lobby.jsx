@@ -1427,19 +1427,28 @@ const Lobby = () => {
                 {viewedUser && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setViewedUser(null)}>
                         <div className="glass-card max-w-md w-full p-6 animate-in fade-in zoom-in duration-300 relative" onClick={e => e.stopPropagation()}>
-                            <button onClick={() => setViewedUser(null)} className="absolute top-4 right-4 btn-ghost p-1 rounded-full"><X size={20} /></button>
+                            <button onClick={() => setViewedUser(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
 
                             <div className="flex flex-col items-center gap-4 mb-6">
-                                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-500/50 bg-[#1a1a2e] shadow-2xl">
-                                    {viewedUser.avatar_url && (viewedUser.avatar_url.startsWith('http') || viewedUser.avatar_url.startsWith('/')) ? (
-                                        <img src={viewedUser.avatar_url} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-4xl">{viewedUser.avatar_url || '👤'}</div>
-                                    )}
+                                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-500/50 bg-[#0c0c14] shadow-2xl">
+                                    <img
+                                        src={viewedUser.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewedUser.name}`}
+                                        className="w-full h-full object-cover"
+                                        alt={viewedUser.name}
+                                        onError={(e) => { e.target.onerror = null; e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewedUser.name}` }}
+                                    />
                                 </div>
                                 <div className="text-center">
                                     <h3 className="text-2xl font-bold font-display text-white">{viewedUser.name}</h3>
                                     {viewedUser.friend_code && <div className="text-xs font-mono text-gray-500 tracking-widest uppercase">#{viewedUser.friend_code}</div>}
+                                </div>
+                            </div>
+
+                            {/* Balance Display */}
+                            <div className="mb-6 flex justify-center">
+                                <div className="bg-black/40 px-4 py-2 rounded-lg border border-yellow-500/30 flex items-center gap-2">
+                                    <span className="text-xs text-gray-400 uppercase">Баланс</span>
+                                    <span className="font-mono font-bold text-xl text-yellow-400">${viewedUser.balance || 0}</span>
                                 </div>
                             </div>
 
@@ -1465,18 +1474,16 @@ const Lobby = () => {
                             )}
 
                             {/* Stats */}
-                            {viewedUser.stats && (
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Победы</div>
-                                        <div className="text-2xl font-mono font-bold text-yellow-500">{viewedUser.stats.wins || 0}</div>
-                                    </div>
-                                    <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Игры</div>
-                                        <div className="text-2xl font-mono font-bold text-blue-500">{viewedUser.stats.games_played || 0}</div>
-                                    </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
+                                    <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Победы</div>
+                                    <div className="text-2xl font-mono font-bold text-yellow-500">{viewedUser.stats?.wins || 0}</div>
                                 </div>
-                            )}
+                                <div className="bg-white/5 p-4 rounded-xl border border-white/10 text-center">
+                                    <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Игры</div>
+                                    <div className="text-2xl font-mono font-bold text-blue-500">{viewedUser.stats?.games_played || 0}</div>
+                                </div>
+                            </div>
 
                         </div>
                     </div>

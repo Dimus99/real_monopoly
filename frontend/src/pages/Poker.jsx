@@ -2,14 +2,15 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, Trophy, Users, AlertCircle, Play, Maximize2, Minimize2, Bot, Trash2, Coins, Lightbulb, LightbulbOff, UserPlus, UserCheck, X } from 'lucide-react';
 
-const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, authFetch }) => {
+const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, authFetch, friends = [] }) => {
     const [gameState, setGameState] = useState(null);
     const [socket, setSocket] = useState(null);
     const [betAmount, setBetAmount] = useState(0);
     const [chatMessage, setChatMessage] = useState('');
-    const [dealerMessage, setDealerMessage] = useState(null);
     const [viewedUser, setViewedUser] = useState(null);
     const [flyingChips, setFlyingChips] = useState([]);
+    const [flyingClowns, setFlyingClowns] = useState([]);
+    const [activeClowns, setActiveClowns] = useState({}); // { seatId: timestamp }
     const [scale, setScale] = useState(1);
 
     // Mobile Scale
@@ -17,13 +18,15 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
         const handleResize = () => {
             const w = window.innerWidth;
             const h = window.innerHeight;
-            // Base width ~1200px for table
-            if (w < 1000) {
-                const newScale = Math.min(w / 1000, h / 600);
-                setScale(newScale);
-            } else {
-                setScale(1);
-            }
+            // Dynamic Full Scaling
+            // Base layout is roughly 1200x800. We want to FIT it, but also ALLOW zooming in if space permits.
+            // Wait, "stretch to max screen size" means fill the screen.
+            // We use a base width of 1100 to leave some side padding (panels).
+            // Calculate scale to fit width AND height, but max out at 1.5 to avoid pixilation if desired (or no limit).
+            const scaleX = w / 1100;
+            const scaleY = h / 700;
+            const newScale = Math.min(scaleX, scaleY) * 0.95; // 0.95 for padding
+            setScale(newScale);
         };
         window.addEventListener('resize', handleResize);
         handleResize();
@@ -52,8 +55,6 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
         }, 800);
 
         sendAction('TIP_DEALER');
-        setDealerMessage("Thank you! Good luck!");
-        setTimeout(() => setDealerMessage(null), 3000);
     };
 
     // Profile Viewing Logic
@@ -429,9 +430,30 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                     }
                     return { ...prev, me: newMe, seats: newSeats };
                 });
-            } else if (data.type === 'ERROR') {
                 setGameError(data.message);
                 setPreAction(null);
+            } else if (data.type === 'CLOWN_ANIMATION') {
+                const fromSeatIdx = data.from_seat;
+                const toSeatIdx = data.to_seat;
+
+                // Add flying clown
+                const clownId = Date.now() + Math.random();
+                setFlyingClowns(prev => [...prev, { id: clownId, from: fromSeatIdx, to: toSeatIdx }]);
+
+                // Remove flying clown and add mask after animation
+                setTimeout(() => {
+                    setFlyingClowns(prev => prev.filter(c => c.id !== clownId));
+                    setActiveClowns(prev => ({ ...prev, [toSeatIdx]: Date.now() }));
+
+                    // Remove mask after 3s
+                    setTimeout(() => {
+                        setActiveClowns(prev => {
+                            const next = { ...prev };
+                            delete next[toSeatIdx];
+                            return next;
+                        });
+                    }, 3000);
+                }, 1000); // 1s flight time
             }
         };
 
@@ -941,6 +963,72 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                     </div>
                 ))}
 
+                {/* Flying Clowns Layer */}
+                {flyingClowns.map(clown => {
+                    // Logic to find coordinates would be complex without fixed positions or refs.
+                    // Easier approach: Use the known layout logic. 
+                    // Seat positions are relative to the center or defined by CSS classes.
+                    // However, connecting two DOM elements is hard in React without refs.
+                    // Alternative: Use the same getSeatPosition logic if available, or just static classes.
+                    // For now, let's assume we can use a simpler center-to-seat animation or just generic.
+                    // BETTER: We know the standard positions (index 0-8) 
+                    // We can employ a trick: render the clown at 'from' position and animate translate to 'to'.
+                    // But positions are calculated in `renderSeat`.
+                    // Let's use CSS variables or classes if possible.
+
+                    // Actually, let's just render them in a full-screen overlay and use calculated % positions used in renderSeat.
+                    // Seats 0-8 have specific styles.
+
+                    const getPos = (seatIdx) => {
+                        // These match the renderSeat styles roughly. 
+                        // Note: This duplicates logic, ideally refactor, but for speed:
+                        const totalSeats = 9;
+                        const angle = (seatIdx * (360 / totalSeats)) + 90; // +90 to start bottom
+                        const rad = angle * (Math.PI / 180);
+                        const rx = 42; // 42% radius x
+                        const ry = 42; // 42% radius y
+                        const x = 50 + rx * Math.cos(rad);
+                        const y = 50 + ry * Math.sin(rad);
+                        return { x, y };
+                    };
+
+                    const start = getPos(clown.from);
+                    const end = getPos(clown.to);
+
+                    return (
+                        <div
+                            key={clown.id}
+                            className="absolute z-[100] text-3xl pointer-events-none transition-all duration-1000 ease-in-out"
+                            style={{
+                                left: `${start.x}%`,
+                                top: `${start.y}%`,
+                                '--dest-x': `${end.x - start.x}vw`, // Approximation? No, percentage based parent.
+                                // We need pixel or percentage delta. 
+                                // Best to use Animate Presence or just fixed transition.
+                                // Since we are in a scale-container, % works well.
+                                transform: `translate(0, 0)`,
+                            }}
+                        >
+                            <style>{`
+                                @keyframes flyClown-${clown.id} {
+                                    0% { left: ${start.x}%; top: ${start.y}%; transform: scale(0.5); }
+                                    50% { transform: scale(1.5); }
+                                    100% { left: ${end.x}%; top: ${end.y}%; transform: scale(1); }
+                                }
+                            `}</style>
+                            <div style={{
+                                position: 'absolute',
+                                animation: `flyClown-${clown.id} 1s forwards`
+                            }}>
+                                🤡
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {/* Dealer Avatar - Close Up */}
+
+
                 {/* Dealer Avatar - Close Up */}
                 <div
                     onClick={() => setDealerImageIdx(prev => (prev + 1) % dealerImages.length)}
@@ -989,10 +1077,10 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                     </button>
 
                     {/* Dealer Message Bubble */}
-                    {dealerMessage && (
-                        <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 z-[60] animate-in zoom-in fade-in slide-in-from-bottom-2 duration-300 pointer-events-none">
+                    {gameState.dealer_message && (
+                        <div className="absolute top-[-25%] left-1/2 -translate-x-1/2 z-[60] animate-in zoom-in fade-in slide-in-from-bottom-2 duration-300 pointer-events-none w-max">
                             <div className="bg-white text-black text-xs font-bold px-3 py-1.5 rounded-xl rounded-bl-none shadow-lg border-2 border-yellow-500 relative max-w-[150px] text-center leading-tight">
-                                {dealerMessage}
+                                {gameState.dealer_message}
                                 <div className="absolute bottom-0 left-0 translate-y-full w-0 h-0 border-t-[8px] border-t-white border-r-[8px] border-r-transparent shadow-sm" />
                             </div>
                         </div>
@@ -1501,8 +1589,41 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                             </div>
                         </div>
 
+                        {/* Balance Display */}
+                        <div className="mb-6 flex justify-center">
+                            <div className="bg-black/40 px-4 py-2 rounded-lg border border-yellow-500/30 flex items-center gap-2">
+                                <span className="text-xs text-gray-400 uppercase">Баланс</span>
+                                <span className="font-mono font-bold text-xl text-yellow-400">${viewedUser.balance || 0}</span>
+                            </div>
+                        </div>
+
+                        {/* Clown Button - Only if seated and opponent is seated */}
+                        {gameState && gameState.seats &&
+                            gameState.seats[gameState.current_player_seat]?.user_id !== viewedUser.id && // not self
+                            Object.values(gameState.seats).some(s => s.user_id === viewedUser.id || s.user_id === viewedUser.user_id) && // target is seated
+                            Object.values(gameState.seats).some(s => s.user_id === gameState.me?.user_id) && // I am seated
+                            (
+                                <button
+                                    onClick={() => {
+                                        // Find target seat
+                                        let targetSeat = -1;
+                                        Object.entries(gameState.seats).forEach(([s, p]) => {
+                                            if (p.user_id === viewedUser.id || p.user_id === viewedUser.user_id) targetSeat = s;
+                                        });
+                                        if (targetSeat !== -1) {
+                                            sendAction('SEND_CLOWN', { amount: parseInt(targetSeat) }); // Use amount for seat
+                                            setViewedUser(null);
+                                        }
+                                    }}
+                                    className="w-full py-3 bg-red-900/50 hover:bg-red-800 border border-red-500/30 rounded-xl flex items-center justify-center gap-2 font-bold mb-4 text-red-200"
+                                >
+                                    <span className="text-2xl">🤡</span> Отправить клоуна
+                                </button>
+                            )
+                        }
+
                         {/* Add Friend Button */}
-                        {gameState.me?.user_id !== viewedUser.id && (
+                        {gameState.me?.user_id !== viewedUser.id && !friends.some(f => f.id === viewedUser.id || f.user_id === viewedUser.id) && (
                             <button
                                 onClick={() => {
                                     authFetch('/api/friends/request', {
@@ -1555,6 +1676,7 @@ const Poker = () => {
     const [currentTableId, setCurrentTableId] = useState(() => localStorage.getItem('active_poker_table'));
     const [isLoading, setIsLoading] = useState(false);
     const [userBalance, setUserBalance] = useState(0);
+    const [friends, setFriends] = useState([]);
 
     // Persist table selection across refreshes
     useEffect(() => {
@@ -1579,9 +1701,10 @@ const Poker = () => {
     const fetchInfo = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [tRes, uRes] = await Promise.all([
+            const [tRes, uRes, fRes] = await Promise.all([
                 authFetch('/api/poker/tables'),
-                authFetch('/api/users/me')
+                authFetch('/api/users/me'),
+                authFetch('/api/friends')
             ]);
 
             if (tRes.ok) {
@@ -1591,6 +1714,9 @@ const Poker = () => {
             if (uRes.ok) {
                 const uData = await uRes.json();
                 setUserBalance(uData.balance || 0);
+            }
+            if (fRes.ok) {
+                setFriends(await fRes.json());
             }
         } catch (e) {
             console.error(e);
@@ -1617,6 +1743,7 @@ const Poker = () => {
                 <PokerTable
                     tableId={currentTableId}
                     balance={userBalance}
+                    friends={friends}
                     refreshBalance={fetchInfo}
                     onLeave={handleLeave}
                     authFetch={authFetch}

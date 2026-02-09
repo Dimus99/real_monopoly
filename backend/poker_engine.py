@@ -110,6 +110,10 @@ class PokerTable:
         # Logs
         self.last_activity = datetime.utcnow()
         self.logs = []
+        
+        # Dealer Message
+        self.dealer_message = None
+        self.dealer_message_expires = None
 
     def get_empty_seat(self) -> int:
         for i in range(self.max_seats):
@@ -297,6 +301,12 @@ class PokerTable:
                      return {"type": "GAME_UPDATE", "state": self.to_dict(), "message": "Waiting for players..."}
              return None
 
+        if self.dealer_message_expires and datetime.utcnow() > self.dealer_message_expires:
+             self.dealer_message = None
+             self.dealer_message_expires = None
+             # We return update to clear it
+             return {"type": "GAME_UPDATE", "state": self.to_dict()}
+
         if datetime.utcnow() > self.turn_deadline:
              # Timeout!
              seat = self.current_player_seat
@@ -420,6 +430,30 @@ class PokerTable:
                  player.is_all_in = True
             player.consecutive_timeouts = 0
             self.add_log(f"{player.name} raised to {total_bet}.")
+            
+        elif action == "TIP_DEALER":
+            phrases = [
+                "Thank you! Good luck!", "Much appreciated!", "Creating a connection...", 
+                "You're too kind!", "May the flop be with you!", "Karma points added!"
+            ]
+            self.dealer_message = random.choice(phrases)
+            self.dealer_message_expires = datetime.utcnow() + timedelta(seconds=5)
+            self.add_log(f"{player.name} tipped the dealer $10.")
+            return {"success": True, "game_state": self.to_dict()}
+            
+        elif action == "SEND_CLOWN":
+            target_seat = amount # data.get('amount') used for target_seat payload
+            if target_seat not in self.seats:
+                 return {"error": "Invalid target"}
+            
+            # Broadcast the clown event
+            return {
+                "success": True, 
+                "game_state": self.to_dict(), # Update state to be safe
+                "type": "CLOWN_ANIMATION",
+                "from_seat": player.seat,
+                "to_seat": target_seat
+            }
 
         player.acted_street = True
         result = self.next_turn()
@@ -743,7 +777,9 @@ class PokerTable:
             "turn_deadline": (self.turn_deadline.isoformat() + "Z") if self.turn_deadline else None,
             "limits": {"min": self.min_buy_in, "max": self.max_buy_in, "sb": self.small_blind, "bb": self.big_blind},
             "winning_cards": [c.to_dict() for c in self.winning_cards],
-            "winners_ids": self.winners_ids
+            "winning_cards": [c.to_dict() for c in self.winning_cards],
+            "winners_ids": self.winners_ids,
+            "dealer_message": self.dealer_message
         }
     
     def get_player_state(self, user_id):
