@@ -446,6 +446,43 @@ const Lobby = () => {
         }
     };
 
+    const handleShopPurchase = async (itemId) => {
+        console.log("DEBUG SHOP: Initiating purchase for:", itemId);
+        setIsLoading(true);
+        try {
+            const res = await authFetch('/api/shop/create-stars-invoice', {
+                method: 'POST',
+                body: JSON.stringify({ item_id: itemId })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.detail || 'Ошибка при создании счета');
+            }
+
+            const data = await res.json();
+            if (data.success) {
+                if (window.Telegram?.WebApp?.openInvoice) {
+                    window.Telegram.WebApp.openInvoice(data.invoice_url, (status) => {
+                        if (status === 'paid') {
+                            alert('Покупка завершена! Баланс обновится в ближайшее время.');
+                            fetchFriendsData(); // Refresh profile/balance
+                        }
+                    });
+                } else {
+                    window.open(data.invoice_url, '_blank');
+                }
+            } else {
+                throw new Error(data.message || 'Не удалось создать счет');
+            }
+        } catch (err) {
+            console.error("Shop Purchase Error:", err);
+            alert(`Ошибка магазина: ${err.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const sendFriendRequest = async () => {
         if (!friendCodeInput) return;
         try {
@@ -1594,22 +1631,7 @@ const Lobby = () => {
                                     ].map(pack => (
                                         <button
                                             key={pack.id}
-                                            onClick={() => {
-                                                authFetch('/api/shop/create-stars-invoice', {
-                                                    method: 'POST',
-                                                    body: JSON.stringify({ item_id: pack.id })
-                                                }).then(r => r.json()).then(d => {
-                                                    if (d.success) {
-                                                        if (window.Telegram?.WebApp?.openInvoice) {
-                                                            window.Telegram.WebApp.openInvoice(d.invoice_url, (status) => {
-                                                                if (status === 'paid') alert('Покупка завершена!');
-                                                            });
-                                                        } else {
-                                                            window.open(d.invoice_url, '_blank');
-                                                        }
-                                                    }
-                                                });
-                                            }}
+                                            onClick={() => handleShopPurchase(pack.id)}
                                             className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-yellow-500/50 transition-all text-center group relative overflow-hidden"
                                         >
                                             <div className="text-yellow-400 font-bold text-lg mb-1 group-hover:scale-110 transition-transform relative z-10">{pack.amount}</div>
@@ -1635,22 +1657,7 @@ const Lobby = () => {
                                     ].map(v => (
                                         <button
                                             key={v.id}
-                                            onClick={() => {
-                                                authFetch('/api/shop/create-stars-invoice', {
-                                                    method: 'POST',
-                                                    body: JSON.stringify({ item_id: v.id })
-                                                }).then(r => r.json()).then(d => {
-                                                    if (d.success) {
-                                                        if (window.Telegram?.WebApp?.openInvoice) {
-                                                            window.Telegram.WebApp.openInvoice(d.invoice_url, (status) => {
-                                                                if (status === 'paid') alert('VIP статус активирован!');
-                                                            });
-                                                        } else {
-                                                            window.open(d.invoice_url, '_blank');
-                                                        }
-                                                    }
-                                                });
-                                            }}
+                                            onClick={() => handleShopPurchase(v.id)}
                                             className="bg-purple-900/40 border border-purple-500/30 rounded-xl p-2 hover:bg-purple-600/30 transition-all text-center"
                                         >
                                             <div className="text-white font-bold text-sm">{v.days}</div>

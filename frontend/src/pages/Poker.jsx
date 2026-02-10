@@ -988,11 +988,12 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                 {flyingReactions.map(reaction => {
                     const getPos = (seatIdx) => {
                         const style = getSeatPosition(seatIdx);
+                        if (!style) return { x: 50, y: 50 };
                         let x = 50, y = 50;
-                        if (style.left) x = parseFloat(style.left);
-                        if (style.right) x = 100 - parseFloat(style.right);
-                        if (style.top) y = parseFloat(style.top);
-                        if (style.bottom) y = 100 - parseFloat(style.bottom);
+                        if ('left' in style) x = parseFloat(style.left);
+                        else if ('right' in style) x = 100 - parseFloat(style.right);
+                        if ('top' in style) y = parseFloat(style.top);
+                        else if ('bottom' in style) y = 100 - parseFloat(style.bottom);
                         return { x, y };
                     };
 
@@ -1042,18 +1043,19 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                             onError={(e) => { e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'; }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-
-                        {/* Integrated Tip Button */}
-                        <button
-                            onClick={(e) => { e.stopPropagation(); handleTip(); }}
-                            className="absolute bottom-2 right-2 z-30 w-10 h-10 rounded-full bg-yellow-500 border-2 border-white shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
-                            title="Tip Dealer ($10)"
-                        >
-                            <span className="text-black font-black text-lg group-hover:rotate-12 transition-transform">$</span>
-                        </button>
                     </div>
-                    <div className="bg-black/80 backdrop-blur-xl px-6 py-1.5 rounded-full border-2 border-yellow-500/50 shadow-2xl -mt-8 z-10 scale-110">
-                        <span className="text-sm font-black text-yellow-500 uppercase tracking-[0.4em] drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">The Dealer</span>
+                    <div className="relative group/badge -mt-8 z-10 transition-transform hover:scale-105 active:scale-95">
+                        <div className="bg-black/80 backdrop-blur-xl px-2 py-1.5 rounded-full border-2 border-yellow-500/50 shadow-2xl scale-110 flex items-center pr-6">
+                            {/* Integrated Tip Button inside badge area */}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleTip(); }}
+                                className="w-8 h-8 rounded-full bg-yellow-500 border-2 border-white shadow-lg flex items-center justify-center hover:bg-yellow-400 transition-all active:scale-90 mr-4 shrink-0"
+                                title="Донат дилеру ($10)"
+                            >
+                                <span className="text-black font-black text-base">$</span>
+                            </button>
+                            <span className="text-sm font-black text-yellow-500 uppercase tracking-[0.2em] drop-shadow-[0_2px_4px_rgba(0,0,0,1)] whitespace-nowrap">The Dealer</span>
+                        </div>
                     </div>
 
                     {/* Dealer Message - Speech Bubble SIDE of Avatar */}
@@ -1168,7 +1170,7 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                         }
 
                         return (
-                            <div key={seatIdx} className={`absolute flex flex-col items-center transition-all duration-300 ${isActive ? 'scale-110 z-30' : 'z-20'}`} style={posStyle}>
+                            <div key={seatIdx} className={`absolute flex flex-col items-center transition-all duration-300 ${isActive ? 'scale-110 z-40' : (interactionMenuSeat === seatIdx ? 'z-[120]' : 'z-20')}`} style={posStyle}>
                                 {player ? (
                                     <div className={`flex items-center group relative ${isMe ? 'flex-row gap-4 items-end' : 'flex-col'}`}>
                                         {/* Timer / Active Indicator */}
