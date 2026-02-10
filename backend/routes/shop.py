@@ -9,7 +9,8 @@ from database import db
 from db.base import get_db
 from db import service as db_service
 from models import User
-from auth import get_current_user, BOT_TOKEN
+import auth
+from auth import get_current_user
 
 router = APIRouter(prefix="/api/shop", tags=["shop"])
 
@@ -39,9 +40,9 @@ async def create_stars_invoice(
     current_user: User = Depends(get_current_user)
 ):
     """Create a Telegram Stars invoice link for shop items."""
-    if not BOT_TOKEN:
+    if not auth.BOT_TOKEN:
         # Dev mode mock
-        return {"success": True, "invoice_url": f"https://t.me/invoice_mock_{item_id}", "is_mock": True}
+        return {"success": True, "invoice_url": f"https://t.me/invoice/mock_{item_id}", "is_mock": True}
     
     item = CURRENCY_PACKS.get(item_id)
     if not item:
@@ -61,7 +62,7 @@ async def create_stars_invoice(
 
     async with httpx.AsyncClient() as client:
         resp = await client.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/createInvoiceLink",
+            f"https://api.telegram.org/bot{auth.BOT_TOKEN}/createInvoiceLink",
             json=payload
         )
         data = resp.json()
@@ -82,7 +83,7 @@ async def buy_currency(
     Deprecated/Dev: Manual buy. 
     In production, this is handled via telegram webhook.
     """
-    if BOT_TOKEN:
+    if auth.BOT_TOKEN:
         raise HTTPException(status_code=400, detail="Use /create-stars-invoice in production")
         
     new_user = await db_service.add_user_balance(session, current_user.id, amount)
@@ -96,7 +97,7 @@ async def buy_vip(
     session: AsyncSession = Depends(get_db)
 ):
     """Deprecated/Dev: Manual VIP buy."""
-    if BOT_TOKEN:
+    if auth.BOT_TOKEN:
          raise HTTPException(status_code=400, detail="Use /create-stars-invoice in production")
     
     now = datetime.utcnow()

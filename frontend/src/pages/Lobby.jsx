@@ -462,6 +462,11 @@ const Lobby = () => {
 
             const data = await res.json();
             if (data.success) {
+                if (data.is_mock) {
+                    alert('Режим разработки: Имитация покупки. Для реальных платежей нужен BOT_TOKEN.');
+                    fetchFriendsData();
+                    return;
+                }
                 if (window.Telegram?.WebApp?.openInvoice) {
                     window.Telegram.WebApp.openInvoice(data.invoice_url, (status) => {
                         if (status === 'paid') {
