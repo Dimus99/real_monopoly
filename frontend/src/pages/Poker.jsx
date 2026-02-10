@@ -1042,20 +1042,29 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                             onError={(e) => { e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'; }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+
+                        {/* Integrated Tip Button */}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleTip(); }}
+                            className="absolute bottom-2 right-2 z-30 w-10 h-10 rounded-full bg-yellow-500 border-2 border-white shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-all group"
+                            title="Tip Dealer ($10)"
+                        >
+                            <span className="text-black font-black text-lg group-hover:rotate-12 transition-transform">$</span>
+                        </button>
                     </div>
                     <div className="bg-black/80 backdrop-blur-xl px-6 py-1.5 rounded-full border-2 border-yellow-500/50 shadow-2xl -mt-8 z-10 scale-110">
                         <span className="text-sm font-black text-yellow-500 uppercase tracking-[0.4em] drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">The Dealer</span>
                     </div>
 
-                    {/* Dealer Message - Speech Bubble BELOW Avatar */}
+                    {/* Dealer Message - Speech Bubble SIDE of Avatar */}
                     {(gameState.dealer_message || dealerMessage) && (
-                        <div className="absolute top-[115%] left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-6 fade-in duration-500 w-max max-w-[320px] pointer-events-none">
-                            <div className="relative bg-white text-black px-8 py-5 rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.7)] border-4 border-yellow-500">
-                                <div className="text-lg font-black uppercase tracking-tight leading-tight text-center italic">
+                        <div className="absolute left-[80%] top-[10%] z-[100] animate-in slide-in-from-left-6 fade-in duration-500 w-max max-w-[280px] pointer-events-none">
+                            <div className="relative bg-white text-black px-6 py-4 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-4 border-yellow-500">
+                                <div className="text-base font-black uppercase tracking-tight leading-tight italic text-center">
                                     "{gameState.dealer_message || dealerMessage}"
                                 </div>
-                                {/* Speech Bubble Tail (Pointing Up, Centered) */}
-                                <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-8 h-8 bg-white border-l-4 border-t-4 border-yellow-500 rounded-tl-lg transform rotate-45"></div>
+                                {/* Speech Bubble Tail (Pointing Left) */}
+                                <div className="absolute top-1/2 -left-4 -translate-y-1/2 w-6 h-6 bg-white border-l-4 border-b-4 border-yellow-500 rounded-bl-lg transform rotate-45"></div>
                             </div>
                         </div>
                     )}
@@ -1074,16 +1083,6 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                 >
 
                     {/* Dealer Tip Button - Dynamic Position based on scale? No, inside relative container */}
-                    {/* Dealer Tip Button */}
-                    <button
-                        onClick={handleTip}
-                        className="absolute top-[-5%] left-[58%] z-[50] w-8 h-8 rounded-full bg-black/60 border border-yellow-500/50 flex items-center justify-center group hover:scale-110 transition-transform"
-                        title="Tip Dealer ($10)"
-                    >
-                        <div className="w-6 h-6 rounded-full border-2 border-dashed border-yellow-500 flex items-center justify-center text-[8px] font-black text-yellow-500 bg-black group-hover:bg-yellow-500 group-hover:text-black transition-colors">
-                            $
-                        </div>
-                    </button>
 
 
                     {/* Center Start Button */}
@@ -1298,6 +1297,8 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
                                                         el.style.opacity = '0.5';
                                                         setTimeout(() => { if (el) el.style.opacity = '1'; }, 200);
                                                     }
+                                                } else {
+                                                    handleAvatarClick(seatIdx, player);
                                                 }
                                             }}
                                             id={isMe ? 'my-cards-container' : undefined}
