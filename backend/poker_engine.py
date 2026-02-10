@@ -433,15 +433,19 @@ class PokerTable:
             
         elif action == "TIP_DEALER":
             if player.chips < 10:
-                return {"error": "Not enough chips to tip ($10)"}
+                return {"error": "Недостаточно фишек для чаевых ($10)"}
             player.chips -= 10
             phrases = [
-                "Thank you! Good luck!", "Much appreciated!", "Creating a connection...", 
-                "You're too kind!", "May the flop be with you!", "Karma points added!"
+                f"Спасибо, {player.name}! Удачи за столом!",
+                f"Огромное спасибо, {player.name}! Пусть придет стрит-флеш!",
+                f"Благодарю, {player.name}! Карма +100 к твоему следующему олл-ину!",
+                f"Очень мило с твоей стороны, {player.name}!",
+                f"Пусть флоп будет к тебе благосклонен, {player.name}!",
+                f"{player.name}, ты лучший! Удачи в раздаче!"
             ]
             self.dealer_message = random.choice(phrases)
             self.dealer_message_expires = datetime.utcnow() + timedelta(seconds=5)
-            self.add_log(f"{player.name} tipped the dealer $10.")
+            self.add_log(f"{player.name} оставил чаевые дилеру $10.")
             return {"success": True, "game_state": self.to_dict()}
             
         elif action == "SEND_REACTION":

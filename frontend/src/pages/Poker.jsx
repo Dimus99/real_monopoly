@@ -1049,13 +1049,13 @@ const PokerTable = ({ tableId, onLeave, autoBuyIn, balance, refreshBalance, auth
 
                     {/* Dealer Message - Speech Bubble BELOW Avatar */}
                     {(gameState.dealer_message || dealerMessage) && (
-                        <div className="absolute top-[105%] left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-6 fade-in duration-500 w-max max-w-[300px] pointer-events-none">
-                            <div className="relative bg-white text-black px-8 py-5 rounded-[3rem] rounded-tl-none shadow-[0_25px_60px_rgba(0,0,0,0.7)] border-4 border-yellow-500">
+                        <div className="absolute top-[115%] left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-6 fade-in duration-500 w-max max-w-[320px] pointer-events-none">
+                            <div className="relative bg-white text-black px-8 py-5 rounded-[3rem] shadow-[0_25px_60px_rgba(0,0,0,0.7)] border-4 border-yellow-500">
                                 <div className="text-lg font-black uppercase tracking-tight leading-tight text-center italic">
                                     "{gameState.dealer_message || dealerMessage}"
                                 </div>
-                                {/* Speech Bubble Tail (Pointing Up) */}
-                                <div className="absolute -top-6 left-0 w-10 h-10 bg-white border-l-4 border-t-4 border-yellow-500 rounded-tl-[2rem] transform rotate-12 translate-x-3"></div>
+                                {/* Speech Bubble Tail (Pointing Up, Centered) */}
+                                <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-8 h-8 bg-white border-l-4 border-t-4 border-yellow-500 rounded-tl-lg transform rotate-45"></div>
                             </div>
                         </div>
                     )}
