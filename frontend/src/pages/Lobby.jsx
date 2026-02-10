@@ -1632,7 +1632,7 @@ const Lobby = () => {
                                 <div className="grid grid-cols-2 gap-3">
                                     {[
                                         { id: 'small', amount: '$10,000', stars: 9, label: '9 ⭐️' },
-                                        { id: 'large', amount: '$100,000', stars: 39, label: '39 ⭐️', badge: 'HIT' }
+                                        { id: 'large', amount: '$100,000', stars: 39, label: '39 ⭐️', badge: 'MAX', benefit: '-57%' }
                                     ].map(pack => (
                                         <button
                                             key={pack.id}
@@ -1640,7 +1640,10 @@ const Lobby = () => {
                                             className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-yellow-500/50 transition-all text-center group relative overflow-hidden"
                                         >
                                             <div className="text-yellow-400 font-bold text-lg mb-1 group-hover:scale-110 transition-transform relative z-10">{pack.amount}</div>
-                                            <div className="text-xs text-gray-400 relative z-10">{pack.label}</div>
+                                            <div className="text-xs text-gray-400 relative z-10 flex items-center justify-center gap-1">
+                                                {pack.label}
+                                                {pack.benefit && <span className="text-[10px] text-green-400 font-bold">({pack.benefit})</span>}
+                                            </div>
                                             {pack.badge && <div className="absolute top-0 right-0 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg animate-pulse">{pack.badge}</div>}
                                         </button>
                                     ))}
@@ -1657,16 +1660,21 @@ const Lobby = () => {
                                 <div className="grid grid-cols-3 gap-2 mb-4 relative z-10">
                                     {[
                                         { id: 'vip_1', days: '1 д', stars: 9 },
-                                        { id: 'vip_7', days: '7 д', stars: 49 },
-                                        { id: 'vip', days: '30 д', stars: 149 }
+                                        { id: 'vip_7', days: '7 д', stars: 49, benefit: '-22%' },
+                                        { id: 'vip', days: '30 д', stars: 149, benefit: '-45%' }
                                     ].map(v => (
                                         <button
                                             key={v.id}
                                             onClick={() => handleShopPurchase(v.id)}
-                                            className="bg-purple-900/40 border border-purple-500/30 rounded-xl p-2 hover:bg-purple-600/30 transition-all text-center"
+                                            className="bg-purple-900/40 border border-purple-500/30 rounded-xl p-2 hover:bg-purple-600/30 transition-all text-center relative"
                                         >
                                             <div className="text-white font-bold text-sm">{v.days}</div>
                                             <div className="text-[10px] text-purple-300">{v.stars} ⭐️</div>
+                                            {v.benefit && (
+                                                <div className="absolute -top-1 -right-1 bg-green-500 text-white text-[7px] font-black px-1 rounded shadow-lg">
+                                                    {v.benefit}
+                                                </div>
+                                            )}
                                         </button>
                                     ))}
                                 </div>

@@ -11,6 +11,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from typing import Optional, Union
+import httpx
 
 from socket_manager import manager
 from game_engine import engine
@@ -128,7 +129,6 @@ async def lifespan(app: FastAPI):
     # Setup Telegram Webhook
     if bot_token:
         try:
-            import httpx
             # Your Public URL (Railway)
             PUBLIC_URL = os.getenv("VITE_API_URL", "https://realmonopoly-production.up.railway.app")
             webhook_url = f"{PUBLIC_URL}/webhook/telegram"
@@ -607,7 +607,6 @@ async def telegram_webhook(update: dict):
             
             if text and text.startswith("/start") and chat_id:
                 # Send welcome message
-                import httpx
                 
                 bot_token = os.getenv("BOT_TOKEN")
                 bot_username = os.getenv("BOT_USERNAME", "monopoly_haha_bot")
